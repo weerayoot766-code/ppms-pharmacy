@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - กำหนดสิทธิ์การใช้งาน (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1200px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .quick-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+  .quick-tabs a {
+    display: block; text-decoration: none; padding: 10px 18px; font-size: 13.5px; font-weight: 600;
+    color: #cfe6d2; background: #226a44; border-radius: 8px 8px 0 0; cursor: pointer;
+  }
+  .quick-tabs a.active { background: #fff; color: #1e6b3c; }
+  .quick-tabs a:hover:not(.active) { background: #2a7a4f; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 18px 22px; border-bottom: 1px solid #eef2ef; flex-wrap: wrap;
+  }
+  .panel-header h2 { font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0; }
+  .panel-header .desc { font-size: 12.5px; color: #8fa198; margin-top: 3px; }
+  .save-btn {
+    background: #2e8b4f; color: #fff; border: none; border-radius: 8px;
+    padding: 11px 22px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .save-btn:hover { background: #257a43; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 16px; padding: 14px 22px; font-size: 12.5px; color: #4a5a4f;
+    border-bottom: 1px solid #eef2ef; background: #f9fcfa;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot-none { background: #cfd8d2; }
+  .dot-view { background: #e6ac2e; }
+  .dot-full { background: #2e8b4f; }
+
+  .tbl-scroll { overflow-x: auto; }
+  table.perm-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  table.perm-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 700;
+    border-bottom: 2px solid #2e8b4f; padding: 12px 16px; white-space: nowrap; background: #f6faf7;
+  }
+  table.perm-table th.role-col { text-align: center; }
+  table.perm-table td {
+    padding: 9px 16px; border-bottom: 1px solid #eef2ef; font-size: 13px; vertical-align: middle;
+  }
+  table.perm-table td.module-name { font-weight: 600; color: #24312a; white-space: nowrap; }
+  table.perm-table td.role-cell { text-align: center; }
+  table.perm-table tr:hover td { background: #f6faf7; }
+
+  .perm-select {
+    padding: 7px 10px; border-radius: 7px; border: 1px solid #cfe0d3; font-size: 12.5px; font-family: inherit;
+    background: #fff; color: #24312a; min-width: 128px;
+  }
+  .perm-select.lvl-none { color: #8fa198; }
+  .perm-select.lvl-view { color: #a9701a; border-color: #f0d9a8; background: #fdf6e8; }
+  .perm-select.lvl-full { color: #1e6b3c; border-color: #bfe0c9; background: #eef8f0; }
+
+  .owner-note {
+    padding: 14px 22px; font-size: 12.5px; color: #8fa198; border-top: 1px solid #eef2ef;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> ตั้งค่าระบบ <span class="sep">/</span> <b>กำหนดสิทธิ์การใช้งาน</b>
+</div>
+
+<div class="content">
+
+  <div class="quick-tabs">
+    <a onclick="window.location.href='user-list-mockup.html'">รายชื่อผู้ใช้งาน</a>
+    <a class="active">กำหนดสิทธิ์การใช้งาน</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>🔐 กำหนดสิทธิ์การใช้งานตามบทบาท</h2>
+        <div class="desc">เลือกระดับสิทธิ์ของแต่ละเมนู แยกตามบทบาทผู้ใช้งาน การเปลี่ยนแปลงจะมีผลกับผู้ใช้งานทุกคนที่อยู่ในบทบาทนั้น</div>
+      </div>
+      <button class="save-btn" onclick="savePermissions()">💾 บันทึกสิทธิ์</button>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot dot-none"></span> ไม่มีสิทธิ์</span>
+      <span><span class="dot dot-view"></span> ดูอย่างเดียว</span>
+      <span><span class="dot dot-full"></span> จัดการได้เต็มสิทธิ์ (เพิ่ม/แก้ไข/ลบ)</span>
+    </div>
+
+    <div class="tbl-scroll">
+      <table class="perm-table">
+        <thead>
+          <tr>
+            <th>เมนู / โมดูล</th>
+            <th class="role-col">เจ้าของร้าน</th>
+            <th class="role-col">แอดมิน</th>
+            <th class="role-col">เภสัชกร</th>
+            <th class="role-col">พนักงานขาย</th>
+          </tr>
+        </thead>
+        <tbody id="permBody"></tbody>
+      </table>
+    </div>
+
+    <div class="owner-note">* บทบาท "เจ้าของร้าน" มีสิทธิ์เต็มทุกเมนูเสมอ และไม่สามารถปรับลดสิทธิ์ได้ เพื่อป้องกันการล็อกตัวเองออกจากระบบ</div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+const roles = ["owner", "admin", "pharmacist", "staff"];
+
+const modules = [
+  { key:"pos",        name:"หน้าขาย (POS)" },
+  { key:"product",     name:"ข้อมูลสินค้า / กลุ่มสินค้า / ชุดสินค้า" },
+  { key:"stock",       name:"คลังสินค้า (ปรับสต๊อก/นับสต๊อก/โอนย้าย)" },
+  { key:"receiving",   name:"การซื้อ/รับสินค้า" },
+  { key:"sale",        name:"บิลย้อนหลัง / คืนสินค้า / ใบลดหนี้" },
+  { key:"customer",    name:"ข้อมูลลูกค้า / ระดับสมาชิก / คูปอง" },
+  { key:"supplier",    name:"ข้อมูลผู้จำหน่าย" },
+  { key:"reportSales", name:"รายงานการขาย" },
+  { key:"reportStock", name:"รายงานคลังสินค้า" },
+  { key:"reportKhy",   name:"รายงาน ขย." },
+  { key:"tele",        name:"Telepharmacy" },
+  { key:"setting",     name:"ตั้งค่าระบบ (ข้อมูลร้าน/เครื่องพิมพ์/สำรองข้อมูล)" },
+  { key:"userAdmin",   name:"ผู้ใช้งาน/สิทธิ์" },
+];
+
+// ค่าเริ่มต้นของแต่ละบทบาท: 'none' | 'view' | 'full'
+// ค่าสิทธิ์ปัจจุบัน — โหลดจริงจาก action 'getRolePermissions' (ถ้าเป็นครั้งแรกที่ใช้งาน backend จะ seed
+// ค่าเริ่มต้นชุดนี้ให้อัตโนมัติ จึงคงโครงสร้างค่าเริ่มต้นไว้เป็น fallback เผื่อโหลดไม่สำเร็จ)
+let permissions = {
+  owner:      Object.fromEntries(modules.map(m => [m.key, 'full'])),
+  admin: {
+    pos:'full', product:'full', stock:'full', receiving:'full', sale:'full',
+    customer:'full', supplier:'full', reportSales:'full', reportStock:'full',
+    reportKhy:'full', tele:'full', setting:'full', userAdmin:'full',
+  },
+  pharmacist: {
+    pos:'full', product:'view', stock:'full', receiving:'full', sale:'full',
+    customer:'view', supplier:'view', reportSales:'view', reportStock:'view',
+    reportKhy:'full', tele:'full', setting:'none', userAdmin:'none',
+  },
+  staff: {
+    pos:'full', product:'view', stock:'none', receiving:'none', sale:'view',
+    customer:'view', supplier:'none', reportSales:'none', reportStock:'none',
+    reportKhy:'none', tele:'none', setting:'none', userAdmin:'none',
+  },
+};
+
+function selectHtml(role, moduleKey) {
+  const value = permissions[role][moduleKey];
+  const disabled = role === 'owner' ? 'disabled' : '';
+  return `
+    <select class="perm-select lvl-${value}" data-role="${role}" data-module="${moduleKey}" ${disabled}
+      onchange="this.className='perm-select lvl-' + this.value">
+      <option value="none" ${value==='none'?'selected':''}>ไม่มีสิทธิ์</option>
+      <option value="view" ${value==='view'?'selected':''}>ดูอย่างเดียว</option>
+      <option value="full" ${value==='full'?'selected':''}>จัดการเต็มสิทธิ์</option>
+    </select>
+  `;
+}
+
+function renderTable() {
+  const body = document.getElementById('permBody');
+  body.innerHTML = modules.map(m => `
+    <tr>
+      <td class="module-name">${m.name}</td>
+      <td class="role-cell">${selectHtml('owner', m.key)}</td>
+      <td class="role-cell">${selectHtml('admin', m.key)}</td>
+      <td class="role-cell">${selectHtml('pharmacist', m.key)}</td>
+      <td class="role-cell">${selectHtml('staff', m.key)}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadPermissions() {
+  document.getElementById('permBody').innerHTML =
+    `<tr><td colspan="5"><div style="padding:24px;text-align:center;color:#8fa198;">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+  try {
+    const data = await apiGet('getRolePermissions');
+    // รวมกับค่าเริ่มต้น เผื่อโมดูลใหม่ที่ยังไม่มีในชีต (เช่นเพิ่มเมนูใหม่ทีหลัง)
+    roles.forEach(role => {
+      permissions[role] = Object.assign({}, permissions[role], data[role] || {});
+    });
+  } catch (err) {
+    alert('โหลดสิทธิ์การใช้งานไม่สำเร็จ (ใช้ค่าเริ่มต้นแทนไปก่อน): ' + err.message);
+  }
+  renderTable();
+}
+
+async function savePermissions() {
+  const payload = {};
+  document.querySelectorAll('#permBody select').forEach(sel => {
+    const role = sel.dataset.role, mod = sel.dataset.module;
+    if (!payload[role]) payload[role] = {};
+    payload[role][mod] = sel.value;
+  });
+  // owner ถูก disabled ไว้เสมอ (สิทธิ์เต็มทุกเมนู) จึงไม่ได้อยู่ใน DOM select ที่ query ได้ตรงๆ — ใส่ทับให้ชัวร์
+  payload.owner = Object.fromEntries(modules.map(m => [m.key, 'full']));
+
+  const btn = document.querySelector('.save-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+  try {
+    await apiPost('saveRolePermissions', { permissions: payload });
+    alert('บันทึกสิทธิ์การใช้งานเรียบร้อย');
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึกสิทธิ์';
+}
+
+loadPermissions();
+</script>
+
+</body>
+</html>

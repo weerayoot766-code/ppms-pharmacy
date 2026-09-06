@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - รายงานการขาย (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1300px; margin: 0 auto; padding: 22px 22px 60px; }
+
+  .report-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+  .report-tabs a {
+    display: block; text-decoration: none; padding: 11px 20px; font-size: 13.5px; font-weight: 600;
+    color: #cfe6d2; background: #226a44; border-radius: 8px 8px 0 0; cursor: pointer;
+  }
+  .report-tabs a.active { background: #fff; color: #1e6b3c; }
+  .report-tabs a:hover:not(.active) { background: #2a7a4f; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .panel-title {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    font-size: 14.5px;
+    font-weight: 700;
+    padding: 12px 20px;
+  }
+
+  .filter-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+  .filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 170px; }
+  .filter-field label { font-size: 12.5px; font-weight: 600; color: #3f4f45; }
+  .filter-field select, .filter-field input {
+    padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 13.5px; font-family: inherit; color: #24312a; background: #fff;
+  }
+  .filter-field select:focus, .filter-field input:focus { outline: none; border-color: #2e8b4f; }
+  .filter-field.grow { flex: 1; min-width: 220px; }
+  .view-btn {
+    background: #e69a1f; color: #fff; border: none; border-radius: 8px;
+    padding: 11px 22px; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .view-btn:hover { background: #cc8815; }
+
+  .result-header {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 12px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  }
+  .result-header .rh-title { font-size: 14.5px; font-weight: 700; }
+  .result-header .rh-actions { display: flex; gap: 8px; }
+  .rh-btn {
+    border: none; border-radius: 7px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .rh-btn.excel { background: #2e8b4f; color: #fff; }
+  .rh-btn.excel:hover { background: #257a43; }
+  .rh-btn.print { background: rgba(255,255,255,.22); color: #fff; }
+  .rh-btn.print:hover { background: rgba(255,255,255,.34); }
+
+  .result-body { padding: 20px; }
+  .company-name { font-size: 17px; font-weight: 700; color: #1e6b3c; }
+  .branch-line { font-size: 12.5px; color: #8fa198; margin-top: 2px; }
+  .report-title { font-size: 15.5px; font-weight: 700; margin: 10px 0 4px; }
+  .purpose-text { font-size: 12px; color: #8fa198; line-height: 1.6; max-width: 720px; }
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-top: 6px;
+  }
+  .meta-right { font-size: 12px; color: #8fa198; text-align: right; }
+
+  .extra-filter-row { margin: 14px 0 4px; }
+  .extra-filter-row label { font-size: 13px; font-weight: 700; color: #3f4f45; margin-right: 10px; }
+  .extra-filter-row input, .extra-filter-row select {
+    padding: 9px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 13.5px; font-family: inherit; min-width: 260px;
+  }
+
+  .summary-stats {
+    display: flex; flex-wrap: wrap; gap: 26px; margin: 16px 0 4px; font-size: 13.5px; color: #3f4f45;
+  }
+  .summary-stats b { color: #1e6b3c; }
+
+  table.report-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  table.report-table th {
+    text-align: left; font-size: 12px; color: #4a5a4f; font-weight: 700;
+    border-bottom: 2px solid #2e8b4f; padding: 9px 12px; white-space: nowrap; background: #f6faf7;
+  }
+  table.report-table th.num, table.report-table td.num { text-align: right; }
+  table.report-table td {
+    padding: 9px 12px; border-bottom: 1px solid #eef2ef; font-size: 13px; vertical-align: middle; white-space: nowrap;
+  }
+  table.report-table tbody tr:hover td { background: #f6faf7; }
+  .hl { background: #eaf3fb; font-weight: 700; }
+  .neg { color: #c0392b; }
+  .empty-row { text-align: center; color: #8fa198; font-size: 13px; padding: 30px; }
+  .tbl-scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> รายงาน <span class="sep">/</span> <b>รายงานการขาย</b>
+</div>
+
+<div class="content">
+
+  <div class="report-tabs">
+    <a class="active">รายงานการขาย</a>
+    <a onclick="window.location.href='report-stock-mockup.html'">รายงานคลังสินค้า</a>
+    <a onclick="window.location.href='report-khy-mockup.html'">รายงาน ขย.</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">รายการงานขาย</div>
+    <div class="filter-body">
+      <div class="filter-field grow">
+        <label>รายงาน</label>
+        <select id="reportType" onchange="onReportChange()"></select>
+      </div>
+      <div class="filter-field">
+        <label>สาขา</label>
+        <select id="branch">
+          <option selected>สำนักงานใหญ่</option>
+          <option>สาขา 2</option>
+        </select>
+      </div>
+      <div class="filter-field" id="monthField" style="display:none;">
+        <label>เดือน</label>
+        <select id="month">
+          <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option><option>เมษายน</option>
+          <option>พฤษภาคม</option><option>มิถุนายน</option><option>กรกฎาคม</option>
+          <option selected>สิงหาคม</option><option>กันยายน</option><option>ตุลาคม</option>
+          <option>พฤศจิกายน</option><option>ธันวาคม</option>
+        </select>
+      </div>
+      <div class="filter-field" id="yearField" style="display:none;">
+        <label>ปี</label>
+        <select id="year">
+          <option selected>2026</option><option>2025</option><option>2024</option>
+        </select>
+      </div>
+      <div class="filter-field" id="fromField">
+        <label>จาก</label>
+        <input type="date" id="dateFrom" value="2026-08-26">
+      </div>
+      <div class="filter-field" id="toField">
+        <label>ถึง</label>
+        <input type="date" id="dateTo" value="2026-08-26">
+      </div>
+      <div class="filter-field" id="payTypeField" style="display:none;">
+        <label>ประเภทการชำระ</label>
+        <select id="payType">
+          <option selected>ทั้งหมด</option><option>เงินสด</option><option>โอนเงิน</option><option>บัตรเครดิต</option>
+        </select>
+      </div>
+      <button class="view-btn" onclick="viewReport()">🔍 ดูรายงาน</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="result-header">
+      <div class="rh-title" id="resultTitle">รายงานสรุปยอดขายแต่ละวัน</div>
+      <div class="rh-actions">
+        <button class="rh-btn excel" onclick="alert('มอคอัพ: บันทึกรายงานเป็นไฟล์ Excel')">📥 บันทึกเป็น Excel</button>
+        <button class="rh-btn print" onclick="alert('มอคอัพ: เปิดหน้าต่างพิมพ์รายงาน')">🖨️ พิมพ์รายงาน</button>
+      </div>
+    </div>
+    <div class="result-body">
+      <div class="company-name">ปรุงยาเภสัช (สำนักงานใหญ่)</div>
+      <div class="report-title" id="reportTitle2">รายงานสรุปยอดขายแต่ละวัน</div>
+      <div class="purpose-text" id="purposeText"></div>
+
+      <div class="meta-row">
+        <div id="resultCountText" style="font-size:12.5px; color:#6b7a70;"></div>
+        <div class="meta-right" id="metaRight"></div>
+      </div>
+
+      <div class="extra-filter-row" id="extraFilterRow" style="display:none;"></div>
+
+      <div class="summary-stats" id="summaryStats"></div>
+
+      <div class="tbl-scroll">
+        <table class="report-table">
+          <thead><tr id="tableHead"></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// แคชไว้ไม่ให้ยิง API ซ้ำทุกครั้งที่สลับแท็บ — โหลดครั้งแรกครั้งเดียวต่อประเภทรายงาน
+const salesDataLoaded = { daily: false, product: false };
+
+/** โหลดรายงานยอดขายจริงจาก action 'getSalesReport' (รองรับ type: 'daily' และ 'product' เท่านั้น) */
+async function loadSalesData(type) {
+  const branch = document.getElementById('branch').value;
+  let dateFrom, dateTo;
+
+  if (type === 'daily') {
+    // รายงานรายวันใช้ตัวเลือกเดือน/ปี ไม่ใช่ dateFrom/dateTo — คำนวณช่วงวันที่ทั้งเดือนแทน
+    const monthNames = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+    const monthIdx = monthNames.indexOf(document.getElementById('month').value);
+    const year = Number(document.getElementById('year').value);
+    const firstDay = new Date(year, monthIdx, 1);
+    const lastDay = new Date(year, monthIdx + 1, 0);
+    const toStr = d => d.toISOString().slice(0, 10);
+    dateFrom = toStr(firstDay);
+    dateTo = toStr(lastDay);
+  } else {
+    dateFrom = document.getElementById('dateFrom').value;
+    dateTo = document.getElementById('dateTo').value;
+  }
+
+  const rows = await apiGet('getSalesReport', { type, branch, dateFrom, dateTo });
+  reportData[type].rows = rows;
+  salesDataLoaded[type] = true;
+}
+
+const reportTypes = [
+  { id:"daily",     label:"รายงานสรุปยอดขายแต่ละวัน" },
+  { id:"product",   label:"รายงานสรุปการขายสินค้า" },
+  { id:"profitProduct", label:"รายงานกำไร-ขาดทุน/สินค้า" },
+  { id:"profitBill", label:"รายงานกำไร-ขาดทุน/บิล" },
+  { id:"bundle",    label:"รายงานการขายสินค้าชุด" },
+  { id:"productGroup", label:"รายงานการขายกลุ่มสินค้า" },
+  { id:"customer",  label:"รายงานประวัติการซื้อสินค้ารายตัวของลูกค้า" },
+  { id:"itemProfit",label:"รายงานการขายสินค้ารายตัวและกำไรขั้นต้น" },
+];
+
+const sel = document.getElementById('reportType');
+reportTypes.forEach(r => {
+  const opt = document.createElement('option');
+  opt.value = r.id; opt.textContent = r.label;
+  sel.appendChild(opt);
+});
+
+function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+const reportData = {
+  daily: {
+    purpose: "จุดประสงค์รายงานสรุปยอดขายแต่ละวัน : รายงานสรุปยอดขายและยอดคืนสินค้ารวมแต่ละวัน โดยยอดขายคิดจากยอดขายสุทธิตามบิลขายรวมภาษีและส่วนลด",
+    filterMode: "month",
+    columns: ["วันที่","สาขา","สรุปยอดขายหลังหักส่วนลดท้ายบิล","มูลค่าภาษี","ส่วนลดท้ายบิล","ส่วนลดจาก Coupons/Voucher","ยอดคืนสินค้า","ต้นทุน","กำไรขั้นต้น"],
+    rightAlignFrom: 2,
+    rows: [], // โหลดจริงจาก action 'getSalesReport' (type: 'daily') — ดู loadSalesData()
+    summary: (rows) => `พบข้อมูล ${rows.length.toLocaleString()} วัน &nbsp;•&nbsp; รวมยอดขาย <b>${fmt(rows.reduce((s,r)=>s+r[2],0))}</b> บาท &nbsp;•&nbsp; รวมกำไรขั้นต้น <b>${fmt(rows.reduce((s,r)=>s+r[8],0))}</b> บาท (กำไรคำนวณจากต้นทุนปัจจุบัน ไม่ใช่ต้นทุน ณ วันที่ขายจริง)`,
+  },
+  product: {
+    purpose: "จุดประสงค์รายงานสรุปการขายสินค้า : แสดงรายการสินค้าที่ขายทั้งหมดในช่วงวันที่ที่เลือก เรียงตามเวลาที่ขาย",
+    filterMode: "range",
+    columns: ["#","วันที่","เลขที่","รหัสสินค้า","ชื่อสินค้า","ราคาขาย","จำนวน","หน่วย","ราคารวม"],
+    rows: [], // โหลดจริงจาก action 'getSalesReport' (type: 'product') — ดู loadSalesData()
+    summary: (rows) => `ผลลัพธ์ทั้งหมด <b>${rows.length.toLocaleString()}</b> รายการ &nbsp;•&nbsp; รวมมูลค่าสินค้า <b>${fmt(rows.reduce((s,r)=>s+r[8],0))}</b> บาท`,
+  },
+  profitProduct: {
+    purpose: "จุดประสงค์รายงานกำไร-ขาดทุน/สินค้า : รายงานสำหรับแสดงกำไรขั้นต้นของสินค้าแต่ละ SKU ที่ขาย โดยคิดจากราคาขายที่ตั้งไว้ (ไม่นำภาษีขายหรือส่วนลดจากการขายในบิลมาคิด) หักด้วยต้นทุนสินค้า (⚠️ ยังไม่เชื่อมข้อมูลจริง — backend ยังไม่มี action รองรับ ตัวอย่างด้านล่างเป็นข้อมูลจำลอง)",
+    filterMode: "range",
+    columns: ["#","รหัสสินค้า","สินค้า","ขาย","คืน","หน่วย","ราคาเฉลี่ย/หน่วย","ทุนเฉลี่ย/หน่วย","กำไรเฉลี่ย/ชิ้น","รวมขาย","รวมคืน","รวมทุน","รวมกำไร"],
+    rows: [
+      [1,"PCU00435","Ibucet 725 mg รีส้ม บันเม็ด",10,0,"TAB",4.00,1.10,2.90,40.00,0.00,11.00,29.00],
+      [2,"PCU00392","Prospa 535 mg รีม่วง (1x3)",10,0,"TAB",2.00,0.68,1.32,20.00,0.00,6.80,13.20],
+      [3,"PCO09086","MUCOLEX 375mg.",1,0,"แผง",50.00,11.40,38.60,50.00,0.00,11.40,38.60],
+      [4,"PCU13207","Clavico/S-clav 1 กแผง 10 เม็ด",1,0,"แผง",160.00,82.75,77.25,160.00,0.00,82.75,77.25],
+    ],
+    summary: () => `ยอดขายทั้งหมด <b>${fmt(5210)}</b> บาท &nbsp;•&nbsp; ยอดคืนทั้งหมด <b>${fmt(0)}</b> บาท &nbsp;•&nbsp; ต้นทุนรวม <b>${fmt(2407.83)}</b> บาท &nbsp;•&nbsp; กำไรขั้นต้น <b>${fmt(2802.17)}</b> บาท`,
+  },
+  profitBill: {
+    purpose: "จุดประสงค์รายงานกำไร-ขาดทุน/บิล : รายงานสำหรับแสดงกำไรขั้นต้นจากการขายในบิลนั้น ในกรณีที่มีการตั้งค่าภาษีขายหรือมีส่วนลดจากการขายในบิลก็จะนำมาคิดในยอดขายด้วย (⚠️ ยังไม่เชื่อมข้อมูลจริง — backend ยังไม่มี action รองรับ ตัวอย่างด้านล่างเป็นข้อมูลจำลอง)",
+    filterMode: "range",
+    extraFilter: "payType",
+    columns: ["#","วันที่และเวลา","เลขที่ใบเสร็จ","ผู้ขาย","ชำระโดย","ยอดขายหลังหักส่วนลด","ส่วนลดท้ายบิล","ส่วนลดจาก Coupons/Voucher","ภาษี","ยอดคืน","ต้นทุนสินค้า","กำไรขั้นต้น"],
+    rows: [
+      [1,"2026-08-26 17:31:05","SR260826-172759760","เภสัชกรวีระยุทธิ์ เพชรทอง","เงินสด",160.00,0.00,0.00,10.47,0.00,45.45,114.55],
+      [2,"2026-08-26 16:41:37","SR260826-164133493","เภสัชกรวีระยุทธิ์ เพชรทอง","เงินสด",65.00,0.00,0.00,4.25,0.00,38.00,27.00],
+      [3,"2026-08-26 16:25:16","SR260826-162417319","เภสัชกรวีระยุทธิ์ เพชรทอง","เงินสด",90.00,0.00,0.00,5.89,0.00,62.60,27.40],
+    ],
+    summary: () => `ยอดขายทั้งหมด <b>${fmt(5210)}</b> บาท &nbsp;•&nbsp; ส่วนลดท้ายบิล <b>${fmt(0)}</b> บาท &nbsp;•&nbsp; ส่วนลด Coupons/Voucher <b>${fmt(0)}</b> บาท &nbsp;•&nbsp; ภาษี <b>${fmt(340.85)}</b> บาท &nbsp;•&nbsp; ยอดคืน <b>${fmt(0)}</b> บาท &nbsp;•&nbsp; ต้นทุนรวม <b>${fmt(2407.83)}</b> บาท &nbsp;•&nbsp; กำไรขั้นต้น <b>${fmt(2802.17)}</b> บาท`,
+  },
+  bundle: {
+    purpose: "จุดประสงค์รายงานการขายสินค้าชุด : สรุปยอดขายและยอดคืนของสินค้าที่จัดเป็นชุด (Bundle) ในช่วงวันที่ที่เลือก (⚠️ ยังไม่เชื่อมข้อมูลจริง — backend ยังไม่มี action รองรับ ตัวอย่างด้านล่างเป็นข้อมูลจำลอง)",
+    filterMode: "range",
+    extraFilter: "bundle",
+    columns: ["#","รหัสสินค้าชุด","ชื่อสินค้าชุด","จำนวนที่ขาย (ชุด)","มูลค่าขายรวม","จำนวนที่คืน (ชุด)","มูลค่าคืนรวม","มูลค่าสุทธิ"],
+    rows: [
+      [1,"PST190200006","ชุดกระเพาะอาหาร 120 บาท",2,240.00,0,0.00,240.00],
+      [2,"PST190200016","ชุดหลอดลมอักเสบ 120 บาท",1,120.00,0,0.00,120.00],
+      [3,"PST190300003","ชุดปวดฟันธรรมดา 100 บาท",1,100.00,0,0.00,100.00],
+      [4,"PST190300011","ชุดไข้หวัดเด็ก 150 บาท",1,150.00,0,0.00,150.00],
+      [5,"PST190400002","ชุดผื่นคันแพ้ผิวหนัง 90 บาท",1,90.00,0,0.00,90.00],
+      [6,"PST190500007","ชุดท้องเสีย 80 บาท",1,80.00,1,80.00,0.00],
+    ],
+    summary: (rows) => `ผลลัพธ์ทั้งหมด <b>${rows ? rows.length : 6}</b> รายการ`,
+  },
+  productGroup: {
+    purpose: "จุดประสงค์รายงานการขายกลุ่มสินค้า : สรุปยอดขาย ต้นทุน และกำไรขั้นต้นแยกตามกลุ่มสินค้าทั้ง 10 กลุ่ม เพื่อดูภาพรวมว่ากลุ่มใดขายดีหรือทำกำไรได้มากที่สุด (⚠️ ยังไม่เชื่อมข้อมูลจริง — backend ยังไม่มี action รองรับ ตัวอย่างด้านล่างเป็นข้อมูลจำลอง)",
+    filterMode: "range",
+    columns: ["#","กลุ่มสินค้า","จำนวนรายการสินค้าในกลุ่ม","จำนวนที่ขาย (ชิ้น)","มูลค่าขายรวม","ต้นทุนรวม","กำไรขั้นต้น"],
+    rows: [
+      [1,"ยาจัดตามอาการ",812,438,18540.00,9820.00,8720.00],
+      [2,"ยาเรียกหา",1204,265,12680.00,6740.00,5940.00],
+      [3,"ยาคุมกำเนิด",46,32,3840.00,2150.00,1690.00],
+      [4,"ผลิตภัณฑ์เด็ก",189,74,6320.00,3980.00,2340.00],
+      [5,"เครื่องสำอางและเสริมความงาม",356,58,9150.00,5470.00,3680.00],
+      [6,"เครื่องดื่มตู้แช่",42,190,1900.00,1140.00,760.00],
+      [7,"เวชภัณฑ์/เครื่องมือแพทย์",271,41,7460.00,4360.00,3100.00],
+      [8,"สินค้าอ้อม",128,26,2080.00,1380.00,700.00],
+      [9,"สินค้าคุณประเสริฐ",63,15,1350.00,890.00,460.00],
+      [10,"สินค้าร้านซุปเปอร์ทเวนตี้",250,63,4410.00,2860.00,1550.00],
+    ],
+    rightAlignFrom: 2,
+    summary: (rows) => {
+      const list = rows || [];
+      const totalSale = list.reduce((s,r)=>s+r[4],0);
+      const totalCost = list.reduce((s,r)=>s+r[5],0);
+      const totalProfit = list.reduce((s,r)=>s+r[6],0);
+      return `ทั้งหมด <b>10</b> กลุ่มสินค้า &nbsp;•&nbsp; รวมยอดขาย <b>${fmt(totalSale)}</b> บาท &nbsp;•&nbsp; รวมต้นทุน <b>${fmt(totalCost)}</b> บาท &nbsp;•&nbsp; รวมกำไรขั้นต้น <b>${fmt(totalProfit)}</b> บาท`;
+    },
+  },
+  customer: {
+    purpose: "จุดประสงค์รายงานประวัติการซื้อสินค้ารายตัวของลูกค้า : ตรวจสอบประวัติการซื้อสินค้าเป็นรายตัวของลูกค้าที่เลือก (⚠️ ยังไม่เชื่อมข้อมูลจริง — backend ยังไม่มี action รองรับ ตัวอย่างด้านล่างเป็นข้อมูลจำลอง)",
+    filterMode: "range",
+    extraFilter: "customer",
+    columns: ["#","วันและเวลาที่ซื้อ","เลขที่ SR","สาขา","รหัสสินค้า","ชื่อสินค้า","จำนวน","หน่วย","ราคาต่อหน่วย","ราคารวม (บาท)"],
+    rows: [],
+    summary: () => `ผลลัพธ์ทั้งหมด <b>0</b> รายการ &nbsp;•&nbsp; รวมมูลค่าสินค้า <b>${fmt(0)}</b> บาท`,
+  },
+  itemProfit: {
+    purpose: "จุดประสงค์รายงานการขายสินค้ารายตัวและกำไรขั้นต้น : ตรวจสอบยอดขาย จำนวนตัดสต๊อก และกำไรขั้นต้นของสินค้าตัวใดตัวหนึ่งแบบละเอียดรายบิล (⚠️ ยังไม่เชื่อมข้อมูลจริง — backend ยังไม่มี action รองรับ ตัวอย่างด้านล่างเป็นข้อมูลจำลอง)",
+    filterMode: "range",
+    extraFilter: "product",
+    columns: ["#","วันที่ขาย","เลขที่บิลขาย","ราคาขาย","จำนวนขาย","หน่วยที่ขาย","มูลค่าการขาย","จำนวนตัดสต๊อก","ราคาทุนต่อหน่วยนับสต๊อก","รวมต้นทุน","กำไรขั้นต้น"],
+    rows: [
+      [1,"2026-08-25 18:39:16","SR260825-183608632",70.00,2,"แผง",140.00,2,30.00,60.00,80.00],
+      [2,"2026-08-25 18:34:22","SR260825-183218584",70.00,1,"แผง",70.00,1,30.00,30.00,40.00],
+      [3,"2026-08-25 15:12:08","SR260825-151208441",65.00,1,"แผง",65.00,1,30.00,30.00,35.00],
+    ],
+    summary: () => `ผลลัพธ์ทั้งหมด <b>3</b> รายการ`,
+  },
+};
+
+async function onReportChange() {
+  const type = sel.value;
+  const cfg = reportData[type];
+  window._bundleSelectValue = '';
+
+  document.getElementById('monthField').style.display = cfg.filterMode === 'month' ? 'flex' : 'none';
+  document.getElementById('yearField').style.display = cfg.filterMode === 'month' ? 'flex' : 'none';
+  document.getElementById('fromField').style.display = cfg.filterMode === 'range' ? 'flex' : 'none';
+  document.getElementById('toField').style.display = cfg.filterMode === 'range' ? 'flex' : 'none';
+  document.getElementById('payTypeField').style.display = cfg.extraFilter === 'payType' ? 'flex' : 'none';
+
+  if (type === 'daily' || type === 'product') {
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="1">กำลังโหลดข้อมูลจริง...</td></tr>`;
+    try {
+      await loadSalesData(type);
+    } catch (err) {
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="1">ดึงข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
+      return;
+    }
+  }
+
+  renderReport();
+}
+
+async function viewReport() {
+  const type = sel.value;
+  if (type === 'daily' || type === 'product') {
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="1">กำลังโหลดข้อมูลจริง...</td></tr>`;
+    try {
+      await loadSalesData(type); // ยิงใหม่ทุกครั้งที่กด "ดูรายงาน" เผื่อเปลี่ยนช่วงวันที่/สาขา
+    } catch (err) {
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="1">ดึงข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
+      return;
+    }
+  }
+  renderReport();
+}
+
+function renderReport() {
+  const type = sel.value;
+  const cfg = reportData[type];
+  const label = reportTypes.find(r => r.id === type).label;
+
+  document.getElementById('resultTitle').textContent = label;
+  document.getElementById('reportTitle2').textContent = label;
+  document.getElementById('purposeText').textContent = cfg.purpose;
+
+  const branch = document.getElementById('branch').value;
+  document.querySelectorAll('.company-name').forEach(()=>{});
+  document.querySelector('.company-name').textContent = `ปรุงยาเภสัช (${branch})`;
+
+  document.getElementById('metaRight').innerHTML = cfg.filterMode === 'month'
+    ? `ข้อมูล ณ วันที่ 2026-08-26`
+    : `ข้อมูล ณ วันที่ 2026-08-26<br>ข้อมูลจากวันที่ ${document.getElementById('dateFrom').value} ถึงวันที่ ${document.getElementById('dateTo').value}`;
+
+  // extra filter row (ค้นหาลูกค้า / เลือกสินค้า / เลือกชุดสินค้า)
+  const extraRow = document.getElementById('extraFilterRow');
+  if (cfg.extraFilter === 'customer') {
+    extraRow.style.display = 'block';
+    extraRow.innerHTML = `<label>ค้นหาลูกค้า:</label><input type="text" placeholder="พิมพ์ชื่อลูกค้า..." value="จินตนา แก้วทุ่ง">`;
+  } else if (cfg.extraFilter === 'product') {
+    extraRow.style.display = 'block';
+    extraRow.innerHTML = `<label>เลือกสินค้า:</label><input type="text" placeholder="ค้นหาสินค้า..." value="PCU00309 : Sonap Forte 550 mg">`;
+  } else if (cfg.extraFilter === 'bundle') {
+    extraRow.style.display = 'block';
+    const opts = cfg.rows.map(r => `<option value="${r[1]}">${r[1]} : ${r[2]}</option>`).join('');
+    extraRow.innerHTML = `<label>เลือกชุดสินค้า:</label><select id="bundleSelect" onchange="renderReport()"><option value="">-- ทั้งหมด --</option>${opts}</select>`;
+    if (window._bundleSelectValue) {
+      const el = document.getElementById('bundleSelect');
+      if (el) el.value = window._bundleSelectValue;
+    }
+  } else {
+    extraRow.style.display = 'none';
+    extraRow.innerHTML = '';
+  }
+
+  // คำนวณรายการที่จะแสดง (กรองตามชุดสินค้าที่เลือก ถ้ามี)
+  let rowsToShow = cfg.rows;
+  if (cfg.extraFilter === 'bundle') {
+    const bundleEl = document.getElementById('bundleSelect');
+    const val = bundleEl ? bundleEl.value : '';
+    window._bundleSelectValue = val;
+    if (val) rowsToShow = cfg.rows.filter(r => r[1] === val);
+  }
+
+  document.getElementById('summaryStats').innerHTML = cfg.summary(rowsToShow);
+
+  // table head
+  const thead = document.getElementById('tableHead');
+  thead.innerHTML = cfg.columns.map((c, i) => `<th class="${i >= (cfg.rightAlignFrom ?? 5) && typeof cfg.rows[0]?.[i] === 'number' ? 'num' : ''}">${c}</th>`).join('');
+
+  const tbody = document.getElementById('tableBody');
+  if (!rowsToShow.length) {
+    tbody.innerHTML = `<tr><td colspan="${cfg.columns.length}"><div class="empty-row">ไม่พบรายการ</div></td></tr>`;
+  } else {
+    tbody.innerHTML = rowsToShow.map(row => `
+      <tr>
+        ${row.map((cell, i) => {
+          const isNum = typeof cell === 'number';
+          const display = isNum ? fmt(cell) : cell;
+          return `<td class="${isNum ? 'num' : ''}">${display}</td>`;
+        }).join('')}
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('resultCountText').textContent = '';
+}
+
+sel.value = 'daily';
+onReportChange();
+</script>
+
+</body>
+</html>

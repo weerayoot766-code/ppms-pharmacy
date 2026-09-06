@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ผู้ใช้งาน/สิทธิ์ (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1200px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .quick-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+  .quick-tabs a {
+    display: block; text-decoration: none; padding: 10px 18px; font-size: 13.5px; font-weight: 600;
+    color: #cfe6d2; background: #226a44; border-radius: 8px 8px 0 0; cursor: pointer;
+  }
+  .quick-tabs a.active { background: #fff; color: #1e6b3c; }
+  .quick-tabs a:hover:not(.active) { background: #2a7a4f; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #eef2ef;
+    flex-wrap: wrap;
+  }
+  .panel-header h2 {
+    font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    border: 1px solid #cfe0d3;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .search-box input {
+    flex: 1; border: none; padding: 10px 12px; font-size: 14px; font-family: inherit;
+  }
+  .search-box button {
+    background: #eef6ee; border: none; padding: 0 16px; cursor: pointer; color: #2e8b4f; font-size: 15px;
+  }
+  .filter-select {
+    padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 13.5px; font-family: inherit; background: #fff;
+  }
+  .add-btn {
+    background: #2e8b4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-btn:hover { background: #257a43; }
+
+  .result-count { padding: 12px 22px 0; font-size: 12.5px; color: #6b7a70; }
+
+  table.user-table { width: 100%; border-collapse: collapse; }
+  table.user-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 10px 14px; white-space: nowrap;
+  }
+  table.user-table td {
+    padding: 11px 14px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: middle; white-space: nowrap;
+  }
+  table.user-table tr:hover td { background: #f6faf7; }
+  .user-cell { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: #eef6ee; color: #1e6b3c;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .user-name { font-weight: 600; }
+  .user-username { font-size: 12px; color: #8fa198; }
+
+  .role-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .role-owner { background: #fdf0da; color: #a9701a; }
+  .role-admin { background: #eaf3fb; color: #1c5f9c; }
+  .role-pharmacist { background: #e3f5e6; color: #1e6b3c; }
+  .role-staff { background: #f1eef8; color: #6b4fa0; }
+
+  .status-toggle {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; font-weight: 600;
+  }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .status-active .status-dot { background: #2e8b4f; }
+  .status-active { color: #1e6b3c; }
+  .status-inactive .status-dot { background: #b6c4bb; }
+  .status-inactive { color: #8fa198; }
+
+  .action-btns { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid #cfe0d3; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: #4a5a4f;
+  }
+  .icon-btn:hover { background: #eef6ee; border-color: #2e8b4f; color: #1e6b3c; }
+  .icon-btn.danger:hover { background: #fbe4e2; border-color: #e0665a; color: #c0392b; }
+
+  .empty-state { padding: 40px; text-align: center; color: #8fa198; font-size: 13.5px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> ตั้งค่าระบบ <span class="sep">/</span> <b>ผู้ใช้งาน/สิทธิ์</b>
+</div>
+
+<div class="content">
+
+  <div class="quick-tabs">
+    <a class="active">รายชื่อผู้ใช้งาน</a>
+    <a onclick="window.location.href='role-permission-mockup.html'">กำหนดสิทธิ์การใช้งาน</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>👥 รายชื่อผู้ใช้งานระบบ</h2>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ค้นหาชื่อผู้ใช้งาน หรือ ชื่อ-นามสกุล..." oninput="renderTable()">
+        <button onclick="renderTable()">🔍</button>
+      </div>
+      <select class="filter-select" id="roleFilter" onchange="renderTable()">
+        <option value="">ทุกบทบาท</option>
+        <option value="owner">เจ้าของร้าน</option>
+        <option value="admin">แอดมิน</option>
+        <option value="pharmacist">เภสัชกร</option>
+        <option value="staff">พนักงานขาย</option>
+      </select>
+      <button class="add-btn" onclick="window.location.href='user-edit-mockup.html'">＋ เพิ่มผู้ใช้งาน</button>
+    </div>
+
+    <div class="result-count" id="resultCount"></div>
+
+    <div style="overflow-x:auto;">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th style="width:44px;">#</th>
+            <th>ผู้ใช้งาน</th>
+            <th>บทบาท</th>
+            <th>สาขา</th>
+            <th>เบอร์โทร</th>
+            <th>เข้าใช้งานล่าสุด</th>
+            <th>สถานะ</th>
+            <th style="width:90px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="userBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+const roleMeta = {
+  owner:      { label: "เจ้าของร้าน", cls: "role-owner" },
+  admin:      { label: "แอดมิน", cls: "role-admin" },
+  pharmacist: { label: "เภสัชกร", cls: "role-pharmacist" },
+  staff:      { label: "พนักงานขาย", cls: "role-staff" },
+};
+
+// ---------- ผู้ใช้งาน: โหลดจริงจากชีต 'ผู้ใช้งาน (Users)' ผ่าน action 'listUsers' ----------
+// หมายเหตุ: ชีตยังไม่มีคอลัมน์ "เข้าใช้งานล่าสุด" เก็บไว้ — แสดง '-' ไปก่อน
+let users = [];
+
+async function loadUsers() {
+  document.getElementById('userBody').innerHTML =
+    `<tr><td colspan="8"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+  try {
+    const rows = await apiGet('listUsers');
+    users = rows.map(u => ({
+      username: u['Username'],
+      name: u['ชื่อ-นามสกุล'],
+      role: u['บทบาท'],
+      branch: u['สาขา'],
+      phone: u['เบอร์โทร'],
+      lastLogin: '-',
+      active: u['สถานะ'] === 'Active',
+    }));
+  } catch (err) {
+    document.getElementById('userBody').innerHTML =
+      `<tr><td colspan="8"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
+    return;
+  }
+  renderTable();
+}
+
+function initials(name) {
+  const clean = name.replace(/^(ภก\.|ภญ\.|นาย|นาง|นางสาว)\s*/,'');
+  return clean.trim().charAt(0) || '?';
+}
+
+function renderTable() {
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  const roleFilter = document.getElementById('roleFilter').value;
+
+  const filtered = users.filter(u => {
+    const matchQ = !q || u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q);
+    const matchRole = !roleFilter || u.role === roleFilter;
+    return matchQ && matchRole;
+  });
+
+  const body = document.getElementById('userBody');
+  if (!filtered.length) {
+    body.innerHTML = `<tr><td colspan="8"><div class="empty-state">ไม่พบผู้ใช้งานที่ค้นหา</div></td></tr>`;
+  } else {
+    body.innerHTML = filtered.map((u, i) => {
+      const rm = roleMeta[u.role];
+      return `
+      <tr>
+        <td>${i + 1}</td>
+        <td>
+          <div class="user-cell">
+            <div class="avatar">${initials(u.name)}</div>
+            <div>
+              <div class="user-name">${u.name}</div>
+              <div class="user-username">@${u.username}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="role-badge ${rm.cls}">${rm.label}</span></td>
+        <td>${u.branch}</td>
+        <td>${u.phone}</td>
+        <td>${u.lastLogin}</td>
+        <td>
+          <span class="status-toggle ${u.active ? 'status-active' : 'status-inactive'}" onclick="toggleStatus('${u.username}')">
+            <span class="status-dot"></span>${u.active ? 'ใช้งานอยู่' : 'ปิดใช้งาน'}
+          </span>
+        </td>
+        <td>
+          <div class="action-btns">
+            <button class="icon-btn" title="แก้ไข" onclick="window.location.href='user-edit-mockup.html'">✏️</button>
+            <button class="icon-btn danger" title="ลบ" onclick="deleteUser('${u.username}')">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `;
+    }).join('');
+  }
+
+  document.getElementById('resultCount').textContent = `พบ ${filtered.length.toLocaleString()} รายการ จากทั้งหมด ${users.length.toLocaleString()} รายการ`;
+}
+
+// หมายเหตุ: เปิด/ปิดสถานะ และลบผู้ใช้งาน ยังเป็นแค่ mock อยู่ในเครื่อง (ไม่ได้เขียนกลับไปที่ชีตจริง)
+// เพราะ backend ยังไม่มี action สำหรับสร้าง/แก้ไข/ลบผู้ใช้งาน — ต่อได้ทีหลังถ้าต้องใช้จริง
+function toggleStatus(username) {
+  const u = users.find(x => x.username === username);
+  if (u) u.active = !u.active;
+  renderTable();
+}
+
+function deleteUser(username) {
+  const u = users.find(x => x.username === username);
+  if (!u) return;
+  if (confirm(`ยืนยันลบผู้ใช้งาน "${u.name}" ใช่หรือไม่?`)) {
+    users = users.filter(x => x.username !== username);
+    renderTable();
+  }
+}
+
+loadUsers();
+</script>
+
+</body>
+</html>

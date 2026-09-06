@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - รายการใบรับสินค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1300px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #eef2ef;
+    flex-wrap: wrap;
+  }
+  .panel-header h2 {
+    font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    border: 1px solid #cfe0d3;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .search-box input {
+    flex: 1; border: none; padding: 10px 12px; font-size: 14px; font-family: inherit;
+  }
+  .search-box button {
+    background: #eef6ee; border: none; padding: 0 16px; cursor: pointer; color: #2e8b4f; font-size: 15px;
+  }
+  .date-filter {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6b7a70;
+  }
+  .date-filter input[type="date"] {
+    border: 1px solid #cfe0d3; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; color: #24312a;
+  }
+  .add-btn {
+    background: #2e8b4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-btn:hover { background: #257a43; }
+
+  .result-count { padding: 12px 22px 0; font-size: 12.5px; color: #6b7a70; }
+
+  table.recv-table { width: 100%; border-collapse: collapse; }
+  table.recv-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 10px 14px; white-space: nowrap;
+  }
+  table.recv-table td {
+    padding: 11px 14px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: middle; white-space: nowrap;
+  }
+  table.recv-table tr:hover td { background: #f6faf7; }
+  .doc-no { color: #1e6b3c; font-weight: 600; }
+  .amount { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .badge-complete { background: #e3f5e6; color: #1e6b3c; }
+  .badge-draft { background: #fdf0da; color: #a9701a; }
+  .badge-unpaid { background: #fbe4e2; color: #c0392b; }
+  .badge-paid { background: #e3f5e6; color: #1e6b3c; }
+
+  .action-btns { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid #cfe0d3; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: #4a5a4f;
+  }
+  .icon-btn:hover { background: #eef6ee; border-color: #2e8b4f; color: #1e6b3c; }
+  .icon-btn.danger:hover { background: #fbe4e2; border-color: #e0665a; color: #c0392b; }
+
+  .empty-state { padding: 40px; text-align: center; color: #8fa198; font-size: 13.5px; }
+
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 16px; }
+  .pagination button {
+    border: 1px solid #cfe0d3; background: #fff; border-radius: 6px; padding: 7px 12px;
+    font-size: 13px; cursor: pointer; color: #4a5a4f;
+  }
+  .pagination button.active { background: #2e8b4f; border-color: #2e8b4f; color: #fff; font-weight: 600; }
+  .pagination button:hover:not(.active) { background: #eef6ee; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> <b>รายการใบรับสินค้า</b>
+</div>
+
+<div class="content">
+  <div class="panel">
+    <div class="panel-header">
+      <h2>📥 รายการใบรับสินค้า</h2>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ค้นหาเลขที่เอกสาร หรือ ชื่อผู้จำหน่าย...">
+        <button onclick="doSearch()">🔍</button>
+      </div>
+      <div class="date-filter">
+        <span>วันที่รับ</span>
+        <input type="date" id="dateFrom">
+        <span>ถึง</span>
+        <input type="date" id="dateTo">
+      </div>
+      <button class="add-btn" onclick="window.location.href='receiving-edit-mockup.html'">＋ เพิ่มใบรับสินค้า</button>
+    </div>
+
+    <div class="result-count" id="resultCount"></div>
+
+    <div style="overflow-x:auto;">
+      <table class="recv-table">
+        <thead>
+          <tr>
+            <th style="width:44px;">#</th>
+            <th>เลขที่เอกสาร</th>
+            <th>วันที่รับสินค้า</th>
+            <th>ผู้จำหน่าย</th>
+            <th style="text-align:right;">ยอดรวม</th>
+            <th>สถานะ</th>
+            <th>การชำระเงิน</th>
+            <th style="width:100px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="recvBody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// ---------- ใบรับสินค้า: โหลดจริงจาก action 'listReceivings' ----------
+// หมายเหตุ: backend ยังไม่มีสถานะ "ร่าง/เสร็จสมบูรณ์" หรือ "จ่ายแล้ว/ยังไม่จ่าย" เก็บไว้จริง
+// (สร้างใบรับสินค้าผ่าน createReceiving แล้วถือว่าเสร็จสมบูรณ์ทันที ไม่มีแนวคิดร่างในระบบตอนนี้)
+// จึงใส่ status:'complete' คงที่ และ paid:null (แสดงเป็น "-" แทนป้ายจ่ายเงิน) ไปก่อน
+let receivings = [];
+
+async function loadReceivings() {
+  document.getElementById('recvBody').innerHTML =
+    `<tr><td colspan="8"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+  try {
+    const from = document.getElementById('dateFrom').value;
+    const to = document.getElementById('dateTo').value;
+    const rows = await apiGet('listReceivings', { dateFrom: from, dateTo: to });
+    receivings = rows.map(r => ({
+      doc: r.docNo,
+      date: r.date ? new Date(r.date).toLocaleDateString('th-TH') : '-',
+      supplier: r.supplier || '-',
+      amount: r.total || 0,
+      status: 'complete',
+      paid: null, // ยังไม่มีข้อมูลการจ่ายเงินในระบบ
+    })).sort((a, b) => (a.doc < b.doc ? 1 : -1));
+  } catch (err) {
+    document.getElementById('recvBody').innerHTML =
+      `<tr><td colspan="8"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
+    return;
+  }
+  doSearch();
+}
+
+let filtered = receivings;
+let currentPage = 1;
+const perPage = 10;
+
+function statusBadge(status) {
+  if (status === "complete") return `<span class="badge badge-complete">เสร็จสมบูรณ์</span>`;
+  return `<span class="badge badge-draft">ร่างรายการ</span>`;
+}
+function paidBadge(r) {
+  if (r.status === "draft") return "-";
+  if (r.paid === null || r.paid === undefined) return "-"; // ยังไม่มีข้อมูลการจ่ายเงินในระบบ
+  return r.paid
+    ? `<span class="badge badge-paid">จ่ายแล้ว</span>`
+    : `<span class="badge badge-unpaid">ยังไม่จ่าย</span>`;
+}
+
+function renderTable() {
+  const body = document.getElementById('recvBody');
+  const start = (currentPage - 1) * perPage;
+  const pageItems = filtered.slice(start, start + perPage);
+
+  if (pageItems.length === 0) {
+    body.innerHTML = `<tr><td colspan="8"><div class="empty-state">ไม่พบใบรับสินค้าที่ค้นหา</div></td></tr>`;
+  } else {
+    body.innerHTML = pageItems.map((r, i) => `
+      <tr>
+        <td>${start + i + 1}</td>
+        <td class="doc-no">${r.doc}</td>
+        <td>${r.date}</td>
+        <td>${r.supplier}</td>
+        <td class="amount">${r.amount ? r.amount.toLocaleString(undefined, {minimumFractionDigits:2}) : '0.00'}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td>${paidBadge(r)}</td>
+        <td>
+          <div class="action-btns">
+            <button class="icon-btn" title="ดู/แก้ไข" onclick="window.location.href='receiving-edit-mockup.html'">📄</button>
+            ${r.status === "draft" ? `<button class="icon-btn danger" title="ลบ" onclick="alert('มอคอัพ: ลบร่างใบรับสินค้า ${r.doc}')">🗑️</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  document.getElementById('resultCount').textContent = `พบ ${filtered.length.toLocaleString()} รายการ`;
+  renderPagination();
+}
+
+function renderPagination() {
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const el = document.getElementById('pagination');
+  let html = '';
+  for (let p = 1; p <= totalPages; p++) {
+    html += `<button class="${p === currentPage ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
+  }
+  el.innerHTML = html;
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  filtered = receivings.filter(r =>
+    r.doc.toLowerCase().includes(q) || r.supplier.toLowerCase().includes(q)
+  );
+  currentPage = 1;
+  renderTable();
+}
+
+document.getElementById('searchInput').addEventListener('keyup', e => {
+  if (e.key === 'Enter') doSearch();
+  else if (e.target.value === '') doSearch();
+});
+
+document.getElementById('dateFrom').addEventListener('change', loadReceivings);
+document.getElementById('dateTo').addEventListener('change', loadReceivings);
+
+loadReceivings();
+</script>
+
+</body>
+</html>

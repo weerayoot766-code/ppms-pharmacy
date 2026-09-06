@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ระบบหลังบ้านและคลังสินค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  /* ---------- เมนูหลัก ---------- */
+  .main-nav {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(20, 60, 35, .18);
+  }
+  .main-nav .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px 13px 0;
+    margin-right: 6px;
+    border-right: 1px solid rgba(255,255,255,.25);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .main-nav .brand .logo-badge {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .nav-items {
+    display: flex;
+    gap: 2px;
+    flex: 1;
+    overflow-x: auto;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 15px 14px;
+    color: rgba(255,255,255,.85);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .nav-item.active {
+    color: #fff;
+    background: rgba(255,255,255,.14);
+    border-bottom-color: #fff;
+  }
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-left: 10px;
+    color: #fff;
+  }
+  .nav-right .icon-btn {
+    background: rgba(255,255,255,.16);
+    border: none;
+    color: #fff;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .nav-right .icon-btn:hover { background: rgba(255,255,255,.28); }
+  .pos-quick-btn {
+    background: #fff;
+    color: #1e6b3c;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .pos-quick-btn:hover { background: #eaf7ec; }
+  .nav-right .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    position: relative;
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+  .nav-right .user-chip:hover { background: rgba(255,255,255,.16); }
+  .user-dropdown {
+    display: none;
+    position: absolute; top: 44px; right: 0;
+    background: #fff; color: #24312a; border-radius: 10px;
+    box-shadow: 0 8px 26px rgba(0,0,0,.18);
+    min-width: 170px; overflow: hidden; z-index: 50;
+  }
+  .user-dropdown.show { display: block; }
+  .user-dropdown a {
+    display: block; padding: 11px 16px; font-size: 13px; font-weight: 500; color: #3f4f45;
+    text-decoration: none; cursor: pointer;
+  }
+  .user-dropdown a:hover { background: #f0f6f1; }
+  .user-dropdown a.logout { color: #c0392b; border-top: 1px solid #eef2ef; }
+
+  /* ---------- breadcrumb ---------- */
+  .breadcrumb {
+    background: #fff;
+    padding: 12px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  /* ---------- เนื้อหา grid ไอคอน ---------- */
+  .content {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 34px 24px 60px;
+  }
+  .section-heading {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e6b3c;
+    margin: 0 0 20px;
+  }
+  .section-heading:not(:first-child) { margin-top: 36px; }
+
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px 20px;
+  }
+  .icon-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 26px 14px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    border: 1px solid transparent;
+    transition: transform .12s, box-shadow .12s, border-color .12s;
+  }
+  .icon-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(30, 90, 50, .14);
+    border-color: #cfe6d2;
+  }
+  .icon-circle {
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    border: 2px solid #2e8b4f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2e8b4f;
+    flex-shrink: 0;
+  }
+  .icon-circle svg { width: 36px; height: 36px; }
+  .icon-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #2c3a32;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 900px) {
+    .icon-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .icon-grid { grid-template-columns: repeat(1, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== เมนูหลักแนวนอน ========== -->
+<div class="main-nav">
+  <div class="brand" style="cursor:pointer;" onclick="window.location.href='pos-mockup.html'">
+    <span class="logo-badge">💊</span>
+    ปรุงยาเภสัช
+  </div>
+  <div class="nav-items" id="mainNavItems">
+    <div class="nav-item" data-section="home">🏠 หน้าหลัก</div>
+    <div class="nav-item active" data-section="product">ข้อมูลสินค้า</div>
+    <div class="nav-item" data-section="member">ระบบสมาชิก</div>
+    <div class="nav-item" data-section="stock">คลังสินค้า</div>
+    <div class="nav-item" data-section="purchase">การซื้อ/รับ</div>
+    <div class="nav-item" data-section="sale">การขาย</div>
+    <div class="nav-item" data-section="report">รายงาน</div>
+    <div class="nav-item" data-section="tele">Telepharmacy</div>
+    <div class="nav-item" data-section="setting">ตั้งค่าระบบ</div>
+  </div>
+  <div class="nav-right">
+    <button class="pos-quick-btn" onclick="window.location.href='pos-mockup.html'">🛒 หน้าขาย (POS)</button>
+    <div class="user-chip" onclick="toggleUserMenu(event)">
+      👤 <span id="topbarUserName">ผู้ใช้งาน</span>
+      <div class="user-dropdown" id="userDropdown">
+        <a onclick="window.location.href='user-edit-mockup.html'">👤 โปรไฟล์ของฉัน</a>
+        <a onclick="window.location.href='user-list-mockup.html'">👥 จัดการผู้ใช้งาน</a>
+        <a class="logout" onclick="doLogout()">🚪 ออกจากระบบ</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== breadcrumb ========== -->
+<div class="breadcrumb" id="breadcrumb">หน้าหลัก <span class="sep">/</span> <b>ข้อมูลสินค้า</b></div>
+
+<!-- ========== เนื้อหา ========== -->
+<div class="content">
+  <div class="section-heading" id="sectionHeading">ข้อมูลสินค้า</div>
+  <div class="icon-grid" id="iconGrid"></div>
+</div>
+
+<script>
+// ---------- ไอคอนเส้น (SVG) ----------
+const icons = {
+  clipboardList: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="5" y="3.5" width="14" height="18" rx="2"/><path d="M9 3.5V2.5a1 1 0 011-1h4a1 1 0 011 1v1"/><path d="M8.5 9.5h7M8.5 13h7M8.5 16.5h4.5"/><circle cx="7.3" cy="9.5" r=".2"/></svg>`,
+  clipboardEdit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="10" height="18" rx="2"/><path d="M9 3.5V2.5a1 1 0 011-1h2a1 1 0 011 1v1"/><path d="M8.5 9.5h5M8.5 13h5"/><path d="M15.2 19.3l4-4 1.5 1.5-4 4H15v-1.5z"/></svg>`,
+  boxes: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 8l4-2.3L12 8v4.6L8 15 4 12.6z"/><path d="M12 8l4-2.3 4 2.3v4.6l-4 2.4-4-2.4z"/><path d="M8 15l4 2.3 4-2.3"/><path d="M8 10.3V15M16 10.3V15M12 12.6V17.3"/></svg>`,
+  barcode: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="14" rx="1.5"/><path d="M7 8v8M9.5 8v8M11.5 8v8M14.5 8v8M17 8v8" stroke-width="1.4"/></svg>`,
+  tag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 3.5H5A1.5 1.5 0 003.5 5v7.5a1.5 1.5 0 00.44 1.06l8.5 8.5a1.5 1.5 0 002.12 0l6.94-6.94a1.5 1.5 0 000-2.12l-8.5-8.5a1.5 1.5 0 00-.5-.44z"/><circle cx="8" cy="8.5" r="1.4"/></svg>`,
+  priceTag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 3.5H5A1.5 1.5 0 003.5 5v7.5a1.5 1.5 0 00.44 1.06l8.5 8.5a1.5 1.5 0 002.12 0l6.94-6.94a1.5 1.5 0 000-2.12l-8.5-8.5a1.5 1.5 0 00-.5-.44z"/><path d="M7.2 7.3c.6.6 1.6.6 2.2 0 .6-.6.6-1.6 0-2.2" opacity="0"/><text x="6" y="10.5" font-size="6.5" stroke="none" fill="currentColor" font-weight="700">฿</text></svg>`,
+  shelf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M3.5 10h17M3.5 15.5h17"/><rect x="6" y="5.7" width="3.2" height="3" rx=".5"/><circle cx="14.5" cy="7.2" r="1.5"/><rect x="6" y="12.2" width="3.5" height="2.5" rx=".5"/></svg>`,
+  warehouse: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/><rect x="10" y="13" width="4" height="7"/><path d="M8 20v-3.5h2M16 20v-3.5h-2" opacity="0"/></svg>`,
+  arrows: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13M17 7l-3.5-3.5M17 7l-3.5 3.5"/><path d="M20 17H7M7 17l3.5-3.5M7 17l3.5 3.5"/></svg>`,
+  receipt: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5"/></svg>`,
+  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="currentColor"/></svg>`,
+  cart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/><path d="M2.5 3.5h2.3L7.5 15h10.8l2.7-8.5H5.8"/></svg>`,
+  users: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 14c2.6.3 4.5 2.4 4.5 5.4"/></svg>`,
+  settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5c.1-.5.1-1 0-1.5l1.9-1.3-1.5-2.6-2.2.8a7.5 7.5 0 00-1.3-.8L16 5.5h-4l-.3 2.6a7.5 7.5 0 00-1.3.8l-2.2-.8-1.5 2.6L8.6 12c-.1.5-.1 1 0 1.5l-1.9 1.3 1.5 2.6 2.2-.8c.4.3.8.6 1.3.8l.3 2.6h4l.3-2.6c.5-.2.9-.5 1.3-.8l2.2.8 1.5-2.6z"/></svg>`,
+  video: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>`,
+  building: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="11" height="18" rx="1"/><path d="M15 9h5v12h-5"/><path d="M7 6.5h1.5M11 6.5h1.5M7 10h1.5M11 10h1.5M7 13.5h1.5M11 13.5h1.5M7 17h1.5M11 17h1.5"/></svg>`,
+};
+
+// ---------- โครงสร้างเมนูย่อย + เนื้อหาแต่ละ section ----------
+const sections = {
+  home: {
+    label: "หน้าหลัก", sub: [], items: []
+  },
+  product: {
+    label: "ข้อมูลสินค้า",
+    sub: ["ข้อมูลสินค้า","กลุ่มสินค้า","ชุดสินค้า","พิมพ์บาร์โค้ดสินค้า"],
+    items: [
+      { icon:"clipboardList", label:"ข้อมูลสินค้า", href:"product-list-mockup.html" },
+      { icon:"clipboardEdit", label:"กลุ่มสินค้า", href:"product-group-mockup.html" },
+      { icon:"boxes", label:"ชุดสินค้า", href:"product-bundle-mockup.html" },
+      { icon:"barcode", label:"พิมพ์บาร์โค้ดสินค้า", href:"barcode-print-mockup.html" },
+    ]
+  },
+  member: {
+    label: "ระบบสมาชิก",
+    sub: ["สมาชิก","ระดับสมาชิก","แต้มสะสม","คูปอง/โปรโมชัน","บริษัทยา"],
+    items: [
+      { icon:"users", label:"ข้อมูลลูกค้า", href:"customer-mockup.html" },
+      { icon:"tag", label:"ระดับสมาชิก" },
+      { icon:"priceTag", label:"แต้มสะสม" },
+      { icon:"receipt", label:"คูปอง/โปรโมชัน" },
+      { icon:"building", label:"ข้อมูลบริษัทยา", href:"supplier-list-mockup.html" },
+    ]
+  },
+  stock: {
+    label: "คลังสินค้า",
+    sub: ["สต๊อกคงเหลือ","ปรับสต๊อก","นับสต๊อก","ยาใกล้หมดอายุ","โอนย้ายสินค้า"],
+    items: [
+      { icon:"warehouse", label:"สต๊อกคงเหลือ" },
+      { icon:"clipboardEdit", label:"ปรับสต๊อก" },
+      { icon:"clipboardList", label:"นับสต๊อก" },
+      { icon:"tag", label:"ยาใกล้หมดอายุ" },
+      { icon:"arrows", label:"โอนย้ายสินค้า" },
+    ]
+  },
+  purchase: {
+    label: "การซื้อ/รับ",
+    sub: ["ใบรับสินค้าเข้าคลัง"],
+    items: [
+      { icon:"boxes", label:"ใบรับสินค้าเข้าคลัง", href:"receiving-list-mockup.html" },
+    ]
+  },
+  sale: {
+    label: "การขาย",
+    sub: ["หน้าขาย (POS)","รายการบิลย้อนหลัง","บิลพักไว้","คืนสินค้า/ใบลดหนี้"],
+    items: [
+      { icon:"cart", label:"หน้าขาย (POS)", href:"pos-mockup.html" },
+      { icon:"receipt", label:"รายการบิลย้อนหลัง" },
+      { icon:"clipboardList", label:"บิลพักไว้" },
+      { icon:"arrows", label:"คืนสินค้า/ใบลดหนี้" },
+    ]
+  },
+  report: {
+    label: "รายงาน",
+    sub: ["ยอดขายรายวัน","สินค้าขายดี","กำไร-ขาดทุน","ภาษีขาย","รายงาน ขย.ต่างๆ","สินค้าคงคลัง","การขายสินค้า"],
+    items: [
+      { icon:"chart", label:"ยอดขายรายวัน", href:"report-sales-mockup.html" },
+      { icon:"boxes", label:"สินค้าขายดี" },
+      { icon:"priceTag", label:"กำไร-ขาดทุน", href:"report-sales-mockup.html" },
+      { icon:"receipt", label:"ภาษีขาย" },
+      { icon:"clipboardList", label:"รายงาน ขย.ต่างๆ", href:"report-khy-mockup.html" },
+      { icon:"warehouse", label:"รายงานสินค้าคงคลัง", href:"report-stock-mockup.html" },
+      { icon:"cart", label:"รายงานการขายสินค้า", href:"report-sales-mockup.html" },
+    ]
+  },
+  tele: {
+    label: "Telepharmacy",
+    sub: ["คิวปรึกษาเภสัชกร","ประวัติการให้คำปรึกษา","ตั้งค่าห้องวิดีโอคอล"],
+    items: [
+      { icon:"video", label:"คิวปรึกษาเภสัชกร" },
+      { icon:"clipboardList", label:"ประวัติการให้คำปรึกษา" },
+      { icon:"settings", label:"ตั้งค่าห้องวิดีโอคอล" },
+    ]
+  },
+  setting: {
+    label: "ตั้งค่าระบบ",
+    sub: ["ข้อมูลร้าน","ผู้ใช้งาน/สิทธิ์","เครื่องพิมพ์","สำรองข้อมูล"],
+    items: [
+      { icon:"settings", label:"ข้อมูลร้าน", href:"shop-info-mockup.html" },
+      { icon:"users", label:"ผู้ใช้งาน/สิทธิ์", href:"user-list-mockup.html" },
+      { icon:"receipt", label:"เครื่องพิมพ์" },
+      { icon:"warehouse", label:"สำรองข้อมูล" },
+    ]
+  },
+};
+
+function renderSection(key){
+  const sec = sections[key];
+
+  // เมนูหลัก active state
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.section === key);
+  });
+
+  // breadcrumb + heading
+  document.getElementById('breadcrumb').innerHTML = `หน้าหลัก <span class="sep">/</span> <b>${sec.label}</b>`;
+  document.getElementById('sectionHeading').textContent = sec.label;
+
+  // grid ไอคอน
+  const grid = document.getElementById('iconGrid');
+  if(sec.items.length === 0){
+    grid.innerHTML = `<div style="grid-column:1/-1;color:#6b8a75;padding:30px 0;">หน้านี้เป็นภาพรวม/แดชบอร์ด — ยังไม่ออกแบบในมอคอัพนี้</div>`;
+  } else {
+    grid.innerHTML = sec.items.map(item => {
+      const action = item.href
+        ? `window.location.href='${item.href}'`
+        : `alert('มอคอัพ: จะเปิดหน้า ${item.label}')`;
+      return `
+      <div class="icon-card" onclick="${action}">
+        <div class="icon-circle">${icons[item.icon]}</div>
+        <div class="icon-label">${item.label}</div>
+      </div>
+    `;
+    }).join('');
+  }
+}
+
+document.getElementById('mainNavItems').addEventListener('click', e => {
+  const item = e.target.closest('.nav-item');
+  if(item) renderSection(item.dataset.section);
+});
+
+renderSection('product');
+
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  document.getElementById('userDropdown').classList.toggle('show');
+}
+document.addEventListener('click', () => {
+  document.getElementById('userDropdown').classList.remove('show');
+});
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  const raw = localStorage.getItem('ppms_user');
+  if (!raw) {
+    window.location.href = 'login-mockup.html';
+    return;
+  }
+  try {
+    const user = JSON.parse(raw);
+    document.getElementById('topbarUserName').textContent = user['ชื่อ-นามสกุล'] || user['Username'] || 'ผู้ใช้งาน';
+  } catch (e) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+function doLogout() {
+  localStorage.removeItem('ppms_user');
+  window.location.href = 'login-mockup.html';
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - รายการสินค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1300px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #eef2ef;
+    flex-wrap: wrap;
+  }
+  .panel-header h2 {
+    font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    border: 1px solid #cfe0d3;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .search-box input {
+    flex: 1; border: none; padding: 10px 12px; font-size: 14px; font-family: inherit;
+  }
+  .search-box button {
+    background: #eef6ee; border: none; padding: 0 16px; cursor: pointer; color: #2e8b4f; font-size: 15px;
+  }
+  .add-product-btn {
+    background: #2e8b4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-product-btn:hover { background: #257a43; }
+
+  .result-count { padding: 12px 22px 0; font-size: 12.5px; color: #6b7a70; }
+
+  table.product-table { width: 100%; border-collapse: collapse; }
+  table.product-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 10px 14px; white-space: nowrap;
+  }
+  table.product-table td {
+    padding: 11px 14px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: middle;
+  }
+  table.product-table tr:hover td { background: #f6faf7; }
+  .tag-danger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 3px; background: #f2544a; color: #fff;
+    font-size: 9px; margin-left: 6px;
+  }
+  .status-pill { color: #2e8b4f; font-weight: 600; font-size: 13px; }
+  .status-pill.off { color: #b0b8b3; }
+  .toggle-switch {
+    width: 34px; height: 19px; border-radius: 10px; background: #cfe6d2; position: relative; cursor: pointer;
+    display: inline-block;
+  }
+  .toggle-switch.on { background: #2e8b4f; }
+  .toggle-switch .knob {
+    position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%;
+    background: #fff; transition: left .15s;
+  }
+  .toggle-switch.on .knob { left: 17px; }
+
+  .action-btns { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid #cfe0d3; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: #4a5a4f;
+  }
+  .icon-btn:hover { background: #eef6ee; border-color: #2e8b4f; color: #1e6b3c; }
+  .icon-btn.edit:hover { background: #eef6ee; }
+
+  .empty-state { padding: 40px; text-align: center; color: #8fa198; font-size: 13.5px; }
+
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 16px; }
+  .pagination button {
+    border: 1px solid #cfe0d3; background: #fff; border-radius: 6px; padding: 7px 12px;
+    font-size: 13px; cursor: pointer; color: #4a5a4f;
+  }
+  .pagination button.active { background: #2e8b4f; border-color: #2e8b4f; color: #fff; font-weight: 600; }
+  .pagination button:hover:not(.active) { background: #eef6ee; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> ข้อมูลสินค้า <span class="sep">/</span> <b>รายการสินค้า</b>
+</div>
+
+<div class="content">
+  <div class="panel">
+    <div class="panel-header">
+      <h2>📋 รายการสินค้า</h2>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ค้นหาด้วยรหัสสินค้า หรือ ชื่อสินค้า...">
+        <button onclick="doSearch()">🔍</button>
+      </div>
+      <button class="add-product-btn" onclick="window.location.href='product-edit-mockup.html?new=1'">＋ เพิ่มสินค้าใหม่</button>
+    </div>
+
+    <div class="result-count" id="resultCount"></div>
+
+    <div style="overflow-x:auto;">
+      <table class="product-table">
+        <thead>
+          <tr>
+            <th style="width:50px;">#</th>
+            <th style="width:120px;">รหัสสินค้า</th>
+            <th>ชื่อสินค้า</th>
+            <th style="width:130px;">สถานะ</th>
+            <th style="width:100px;">เปิดใช้งาน</th>
+            <th style="width:110px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="productBody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<script>
+// ================= ข้อมูลสินค้าตัวอย่าง (ของจริงบางส่วนจากไฟล์คงคลังที่ส่งมา) =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// ---------- รายการสินค้า: โหลดจริงจาก action 'listProducts' (แบ่งหน้า+ค้นหาฝั่ง server) ----------
+let products = []; // สินค้าของหน้าปัจจุบัน (server แบ่งหน้าให้แล้ว ไม่ต้อง slice ซ้ำฝั่ง client)
+let totalCount = 0;
+let keyword = '';
+
+let currentPage = 1;
+const perPage = 10;
+
+async function loadProducts() {
+  document.getElementById('productBody').innerHTML =
+    `<tr><td colspan="6"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+  try {
+    const data = await apiGet('listProducts', { keyword, page: currentPage, perPage });
+    products = data.items;
+    totalCount = data.total;
+  } catch (err) {
+    document.getElementById('productBody').innerHTML =
+      `<tr><td colspan="6"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
+    return;
+  }
+  renderTable();
+}
+
+function renderTable() {
+  const body = document.getElementById('productBody');
+  const start = (currentPage - 1) * perPage;
+
+  if (products.length === 0) {
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-state">ไม่พบสินค้าที่ค้นหา</div></td></tr>`;
+  } else {
+    body.innerHTML = products.map((p, i) => `
+      <tr>
+        <td>${start + i + 1}</td>
+        <td>${p.code}</td>
+        <td>${p.name} ${p.danger ? '<span class="tag-danger" title="วัตถุอันตราย">!</span>' : ''}</td>
+        <td><span class="status-pill ${p.active ? '' : 'off'}">${p.status}</span></td>
+        <td><div class="toggle-switch ${p.active ? 'on' : ''}" onclick="alert('มอคอัพ: จะเปิด/ปิดการใช้งานสินค้านี้ (backend ยังไม่มี action สำหรับอัปเดตค่านี้)')"><div class="knob"></div></div></td>
+        <td>
+          <div class="action-btns">
+            <button class="icon-btn" title="ดูรายละเอียด" onclick="window.location.href='product-edit-mockup.html?code=${p.code}'">📄</button>
+            <button class="icon-btn edit" title="แก้ไข" onclick="window.location.href='product-edit-mockup.html?code=${p.code}'">✏️</button>
+            <button class="icon-btn" title="เพิ่มเติม" onclick="alert('มอคอัพ: เมนูเพิ่มเติม (ลบ/ทำสำเนา ฯลฯ)')">⋯</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  document.getElementById('resultCount').textContent = `พบ ${totalCount.toLocaleString()} รายการ`;
+  renderPagination();
+}
+
+function renderPagination() {
+  const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
+  const pag = document.getElementById('pagination');
+  let html = '';
+  const windowSize = 2;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - windowSize && i <= currentPage + windowSize)) {
+      html += `<button class="${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (i === currentPage - windowSize - 1 || i === currentPage + windowSize + 1) {
+      html += `<span>…</span>`;
+    }
+  }
+  pag.innerHTML = html;
+}
+
+function goPage(n) {
+  currentPage = n;
+  loadProducts();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function doSearch() {
+  keyword = document.getElementById('searchInput').value.trim();
+  currentPage = 1;
+  loadProducts();
+}
+
+document.getElementById('searchInput').addEventListener('keyup', e => { if (e.key === 'Enter') doSearch(); });
+
+loadProducts();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ประเมินการแพ้ยา</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 860px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 18px 22px; border-bottom: 1px solid #eef2ef; flex-wrap: wrap;
+  }
+  .panel-head h2 { font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0; }
+  .cust-tag { font-size: 12.5px; color: #6b7a70; margin-top: 3px; }
+  .cust-tag b { color: #24312a; }
+
+  .panel-body { padding: 22px; }
+
+  .entry-card {
+    border: 1px solid #eef2ef; border-radius: 10px; padding: 16px; margin-bottom: 14px; position: relative; background: #f9fcfa;
+  }
+  .entry-card .remove-entry {
+    position: absolute; top: 10px; right: 10px; background: none; border: none; color: #c0392b;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .field-row { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 160px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 9px 11px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 13.5px; font-family: inherit; color: #24312a; background: #fff;
+  }
+  .field textarea { min-height: 60px; resize: vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #2e8b4f; }
+
+  .add-entry-btn {
+    background: #eef6ee; border: 1px dashed #2e8b4f; color: #1e6b3c; border-radius: 8px;
+    padding: 11px; width: 100%; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-bottom: 20px;
+  }
+  .add-entry-btn:hover { background: #dcefe0; }
+
+  .severity-none { color: #6b7a70; }
+  .severity-mild { color: #1e6b3c; }
+  .severity-moderate { color: #a9701a; }
+  .severity-severe { color: #c0392b; font-weight: 700; }
+
+  .bottom-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 6px; border-top: 1px solid #eef2ef; }
+  .bottom-actions button {
+    padding: 11px 22px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-cancel { background: #fff; color: #3f4f45; border: 1px solid #cfe0d3 !important; }
+  .btn-cancel:hover { background: #eef2ef; }
+  .btn-save { background: #2e8b4f; color: #fff; }
+  .btn-save:hover { background: #257a43; }
+  .btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+  .empty-state { padding: 40px; text-align: center; color: #8fa198; font-size: 13.5px; }
+  .kv-hint { font-size: 11.5px; color: #8fa198; margin: -6px 0 16px; line-height: 1.6; }
+
+  /* ---------- Naranjo Algorithm ---------- */
+  .naranjo-toggle {
+    background: none; border: 1px solid #cfe0d3; color: #1e6b3c; border-radius: 8px;
+    padding: 7px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; margin-top: 4px;
+  }
+  .naranjo-toggle:hover { background: #eef6ee; }
+  .naranjo-box { margin-top: 12px; padding: 14px; background: #fff; border: 1px solid #dcefe0; border-radius: 9px; }
+  .naranjo-box .naranjo-title { font-size: 12.5px; font-weight: 700; color: #1e6b3c; margin-bottom: 10px; }
+  .naranjo-q { padding: 9px 0; border-bottom: 1px dashed #eef2ef; }
+  .naranjo-q:last-of-type { border-bottom: none; }
+  .naranjo-q .q-text { font-size: 12.5px; color: #3f4f45; margin-bottom: 7px; line-height: 1.5; }
+  .naranjo-q .q-options { display: flex; gap: 14px; flex-wrap: wrap; }
+  .naranjo-q label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #4a5a4f; cursor: pointer; }
+  .naranjo-q input[type=radio] { accent-color: #2e8b4f; width: 14px; height: 14px; }
+  .naranjo-q .pts { color: #8fa198; font-size: 11px; }
+  .naranjo-result {
+    margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .naranjo-result.res-definite { background: #fbe4e2; color: #c0392b; }
+  .naranjo-result.res-probable { background: #fdf0da; color: #a9701a; }
+  .naranjo-result.res-possible { background: #eaf3fb; color: #1c5f9c; }
+  .naranjo-result.res-doubtful { background: #eef2ef; color: #6b7a70; }
+  .naranjo-result .score-num { font-size: 17px; }
+
+  .print-btn {
+    background: #fff; color: #1e6b3c; border: 1px solid #2e8b4f !important;
+  }
+  .print-btn:hover { background: #eef6ee; }
+
+  /* ---------- บัตรแพ้ยาสำหรับพิมพ์ ---------- */
+  #printCardOverlay {
+    display: none; position: fixed; inset: 0; background: rgba(20,40,28,.5);
+    align-items: center; justify-content: center; z-index: 200; padding: 20px;
+  }
+  #printCardOverlay.show { display: flex; }
+  .print-card-modal { background: #fff; border-radius: 14px; max-width: 420px; width: 100%; box-shadow: 0 12px 34px rgba(20,60,35,.3); }
+  .print-card-modal-head {
+    display: flex; align-items: center; justify-content: space-between; padding: 14px 18px;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .print-card-modal-head b { color: #1e6b3c; font-size: 14.5px; }
+  .print-card-modal-head button { background: none; border: none; font-size: 16px; color: #6b7a70; cursor: pointer; }
+  .print-card-modal-body { padding: 18px; }
+
+  .allergy-card {
+    border: 2.5px solid #c0392b; border-radius: 10px; padding: 16px; font-family: 'Sarabun', Arial, sans-serif;
+  }
+  .allergy-card .card-header { display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #c0392b; padding-bottom: 8px; margin-bottom: 10px; }
+  .allergy-card .card-header .warn-icon { font-size: 20px; }
+  .allergy-card .card-header .card-title { font-size: 15px; font-weight: 800; color: #c0392b; }
+  .allergy-card .shop-name { font-size: 11px; color: #6b7a70; margin-bottom: 8px; }
+  .allergy-card .patient-line { font-size: 13px; margin-bottom: 4px; }
+  .allergy-card .patient-line b { color: #24312a; }
+  .allergy-card .drug-list { margin: 10px 0; padding-left: 0; list-style: none; }
+  .allergy-card .drug-list li { padding: 6px 0; border-bottom: 1px dashed #eaeaea; font-size: 12.5px; }
+  .allergy-card .drug-list li:last-child { border-bottom: none; }
+  .allergy-card .drug-list .drug-name { font-weight: 700; color: #c0392b; }
+  .allergy-card .drug-list .drug-meta { color: #6b7a70; font-size: 11.5px; margin-top: 2px; }
+  .allergy-card .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid #eef2ef; font-size: 10.5px; color: #8fa198; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #printCardOverlay, #printCardOverlay * { visibility: visible; }
+    #printCardOverlay { position: absolute; inset: 0; background: #fff; padding: 0; display: flex !important; }
+    .print-card-modal-head { display: none; }
+    .print-card-modal { box-shadow: none; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.close()">💊</div>
+  <div class="titles" onclick="window.close()">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.close()">✕ ปิดหน้านี้</button>
+</div>
+
+<div class="breadcrumb">
+  ข้อมูลลูกค้า <span class="sep">/</span> <b>ประเมินการแพ้ยา</b>
+</div>
+
+<div class="content">
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>🩺 แบบประเมินประวัติการแพ้ยา</h2>
+        <div class="cust-tag" id="custTag">กำลังโหลดข้อมูลลูกค้า...</div>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="kv-hint">
+        กรอกรายละเอียดยา/สารที่สงสัยว่าแพ้ทีละรายการ ระบุอาการที่เกิด ความรุนแรง และแหล่งข้อมูล เพื่อช่วยเภสัชกรตัดสินใจจ่ายยาได้ปลอดภัยขึ้น
+        เมื่อกด "บันทึกผลการประเมิน" ระบบจะสรุปเป็นข้อความแล้วเติมกลับเข้าไปที่ช่อง "ประวัติแพ้ยา/แพ้อาหาร" ของลูกค้ารายนี้โดยอัตโนมัติ
+      </div>
+
+      <div id="entriesArea"></div>
+      <button class="add-entry-btn" onclick="addEntry()">＋ เพิ่มรายการยา/สารที่สงสัยว่าแพ้</button>
+
+      <div class="field-row">
+        <div class="field"><label>สรุปเพิ่มเติม (ถ้ามี)</label><textarea id="fSummaryNote" placeholder="เช่น อาการเกิดหลังทานยาประมาณ 30 นาที เคยแอดมิดโรงพยาบาล ฯลฯ"></textarea></div>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="btn-cancel" onclick="window.close()">ยกเลิก</button>
+        <button class="btn-cancel print-btn" onclick="openPrintCard()">🖨️ พิมพ์บัตรแพ้ยา</button>
+        <button class="btn-save" id="saveBtn" onclick="saveAssessment()">💾 บันทึกผลการประเมิน</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== บัตรแพ้ยาสำหรับพิมพ์ ========== -->
+<div id="printCardOverlay">
+  <div class="print-card-modal">
+    <div class="print-card-modal-head">
+      <b>ตัวอย่างบัตรแพ้ยา</b>
+      <button onclick="closePrintCard()">✕</button>
+    </div>
+    <div class="print-card-modal-body">
+      <div class="allergy-card" id="allergyCardContent"></div>
+      <button class="btn-save" style="width:100%;margin-top:14px;" onclick="window.print()">🖨️ พิมพ์เลย</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// ---------- อ่านรหัสลูกค้าจาก URL (?customerId=CUS00001) ----------
+const customerId = new URLSearchParams(window.location.search).get('customerId');
+let currentCustomer = null;
+let shopName = 'ปรุงยาเภสัช';
+let entries = [newBlankEntry()];
+
+function newBlankEntry() {
+  return {
+    drug: '', reaction: '', severity: 'mild', date: '', source: 'patient',
+    naranjoOpen: false,
+    naranjo: Array(10).fill(null), // แต่ละช่อง = 'yes' | 'no' | 'unknown' | null
+  };
+}
+
+// ---------- Naranjo's Algorithm (Naranjo Adverse Drug Reaction Probability Scale) ----------
+// มาตรฐานสากลสำหรับประเมินว่าอาการไม่พึงประสงค์น่าจะเกิดจากยาที่สงสัยจริงหรือไม่ (คะแนนบวก/ลบตามคำตอบแต่ละข้อ)
+const NARANJO_QUESTIONS = [
+  { text: '1. มีรายงานที่ยืนยันแน่ชัดเกี่ยวกับปฏิกิริยานี้มาก่อนหรือไม่?', yes: 1, no: 0, unknown: 0 },
+  { text: '2. อาการไม่พึงประสงค์เกิดขึ้นหลังจากได้รับยาที่สงสัยหรือไม่?', yes: 2, no: -1, unknown: 0 },
+  { text: '3. อาการดีขึ้นเมื่อหยุดยา หรือให้ยาต้านฤทธิ์เฉพาะหรือไม่?', yes: 1, no: 0, unknown: 0 },
+  { text: '4. อาการกลับเป็นซ้ำเมื่อให้ยาชนิดเดิมซ้ำอีกครั้งหรือไม่?', yes: 2, no: -1, unknown: 0 },
+  { text: '5. มีสาเหตุอื่นนอกจากยาที่อาจทำให้เกิดอาการนี้ได้เองหรือไม่?', yes: -1, no: 2, unknown: 0 },
+  { text: '6. อาการกลับเป็นซ้ำเมื่อให้ยาหลอก (placebo) หรือไม่?', yes: -1, no: 1, unknown: 0 },
+  { text: '7. ตรวจพบระดับยาในเลือด (หรือสารน้ำอื่น) ในปริมาณที่เป็นพิษหรือไม่?', yes: 1, no: 0, unknown: 0 },
+  { text: '8. อาการรุนแรงขึ้นเมื่อเพิ่มขนาดยา หรือรุนแรงน้อยลงเมื่อลดขนาดยาหรือไม่?', yes: 1, no: 0, unknown: 0 },
+  { text: '9. ผู้ป่วยเคยมีอาการคล้ายกันจากยานี้หรือยาที่คล้ายกันมาก่อนหรือไม่?', yes: 1, no: 0, unknown: 0 },
+  { text: '10. มีหลักฐานเชิงประจักษ์อื่นยืนยันอาการไม่พึงประสงค์นี้หรือไม่?', yes: 1, no: 0, unknown: 0 },
+];
+
+function calcNaranjoScore(entry) {
+  let score = 0, answeredCount = 0;
+  NARANJO_QUESTIONS.forEach((q, i) => {
+    const ans = entry.naranjo[i];
+    if (ans === 'yes') { score += q.yes; answeredCount++; }
+    else if (ans === 'no') { score += q.no; answeredCount++; }
+    else if (ans === 'unknown') { score += q.unknown; answeredCount++; }
+  });
+  return { score, answeredCount };
+}
+
+function naranjoInterpret(score) {
+  if (score >= 9) return { label: 'แน่นอน (Definite)', cls: 'res-definite' };
+  if (score >= 5) return { label: 'น่าจะใช่ (Probable)', cls: 'res-probable' };
+  if (score >= 1) return { label: 'อาจจะใช่ (Possible)', cls: 'res-possible' };
+  return { label: 'ไม่น่าใช่ (Doubtful)', cls: 'res-doubtful' };
+}
+
+function severityClass(level) {
+  return { none: 'severity-none', mild: 'severity-mild', moderate: 'severity-moderate', severe: 'severity-severe' }[level] || '';
+}
+
+function renderEntries() {
+  const area = document.getElementById('entriesArea');
+  if (entries.length === 0) {
+    area.innerHTML = `<div class="empty-state">ยังไม่มีรายการ กดปุ่มด้านล่างเพื่อเพิ่ม</div>`;
+    return;
+  }
+  area.innerHTML = entries.map((e, i) => {
+    const { score, answeredCount } = calcNaranjoScore(e);
+    const interp = naranjoInterpret(score);
+    return `
+    <div class="entry-card">
+      ${entries.length > 1 ? `<button class="remove-entry" onclick="removeEntry(${i})">✕ ลบรายการนี้</button>` : ''}
+      <div class="field-row">
+        <div class="field">
+          <label>ยา/สารที่สงสัยว่าแพ้</label>
+          <input type="text" value="${e.drug}" placeholder="เช่น Amoxicillin, Sulfa" oninput="entries[${i}].drug=this.value">
+        </div>
+        <div class="field" style="max-width:160px;">
+          <label>วันที่เกิดอาการ (ถ้าทราบ)</label>
+          <input type="date" value="${e.date}" onchange="entries[${i}].date=this.value">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>ลักษณะอาการที่เกิด</label>
+          <input type="text" value="${e.reaction}" placeholder="เช่น ผื่นขึ้น, หายใจลำบาก, ปากบวม" oninput="entries[${i}].reaction=this.value">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>ความรุนแรง</label>
+          <select class="${severityClass(e.severity)}" onchange="entries[${i}].severity=this.value; this.className=severityClass(this.value)">
+            <option value="mild" ${e.severity==='mild'?'selected':''}>เล็กน้อย (ผื่นคัน)</option>
+            <option value="moderate" ${e.severity==='moderate'?'selected':''}>ปานกลาง (บวม/หายใจติดขัดเล็กน้อย)</option>
+            <option value="severe" ${e.severity==='severe'?'selected':''}>รุนแรง (แอนาฟิแล็กซิส/ต้องรักษาฉุกเฉิน)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>แหล่งข้อมูล</label>
+          <select onchange="entries[${i}].source=this.value">
+            <option value="patient" ${e.source==='patient'?'selected':''}>ผู้ป่วย/ญาติแจ้งเอง</option>
+            <option value="record" ${e.source==='record'?'selected':''}>มีบันทึกทางการแพทย์</option>
+            <option value="observed" ${e.source==='observed'?'selected':''}>สังเกตพบระหว่างจ่ายยาที่ร้าน</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="naranjo-toggle" onclick="toggleNaranjo(${i})">
+        ${e.naranjoOpen ? '▾' : '▸'} ประเมินความน่าจะเป็นด้วย Naranjo's Algorithm
+        ${answeredCount > 0 ? ` (ตอบแล้ว ${answeredCount}/10 ข้อ — คะแนนรวม ${score})` : ''}
+      </button>
+
+      ${e.naranjoOpen ? `
+        <div class="naranjo-box">
+          <div class="naranjo-title">Naranjo Adverse Drug Reaction Probability Scale — ตอบตามความเป็นจริงเท่าที่ทราบ ข้อไหนไม่ทราบเลือก "ไม่ทราบ" ได้</div>
+          ${NARANJO_QUESTIONS.map((q, qi) => `
+            <div class="naranjo-q">
+              <div class="q-text">${q.text}</div>
+              <div class="q-options">
+                <label><input type="radio" name="naranjo-${i}-${qi}" ${e.naranjo[qi]==='yes'?'checked':''} onchange="setNaranjoAnswer(${i},${qi},'yes')"> ใช่ <span class="pts">(${q.yes>=0?'+':''}${q.yes})</span></label>
+                <label><input type="radio" name="naranjo-${i}-${qi}" ${e.naranjo[qi]==='no'?'checked':''} onchange="setNaranjoAnswer(${i},${qi},'no')"> ไม่ใช่ <span class="pts">(${q.no>=0?'+':''}${q.no})</span></label>
+                <label><input type="radio" name="naranjo-${i}-${qi}" ${e.naranjo[qi]==='unknown'?'checked':''} onchange="setNaranjoAnswer(${i},${qi},'unknown')"> ไม่ทราบ <span class="pts">(0)</span></label>
+              </div>
+            </div>
+          `).join('')}
+          <div class="naranjo-result ${interp.cls}">
+            <span>ผลการประเมิน: ${interp.label}</span>
+            <span class="score-num">${score} คะแนน</span>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+  }).join('');
+}
+
+function toggleNaranjo(i) {
+  entries[i].naranjoOpen = !entries[i].naranjoOpen;
+  renderEntries();
+}
+
+function setNaranjoAnswer(i, qi, value) {
+  entries[i].naranjo[qi] = value;
+  renderEntries();
+}
+
+function addEntry() {
+  entries.push(newBlankEntry());
+  renderEntries();
+}
+
+function removeEntry(i) {
+  entries.splice(i, 1);
+  renderEntries();
+}
+
+async function loadShopName() {
+  try {
+    const s = await apiGet('getShopSettings');
+    if (s['ShopNameTH']) shopName = s['ShopNameTH'];
+  } catch (e) { /* โหลดไม่สำเร็จก็ใช้ชื่อ default ไปก่อน ไม่ต้อง block การทำงานอื่น */ }
+}
+
+function openPrintCard() {
+  const validEntries = entries.filter(e => e.drug.trim() !== '');
+  if (validEntries.length === 0) {
+    alert('กรุณากรอกอย่างน้อย 1 รายการยา/สารที่สงสัยว่าแพ้ ก่อนพิมพ์บัตร');
+    return;
+  }
+  const custName = currentCustomer ? `${currentCustomer.prefix}${currentCustomer.first} ${currentCustomer.last}` : '-';
+  const custId = currentCustomer ? currentCustomer.id : '-';
+  const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const drugListHtml = validEntries.map(e => {
+    const severityLabel = { mild: 'เล็กน้อย', moderate: 'ปานกลาง', severe: 'รุนแรง' }[e.severity] || '';
+    const { score, answeredCount } = calcNaranjoScore(e);
+    const naranjoText = answeredCount > 0 ? ` • Naranjo: ${score} (${naranjoInterpret(score).label})` : '';
+    return `<li>
+      <div class="drug-name">${e.drug}</div>
+      <div class="drug-meta">${e.reaction || 'ไม่ระบุอาการ'} • ความรุนแรง: ${severityLabel}${naranjoText}</div>
+    </li>`;
+  }).join('');
+
+  document.getElementById('allergyCardContent').innerHTML = `
+    <div class="card-header">
+      <span class="warn-icon">⚠️</span>
+      <span class="card-title">บัตรแพ้ยา / DRUG ALLERGY CARD</span>
+    </div>
+    <div class="shop-name">${shopName}</div>
+    <div class="patient-line">ชื่อผู้ป่วย: <b>${custName}</b></div>
+    <div class="patient-line">รหัสลูกค้า: <b>${custId}</b></div>
+    <ul class="drug-list">${drugListHtml}</ul>
+    <div class="card-footer">ออกบัตรวันที่ ${today} — โปรดแสดงบัตรนี้ทุกครั้งที่รับบริการทางการแพทย์</div>
+  `;
+  document.getElementById('printCardOverlay').classList.add('show');
+}
+
+function closePrintCard() {
+  document.getElementById('printCardOverlay').classList.remove('show');
+}
+
+async function loadCustomerInfo() {
+  if (!customerId) {
+    document.getElementById('custTag').textContent = 'ไม่พบรหัสลูกค้า — เปิดหน้านี้ผ่านปุ่ม "ประเมินการแพ้ยา" ในหน้าข้อมูลลูกค้าเท่านั้น';
+    document.getElementById('saveBtn').disabled = true;
+    return;
+  }
+  try {
+    currentCustomer = await apiGet('getCustomer', { id: customerId });
+    document.getElementById('custTag').innerHTML = `ลูกค้า: <b>${currentCustomer.prefix}${currentCustomer.first} ${currentCustomer.last}</b> (${currentCustomer.id})`;
+    // ถ้าเคยมีประวัติแพ้ยาบันทึกไว้แล้ว โชว์เป็นข้อความอ้างอิงในช่องสรุปเพิ่มเติม เผื่อเภสัชกรอยากอ้างอิงของเดิม
+    if (currentCustomer.drugInfo && currentCustomer.drugInfo.allergies) {
+      document.getElementById('fSummaryNote').placeholder = 'ประวัติเดิมที่เคยบันทึกไว้: ' + currentCustomer.drugInfo.allergies;
+    }
+  } catch (err) {
+    document.getElementById('custTag').textContent = 'โหลดข้อมูลลูกค้าไม่สำเร็จ: ' + err.message;
+    document.getElementById('saveBtn').disabled = true;
+  }
+}
+
+function buildSummaryText() {
+  const lines = entries
+    .filter(e => e.drug.trim() !== '')
+    .map(e => {
+      const severityLabel = { mild: 'เล็กน้อย', moderate: 'ปานกลาง', severe: 'รุนแรง' }[e.severity] || '';
+      const sourceLabel = { patient: 'ผู้ป่วยแจ้งเอง', record: 'มีบันทึกทางการแพทย์', observed: 'สังเกตพบที่ร้าน' }[e.source] || '';
+      let line = `${e.drug} — ${e.reaction || 'ไม่ระบุอาการ'} (ความรุนแรง: ${severityLabel}, แหล่งข้อมูล: ${sourceLabel}`;
+      if (e.date) line += `, วันที่: ${e.date}`;
+      const { score, answeredCount } = calcNaranjoScore(e);
+      if (answeredCount > 0) {
+        line += `, Naranjo: ${score} คะแนน — ${naranjoInterpret(score).label}`;
+      }
+      line += ')';
+      return line;
+    });
+  const note = document.getElementById('fSummaryNote').value.trim();
+  if (note) lines.push('หมายเหตุ: ' + note);
+  return lines.join(' | ');
+}
+
+async function saveAssessment() {
+  if (!currentCustomer) { alert('ไม่พบข้อมูลลูกค้า ไม่สามารถบันทึกได้'); return; }
+  const summary = buildSummaryText();
+  if (!summary) { alert('กรุณากรอกอย่างน้อย 1 รายการยา/สารที่สงสัยว่าแพ้ ก่อนบันทึก'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+  try {
+    const updated = Object.assign({}, currentCustomer);
+    updated.drugInfo = Object.assign({}, currentCustomer.drugInfo, { allergies: summary });
+    await apiPost('updateCustomer', { id: currentCustomer.id, customer: updated });
+    alert('บันทึกผลการประเมินเรียบร้อย ระบบเติมข้อความสรุปกลับเข้าช่อง "ประวัติแพ้ยา/แพ้อาหาร" ของลูกค้าให้แล้ว');
+    window.close();
+    // เผื่อเบราว์เซอร์ไม่ยอมปิดแท็บอัตโนมัติ (เช่นเปิดจากลิงก์ตรง ไม่ใช่ window.open) แจ้งให้กลับไปหน้าลูกค้าเอง
+    document.getElementById('custTag').innerHTML += '<br><b>บันทึกสำเร็จแล้ว — กลับไปที่หน้าข้อมูลลูกค้าเพื่อดูผลได้เลย</b>';
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึกผลการประเมิน';
+}
+
+renderEntries();
+loadCustomerInfo();
+loadShopName();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ใบรับสินค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1100px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; border-bottom: 1px solid #eef2ef;
+  }
+  .doc-title { font-size: 20px; font-weight: 700; color: #1e6b3c; }
+  .doc-sub { font-size: 12.5px; color: #8fa198; margin-top: 3px; }
+  .save-btn {
+    background: #2e8b4f; color: #fff; border: none; border-radius: 8px;
+    padding: 11px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .save-btn:hover { background: #257a43; }
+
+  .form-body { padding: 22px; }
+  .form-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px 22px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 12.5px; font-weight: 600; color: #3f4f45; }
+  .field label .req { color: #e0665a; }
+  .field input, .field select {
+    padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: #24312a; background: #fff;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: #2e8b4f; }
+  .field input[readonly] { background: #f3f7f3; color: #6b7a70; }
+
+  .product-suggest {
+    display: none;
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
+    background: #fff; border: 1px solid #cfe0d3; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12); max-height: 260px; overflow-y: auto; margin-top: 4px;
+  }
+  .product-suggest.show { display: block; }
+  .product-suggest-item {
+    padding: 10px 14px; font-size: 13.5px; cursor: pointer; border-bottom: 1px solid #eef2ef;
+    display: flex; justify-content: space-between; gap: 10px;
+  }
+  .product-suggest-item:last-child { border-bottom: none; }
+  .product-suggest-item:hover { background: #f6faf7; }
+  .product-suggest-item b { color: #1e6b3c; font-weight: 700; white-space: nowrap; }
+
+  .section-title {
+    font-size: 14.5px; font-weight: 700; color: #1e6b3c; margin: 0 0 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-sub { font-size: 12px; color: #8fa198; margin-bottom: 14px; }
+
+  .item-form {
+    background: #f6faf7; border: 1px solid #e3efe5; border-radius: 10px;
+    padding: 18px; margin-top: 6px;
+  }
+  .item-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 16px;
+  }
+  .item-grid .field.wide { grid-column: span 2; }
+  .inline-group { display: flex; gap: 8px; }
+  .inline-group input { flex: 1; min-width: 0; }
+  .price-btn {
+    background: #eef6ee; border: 1px solid #2e8b4f; color: #1e6b3c;
+    border-radius: 8px; padding: 0 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    white-space: nowrap;
+  }
+  .price-btn:hover { background: #dcefe0; }
+  .add-line-btn {
+    margin-top: 16px; background: #2e8b4f; color: #fff; border: none; border-radius: 8px;
+    padding: 10px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  }
+  .add-line-btn:hover { background: #257a43; }
+
+  table.item-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  table.item-table th {
+    text-align: left; font-size: 12px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 9px 12px; white-space: nowrap;
+  }
+  table.item-table td {
+    padding: 10px 12px; border-bottom: 1px solid #eef2ef; font-size: 13px; vertical-align: middle; white-space: nowrap;
+  }
+  .amount { text-align: right; font-variant-numeric: tabular-nums; }
+  .del-btn {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #f0c9c4; background: #fff;
+    color: #c0392b; cursor: pointer; font-size: 12px;
+  }
+  .del-btn:hover { background: #fbe4e2; }
+  .empty-row { text-align: center; color: #8fa198; font-size: 13px; padding: 24px; }
+
+  .summary-box {
+    display: flex; justify-content: flex-end; margin-top: 16px;
+  }
+  .summary-inner { width: 280px; font-size: 14px; }
+  .summary-row { display: flex; justify-content: space-between; padding: 6px 0; color: #4a5a4f; }
+  .summary-row.total { border-top: 2px solid #2e8b4f; margin-top: 6px; padding-top: 10px; font-weight: 700; color: #1e6b3c; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='receiving-list-mockup.html'">← กลับรายการใบรับสินค้า</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> รายการใบรับสินค้า <span class="sep">/</span> <b>ใบรับสินค้า</b>
+</div>
+
+<div class="content">
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="doc-title" id="docNo">GR2633209</div>
+        <div class="doc-sub">สถานะ: เตรียมรายการ • ยังไม่จ่าย</div>
+      </div>
+      <button class="save-btn" id="saveBtn" onclick="saveReceiving()">💾 บันทึก</button>
+    </div>
+    <div class="form-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>สาขาที่รับ <span class="req">*</span></label>
+          <select id="branch">
+            <option value="">-- เลือกสาขา --</option>
+            <option selected>สำนักงานใหญ่</option>
+            <option>สาขา 2</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ผู้จัดจำหน่าย <span class="req">*</span></label>
+          <select id="supplier">
+            <option value="">-- กำลังโหลดรายชื่อผู้จัดจำหน่าย... --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>วันที่รับสินค้า <span class="req">*</span></label>
+          <input type="date" id="recvDate">
+        </div>
+        <div class="field">
+          <label>เภสัชกรผู้รับสินค้า</label>
+          <input type="text" id="pharmacistName" readonly style="background:#f3f7f3; color:#6b7a70;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="form-body">
+      <div class="section-title">📦 เพิ่มรายการสินค้า</div>
+      <div class="section-sub">เลือกสินค้าแล้วกรอกจำนวน/ราคา ระบบจะแสดงคงเหลือในคลังและต้นทุนล่าสุดให้อัตโนมัติ</div>
+
+      <div class="item-form">
+        <div class="item-grid">
+          <div class="field wide" style="position:relative;">
+            <label>ชื่อสินค้า</label>
+            <input type="text" id="productSearchInput" placeholder="พิมพ์ค้นหาชื่อสินค้าหรือรหัสสินค้า..." autocomplete="off">
+            <div class="product-suggest" id="productSuggest"></div>
+          </div>
+          <div class="field">
+            <label>หน่วย</label>
+            <select id="unit"></select>
+          </div>
+          <div class="field">
+            <label>เลขที่ผลิต</label>
+            <input type="text" id="lotNo" placeholder="เลขที่ผลิต">
+          </div>
+          <div class="field">
+            <label>MFG</label>
+            <input type="date" id="mfgDate">
+          </div>
+          <div class="field">
+            <label>EXP</label>
+            <input type="date" id="expDate">
+          </div>
+          <div class="field">
+            <label>จำนวนซื้อ</label>
+            <input type="number" id="qtyBuy" min="0" value="0">
+          </div>
+          <div class="field">
+            <label>จำนวนแถม</label>
+            <input type="number" id="qtyFree" min="0" value="0">
+          </div>
+          <div class="field">
+            <label>ราคาซื้อ / หน่วย</label>
+            <input type="number" id="unitPrice" min="0" step="0.01" value="0">
+          </div>
+          <div class="field">
+            <label>จำนวนคงเหลือในคลัง</label>
+            <input type="text" id="stockQty" readonly value="-">
+          </div>
+          <div class="field wide">
+            <label>ต้นทุนล่าสุด</label>
+            <div class="inline-group">
+              <input type="text" id="lastCost" readonly value="-">
+              <button type="button" class="price-btn" onclick="alert('มอคอัพ: จะเปิดหน้าตั้งราคาขายของสินค้านี้')">เปลี่ยนราคาขาย</button>
+            </div>
+          </div>
+        </div>
+        <button class="add-line-btn" onclick="addLine()">＋ เพิ่มลงรายการ</button>
+      </div>
+
+      <div style="overflow-x:auto; margin-top:18px;">
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th>ชื่อสินค้า</th>
+              <th>หน่วย</th>
+              <th>เลขที่ผลิต</th>
+              <th>EXP</th>
+              <th style="text-align:right;">จำนวนซื้อ</th>
+              <th style="text-align:right;">จำนวนแถม</th>
+              <th style="text-align:right;">ราคาซื้อ/หน่วย</th>
+              <th style="text-align:right;">ยอดรวม</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="itemBody">
+            <tr><td colspan="9"><div class="empty-row">ยังไม่มีรายการสินค้า</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary-box">
+        <div class="summary-inner">
+          <div class="summary-row"><span>จำนวนสินค้าทั้งหมด</span><span id="sumQty">0</span></div>
+          <div class="summary-row total"><span>ยอดรวมทั้งหมด</span><span id="sumTotal">0.00</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+let currentUser = null;
+(function () {
+  const raw = localStorage.getItem('ppms_user');
+  if (!raw) {
+    window.location.href = 'login-mockup.html';
+    return;
+  }
+  try {
+    currentUser = JSON.parse(raw);
+    document.getElementById('pharmacistName').value = currentUser['ชื่อ-นามสกุล'] || currentUser['Username'] || 'ไม่ระบุ';
+  } catch (e) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// ---------- เลขที่เอกสารใหม่ ----------
+function genDocNo() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return 'GR' + String(d.getFullYear()).slice(2) + pad(d.getMonth() + 1) + pad(d.getDate()) + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+}
+document.getElementById('docNo').textContent = genDocNo();
+document.getElementById('recvDate').value = new Date().toISOString().slice(0, 10);
+
+// ---------- โหลดรายชื่อผู้จัดจำหน่ายจริงจาก Sheet ----------
+async function loadSuppliers() {
+  const sel = document.getElementById('supplier');
+  try {
+    const suppliers = await apiGet('listSuppliers');
+    sel.innerHTML = '<option value="">-- เลือกผู้จัดจำหน่าย --</option>' +
+      suppliers.map(s => `<option value="${s['ชื่อเจ้าหนี้']}">${s['ชื่อเจ้าหนี้']}</option>`).join('');
+  } catch (err) {
+    sel.innerHTML = `<option value="">โหลดรายชื่อผู้จัดจำหน่ายไม่สำเร็จ: ${err.message}</option>`;
+  }
+}
+loadSuppliers();
+
+// ---------- ค้นหาสินค้า (เหมือนหน้า POS) ----------
+const productSearchInput = document.getElementById('productSearchInput');
+const productSuggest = document.getElementById('productSuggest');
+let selectedProduct = null; // { code, name, units: [{label, cost, multiplier}], stock }
+let searchDebounceTimer = null;
+
+productSearchInput.addEventListener('input', () => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(doProductSearch, 300);
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.field.wide')) productSuggest.classList.remove('show');
+});
+
+async function doProductSearch() {
+  const kw = productSearchInput.value.trim();
+  if (!kw) { productSuggest.classList.remove('show'); return; }
+
+  productSuggest.innerHTML = '<div class="product-suggest-item"><span>กำลังค้นหา...</span></div>';
+  productSuggest.classList.add('show');
+
+  let results;
+  try {
+    results = await apiGet('searchProducts', { keyword: kw });
+  } catch (err) {
+    productSuggest.innerHTML = `<div class="product-suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
+    return;
+  }
+
+  if (results.length === 0) {
+    productSuggest.innerHTML = '<div class="product-suggest-item"><span>ไม่พบสินค้า</span></div>';
+  } else {
+    productSuggest.innerHTML = results.map(p => `
+      <div class="product-suggest-item" onclick="pickProduct('${p.code}')">
+        <span>${p.name}</span>
+        <b>${p.code}</b>
+      </div>
+    `).join('');
+  }
+  productSuggest.classList.add('show');
+}
+
+async function pickProduct(code) {
+  productSuggest.classList.remove('show');
+  productSearchInput.value = 'กำลังโหลดข้อมูลสินค้า...';
+
+  let detail;
+  try {
+    detail = await apiGet('getProduct', { code });
+  } catch (err) {
+    alert('ดึงข้อมูลสินค้าไม่สำเร็จ: ' + err.message);
+    productSearchInput.value = '';
+    return;
+  }
+
+  const product = detail.product || {};
+  const costPerSmallUnit = Number(product['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0;
+  const smallUnitLabel = product['หน่วยเล็กสุด(อัตโนมัติ)'] || 'หน่วย';
+
+  let units = (detail.units || []).map(u => {
+    const multiplier = Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1;
+    return {
+      label: u['หน่วย(ใหญ่)'],
+      cost: Math.round(costPerSmallUnit * multiplier * 100) / 100,
+      multiplier,
+    };
+  });
+  if (!units.some(u => u.label === smallUnitLabel)) {
+    units.unshift({ label: smallUnitLabel, cost: costPerSmallUnit, multiplier: 1 });
+  }
+  units.sort((a, b) => (a.multiplier || 1) - (b.multiplier || 1));
+  if (units.length === 0) units = [{ label: smallUnitLabel, cost: costPerSmallUnit, multiplier: 1 }];
+
+  selectedProduct = {
+    code: product['รหัสสินค้า'],
+    name: product['ชื่อสินค้า'],
+    stock: detail.liveStock != null ? detail.liveStock : (product['คงเหลือรวมทุกล็อต(อัตโนมัติ)'] || 0),
+    smallUnitLabel,
+    units,
+  };
+
+  productSearchInput.value = `${selectedProduct.code}  ${selectedProduct.name}`;
+  renderUnitOptions();
+}
+
+function renderUnitOptions() {
+  const unitSelect = document.getElementById('unit');
+  unitSelect.innerHTML = selectedProduct.units.map(u => `<option value="${u.label}">${u.label}</option>`).join('');
+  onUnitChange();
+}
+
+function onUnitChange() {
+  if (!selectedProduct) return;
+  const unitLabel = document.getElementById('unit').value;
+  const u = selectedProduct.units.find(x => x.label === unitLabel) || selectedProduct.units[0];
+  document.getElementById('stockQty').value = `${Number(selectedProduct.stock).toLocaleString()} ${selectedProduct.smallUnitLabel}`;
+  document.getElementById('lastCost').value = `${u.cost.toLocaleString(undefined,{minimumFractionDigits:2})} บาท/${u.label}`;
+  document.getElementById('unitPrice').value = u.cost.toFixed(2);
+}
+document.getElementById('unit').addEventListener('change', onUnitChange);
+
+let lines = [];
+
+function addLine() {
+  if (!selectedProduct) { alert('กรุณาค้นหาและเลือกสินค้าก่อน'); return; }
+
+  const qtyBuy = parseFloat(document.getElementById('qtyBuy').value) || 0;
+  const qtyFree = parseFloat(document.getElementById('qtyFree').value) || 0;
+  const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+  const unit = document.getElementById('unit').value;
+  const expDate = document.getElementById('expDate').value;
+  if (qtyBuy <= 0) { alert('กรุณากรอกจำนวนซื้อ'); return; }
+  if (!expDate) { alert('กรุณากรอกวันหมดอายุ (EXP)'); return; }
+
+  lines.push({
+    code: selectedProduct.code,
+    name: selectedProduct.name,
+    unit,
+    lotNo: document.getElementById('lotNo').value || '-',
+    mfgDate: document.getElementById('mfgDate').value || '',
+    expDate,
+    qtyBuy, qtyFree, unitPrice,
+    total: qtyBuy * unitPrice
+  });
+
+  renderLines();
+
+  // รีเซ็ตฟอร์มเพิ่มสินค้า พร้อมค้นหาตัวถัดไปได้ทันที
+  selectedProduct = null;
+  productSearchInput.value = '';
+  document.getElementById('unit').innerHTML = '';
+  document.getElementById('lotNo').value = '';
+  document.getElementById('mfgDate').value = '';
+  document.getElementById('expDate').value = '';
+  document.getElementById('qtyBuy').value = 0;
+  document.getElementById('qtyFree').value = 0;
+  document.getElementById('unitPrice').value = 0;
+  document.getElementById('stockQty').value = '-';
+  document.getElementById('lastCost').value = '-';
+  productSearchInput.focus();
+}
+
+function removeLine(i) {
+  lines.splice(i, 1);
+  renderLines();
+}
+
+function renderLines() {
+  const body = document.getElementById('itemBody');
+  if (lines.length === 0) {
+    body.innerHTML = `<tr><td colspan="9"><div class="empty-row">ยังไม่มีรายการสินค้า</div></td></tr>`;
+  } else {
+    body.innerHTML = lines.map((l, i) => `
+      <tr>
+        <td>${l.code} ${l.name}</td>
+        <td>${l.unit}</td>
+        <td>${l.lotNo}</td>
+        <td>${l.expDate}</td>
+        <td class="amount">${l.qtyBuy.toLocaleString()}</td>
+        <td class="amount">${l.qtyFree.toLocaleString()}</td>
+        <td class="amount">${l.unitPrice.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+        <td class="amount">${l.total.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+        <td><button class="del-btn" onclick="removeLine(${i})">🗑️</button></td>
+      </tr>
+    `).join('');
+  }
+
+  const totalQty = lines.reduce((s, l) => s + l.qtyBuy + l.qtyFree, 0);
+  const totalAmount = lines.reduce((s, l) => s + l.total, 0);
+  document.getElementById('sumQty').textContent = totalQty.toLocaleString();
+  document.getElementById('sumTotal').textContent = totalAmount.toLocaleString(undefined,{minimumFractionDigits:2});
+}
+renderLines();
+
+// ---------- บันทึกใบรับสินค้าจริงเข้า Google Sheet ----------
+async function saveReceiving() {
+  const branch = document.getElementById('branch').value;
+  const supplier = document.getElementById('supplier').value;
+
+  if (!branch) { alert('กรุณาเลือกสาขาที่รับ'); return; }
+  if (!supplier) { alert('กรุณาเลือกผู้จัดจำหน่าย'); return; }
+  if (lines.length === 0) { alert('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+
+  try {
+    await apiPost('createReceiving', {
+      receiving: {
+        docNo: document.getElementById('docNo').textContent,
+        branch, supplier,
+        taxInvoiceNo: '',
+        pharmacist: document.getElementById('pharmacistName').value,
+        items: lines.map(l => ({
+          code: l.code, name: l.name, lotNo: l.lotNo, mfgDate: l.mfgDate, expDate: l.expDate,
+          qtyBuy: l.qtyBuy, qtyFree: l.qtyFree, unit: l.unit, unitPrice: l.unitPrice, discount: 0,
+        })),
+      }
+    });
+    alert('บันทึกใบรับสินค้าเรียบร้อย เพิ่มเข้าคลังสินค้าแล้ว');
+    window.location.href = 'receiving-list-mockup.html';
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = '💾 บันทึก';
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - แก้ไขข้อมูลสินค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  /* ---------- แถบหัว ---------- */
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1300px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    padding: 22px 24px;
+    margin-bottom: 18px;
+  }
+
+  /* ---------- ข้อมูลพื้นฐาน ---------- */
+  .panel-title { font-size: 15px; font-weight: 700; color: #1e6b3c; margin: 0 0 18px; }
+
+  /* ---------- ค้นหาสินค้าจริง ---------- */
+  .product-loader {
+    background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(30,90,50,.06);
+    padding: 16px 20px; margin-bottom: 18px; position: relative;
+  }
+  .product-loader label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 6px; }
+  .product-loader input {
+    width: 100%; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: #24312a;
+  }
+  .product-loader input:focus { outline: none; border-color: #2e8b4f; }
+  .product-suggest {
+    display: none; position: absolute; top: 100%; left: 20px; right: 20px; z-index: 30;
+    background: #fff; border: 1px solid #cfe0d3; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12); max-height: 260px; overflow-y: auto; margin-top: 4px;
+  }
+  .product-suggest.show { display: block; }
+  .product-suggest-item {
+    padding: 10px 14px; font-size: 13.5px; cursor: pointer; border-bottom: 1px solid #eef2ef;
+    display: flex; justify-content: space-between; gap: 10px;
+  }
+  .product-suggest-item:last-child { border-bottom: none; }
+  .product-suggest-item:hover { background: #f6faf7; }
+  .product-suggest-item b { color: #1e6b3c; font-weight: 700; white-space: nowrap; }
+  .loaded-tag {
+    display: inline-block; margin-top: 8px; font-size: 12px; color: #1e6b3c; background: #e3f5e6;
+    padding: 3px 10px; border-radius: 10px;
+  }
+  .not-connected-hint {
+    font-size: 11.5px; color: #a9701a; background: #fff3d6; border: 1px solid #f0d9a8;
+    border-radius: 6px; padding: 6px 10px; margin: -8px 0 16px;
+  }
+  .connected-hint {
+    font-size: 11.5px; color: #1e6b3c; background: #eef6ee; border: 1px solid #cfe6d2;
+    border-radius: 6px; padding: 6px 10px; margin: -8px 0 16px;
+  }
+  .basic-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+  }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #3f4f45;
+    margin-bottom: 5px;
+  }
+  .field .required { color: #d9534f; }
+  .field input, .field select {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid #cfe0d3;
+    border-radius: 7px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+  }
+  .field input:disabled, .field input.readonly {
+    background: #eef2ef;
+    color: #5b6b60;
+  }
+  .basic-checks {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-self: end;
+    white-space: nowrap;
+    padding-top: 4px;
+  }
+  .basic-checks label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13.5px; font-weight: 500; color: #3f4f45; cursor: pointer;
+  }
+  .basic-checks input { width: 16px; height: 16px; accent-color: #2e8b4f; }
+
+  /* ---------- แท็บ + เนื้อหา ---------- */
+  .tab-layout { display: flex; gap: 18px; align-items: flex-start; }
+  .tab-menu {
+    flex: 0 0 200px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .tab-item {
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #4a5a4f;
+    cursor: pointer;
+  }
+  .tab-item:hover { background: #eef6ee; }
+  .tab-item.active { background: #2e8b4f; color: #fff; }
+
+  .tab-content {
+    flex: 1;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    padding: 24px 26px;
+    min-height: 420px;
+  }
+  .tab-content h3 {
+    font-size: 15px; font-weight: 700; color: #1e6b3c; margin: 0 0 18px;
+  }
+  .tab-content h4 {
+    font-size: 13.5px; font-weight: 700; color: #1e6b3c; margin: 24px 0 12px;
+  }
+  .tab-content h4:first-child { margin-top: 0; }
+
+  table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+  table.data-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 8px 8px;
+  }
+  table.data-table td { padding: 9px 8px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: middle; }
+  table.data-table input[type=text], table.data-table input[type=number], table.data-table select {
+    width: 100%; padding: 7px 9px; border: 1px solid #cfe0d3; border-radius: 6px; font-size: 13.5px; font-family: inherit;
+  }
+  table.data-table input:disabled { background: #eef2ef; color: #5b6b60; }
+  table.data-table input[type=checkbox] { width: 16px; height: 16px; accent-color: #2e8b4f; }
+  .del-icon-btn {
+    background: #f2544a; color: #fff; border: none; border-radius: 6px;
+    padding: 6px 10px; font-size: 12px; cursor: pointer;
+  }
+  .add-row-btn {
+    background: #eef6ee; color: #1e6b3c; border: 1px solid #cfe6d2;
+    border-radius: 7px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 6px;
+  }
+  .add-row-btn:hover { background: #dcefe0; }
+
+  .barcode-preview { font-family: 'Courier New', monospace; letter-spacing: 1px; }
+  .barcode-svg { display: block; margin-top: 4px; }
+
+  .checkbox-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px;
+  }
+  .checkbox-grid label { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #3f4f45; cursor: pointer; }
+  .checkbox-grid input { width: 16px; height: 16px; accent-color: #2e8b4f; flex-shrink: 0; }
+
+  .inline-fields { display: flex; gap: 14px; flex-wrap: wrap; }
+  .inline-fields .field { flex: 1; min-width: 200px; }
+
+  .empty-note { text-align: center; color: #8fa198; font-size: 13px; padding: 14px; background: #f6f9f6; border-radius: 7px; }
+
+  .kv-hint { font-size: 12px; color: #8fa198; margin: -4px 0 14px; }
+
+  .checkbox-row {
+    display: flex; flex-wrap: wrap; gap: 14px; font-size: 13.5px;
+    margin: 4px 0 16px; align-items: center; color: #3f4f45;
+  }
+  .checkbox-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500; }
+  .checkbox-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #2e8b4f; }
+  .field-inline { display: flex; align-items: center; gap: 7px; font-size: 13.5px; white-space: nowrap; }
+  .field-inline label { font-weight: 600; color: #3f4f45; margin: 0; }
+  .field-inline input[type=number] { width: 64px; padding: 8px; border: 1px solid #cfe0d3; border-radius: 6px; }
+  .field-inline select, .field-inline input[type=text] { padding: 8px; border: 1px solid #cfe0d3; border-radius: 6px; font-family: inherit; }
+  .template-banner {
+    background: #eef6ee; border: 1px solid #cfe6d2; border-radius: 8px;
+    padding: 12px 14px; font-size: 12.5px; color: #3f4f45; margin-bottom: 20px; line-height: 1.6;
+  }
+  .template-banner b { color: #1e6b3c; }
+
+  /* ---------- ปุ่มล่าง ---------- */
+  .bottom-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  .bottom-actions button {
+    padding: 12px 26px; border-radius: 8px; font-size: 14.5px; font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-cancel { background: #fff; color: #3f4f45; border: 1px solid #cfe0d3 !important; }
+  .btn-cancel:hover { background: #eef2ef; }
+  .btn-save { background: #2e8b4f; color: #fff; }
+  .btn-save:hover { background: #257a43; }
+
+  @media (max-width: 850px) {
+    .tab-layout { flex-direction: column; }
+    .tab-menu { flex-direction: row; flex-wrap: wrap; flex: 1 1 auto; width: 100%; }
+    .basic-grid { grid-template-columns: 1fr 1fr; }
+    .basic-checks { grid-column: 1 / -1; grid-row: auto; flex-direction: row; flex-wrap: wrap; justify-self: start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> <a href="product-list-mockup.html" style="color:#1e6b3c;text-decoration:none;cursor:pointer;">ข้อมูลสินค้า</a> <span class="sep">/</span> <b>แก้ไขสินค้า</b>
+</div>
+
+<div class="content">
+
+  <!-- ========== ค้นหาสินค้าจริง ========== -->
+  <div class="product-loader">
+    <label>ค้นหาสินค้าที่จะแก้ไข (ดึงข้อมูลจริงจากระบบ)</label>
+    <input type="text" id="productSearchInput" placeholder="พิมพ์ชื่อสินค้าหรือรหัสสินค้า..." autocomplete="off">
+    <div class="product-suggest" id="productSuggest"></div>
+    <div class="loaded-tag" id="loadedTag" style="display:none;"></div>
+  </div>
+
+  <!-- ========== ข้อมูลพื้นฐาน ========== -->
+  <div class="panel">
+    <div class="panel-title">ข้อมูลพื้นฐาน</div>
+    <div class="basic-grid">
+      <div class="field">
+        <label>รหัสสินค้า <span class="required">*</span></label>
+        <input type="text" id="fProductCode" value="PCU00309" class="readonly" disabled>
+      </div>
+      <div class="field">
+        <label>ชื่อสินค้า <span class="required">*</span></label>
+        <input type="text" id="fProductName" value="Sonap Forte 550 mg">
+      </div>
+      <div class="field">
+        <label>ชื่อยาสามัญ</label>
+        <input type="text" id="fGenericSummary" value="NAPROXEN" class="readonly" disabled>
+      </div>
+
+      <div class="basic-checks">
+        <label><input type="checkbox" id="fIsDrug" checked> เป็นสินค้าประเภทยา</label>
+        <label><input type="checkbox" id="fActiveStatus" checked> เปิดใช้งานสินค้า</label>
+        <label><input type="checkbox" id="fBonusEnabled"> เปิดใช้งานสินค้าแถม</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== แท็บ ========== -->
+  <div class="tab-layout">
+    <div class="tab-menu" id="tabMenu">
+      <div class="tab-item active" data-tab="unit">หน่วย</div>
+      <div class="tab-item" data-tab="barcode">บาร์โค้ด</div>
+      <div class="tab-item" data-tab="price">ราคา</div>
+      <div class="tab-item" data-tab="stock">ข้อมูลคลังสินค้า</div>
+      <div class="tab-item" data-tab="drug">ข้อมูลทางยา</div>
+      <div class="tab-item" data-tab="supplier">ผู้แทนจำหน่าย</div>
+      <div class="tab-item" data-tab="print">สำหรับพิมพ์</div>
+    </div>
+
+    <div class="tab-content" id="tabContent"></div>
+  </div>
+
+  <div class="bottom-actions">
+    <button class="btn-cancel" onclick="window.location.href='backoffice-mockup.html'">ยกเลิก</button>
+    <button class="btn-save" id="mainSaveBtn" onclick="saveAll()">💾 บันทึก</button>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+let currentProductCode = null;
+let currentProductRaw = {}; // เก็บ object สินค้าดิบจาก getProduct ไว้ใช้ข้ามแท็บ (เช่น ต้นทุนล่าสุดจริงในแท็บผู้แทนจำหน่าย)
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// ================= ข้อมูล — เริ่มด้วยค่าว่าง จะถูกแทนที่ด้วยข้อมูลจริงทันทีที่โหลดสินค้าสำเร็จ =================
+let unitData = [];
+let barcodeData = [];
+let priceData = [];
+let safetyStockData = [];       // {unit, branch, max, min}
+let shelfLocationData = [];     // {branch, cabinetCode, cabinetName, zone, shelf}
+let supplierHistoryData = [];   // ประวัติผู้แทนจำหน่ายจริง ดึงจากใบรับสินค้า (อ่านอย่างเดียว)
+let productGroupsSelected = ['', '', '', '']; // กลุ่มที่ 1-4 ของสินค้านี้
+let realProductGroups = [];     // รายชื่อกลุ่มสินค้าทั้งหมดที่นิยามไว้ในระบบ (โหลดจริงตอนเปิดหน้า)
+let productTypeChecked = [];
+let genericNameData = [];
+// "ต้องรายงาน ขย.9/10/11" — อ่านอย่างเดียวเท่านั้น ห้ามบันทึกทับจากหน้านี้ (ป้องกันทำลายสูตร/ข้อมูลที่ยืนยันแล้วในชีต)
+let reqKY9 = false, reqKY10 = false, reqKY11 = false;
+// "พิมพ์รายงาน ขย.9/10/11" — แก้ไข/บันทึกได้จริงตามที่ชีตต้นทางระบุว่า override ได้
+let printKY9 = false, printKY10 = false, printKY11 = false;
+let treatmentClassChecked = [];
+
+// ---------- รายชื่อหน่วยนับที่ใช้บ่อย (เลือกจากลิสต์ได้ หรือพิมพ์ชื่ออื่นเองก็ได้ ผ่าน <datalist>) ----------
+// โหลดจริงจากชีต (ผ่าน loadCommonUnitNames() ตอนเปิดหน้า) — พิมพ์ชื่อหน่วยใหม่ที่ไม่มีในลิสต์
+// ระบบจะบันทึกเข้าชีตถาวรให้อัตโนมัติผ่าน registerCustomUnitName() ใช้ได้ข้ามการเปิดหน้าครั้งต่อๆ ไปเลย
+let commonUnitNames = [];
+
+async function loadCommonUnitNames() {
+  try {
+    commonUnitNames = await apiGet('getCommonUnitNames');
+  } catch (err) {
+    console.error('โหลดรายชื่อหน่วยนับไม่สำเร็จ:', err.message);
+    commonUnitNames = [];
+  }
+  const dl = document.getElementById('unitNameList');
+  if (dl) dl.innerHTML = commonUnitNames.map(n => `<option value="${n}">`).join('');
+}
+
+async function loadRealProductGroups() {
+  try {
+    const groups = await apiGet('listProductGroups');
+    realProductGroups = groups.map(g => g.name);
+  } catch (err) {
+    console.error('โหลดรายชื่อกลุ่มสินค้าไม่สำเร็จ:', err.message);
+    realProductGroups = [];
+  }
+  // ถ้ากำลังอยู่ที่แท็บ "ข้อมูลคลังสินค้า" อยู่แล้วตอนโหลดเสร็จ ให้รีเฟรชดรอปดาวน์กลุ่มสินค้าให้ตรงกัน
+  const activeTab = document.querySelector('.tab-item.active');
+  if (activeTab && activeTab.dataset.tab === 'stock') switchTab('stock');
+}
+
+/** ถ้าพิมพ์ชื่อหน่วยที่ยังไม่มีในลิสต์ ให้เพิ่มเข้าไปอัตโนมัติทั้งในหน้าปัจจุบันและบันทึกถาวรลงชีต ใช้ซ้ำได้ทุกครั้งที่เปิดหน้านี้ในอนาคต */
+async function registerCustomUnitName(name) {
+  name = (name || '').trim();
+  if (!name || commonUnitNames.includes(name)) return;
+  commonUnitNames.push(name);
+  const dl = document.getElementById('unitNameList');
+  if (dl) dl.innerHTML = commonUnitNames.map(n => `<option value="${n}">`).join('');
+  try {
+    await apiPost('addCommonUnitName', { name });
+  } catch (err) {
+    console.error('บันทึกชื่อหน่วยใหม่ลงระบบถาวรไม่สำเร็จ (ใช้ได้แค่หน้านี้ชั่วคราว):', err.message);
+  }
+}
+
+/** อัปเดตข้อความแสดงหน่วยเล็กสุดในตารางให้ตรงกับที่พิมพ์ในช่อง "หน่วยเล็กสุด" ด้านบนแบบสดๆ โดยไม่ต้องรีเฟรชทั้งแท็บ */
+function syncBaseUnitDisplay(value) {
+  const el = document.getElementById('baseUnitDisplay');
+  if (!el) return;
+  el.textContent = value || '(หน่วยเล็กสุด — กรอกด้านบน)';
+  el.style.color = value ? '#24312a' : '#8fa198';
+}
+
+/**
+ * สร้างบาร์โค้ดแบบ EAN-13 ให้อัตโนมัติสำหรับสินค้าที่ยังไม่มีบาร์โค้ดจริงจากผู้ผลิต
+ * ใช้ prefix "20" (ช่วงเลขที่ GS1 สงวนไว้สำหรับใช้ภายในองค์กรเอง ไม่ชนกับบาร์โค้ดสินค้าแบรนด์จริงในตลาด)
+ * คำนวณจากรหัสสินค้า+หน่วย เพื่อให้ได้เลขเดิมทุกครั้งถ้ากดสร้างซ้ำให้สินค้า/หน่วยเดียวกัน แล้วปิดท้ายด้วย checksum ที่ถูกต้องตามมาตรฐาน EAN-13
+ */
+function generateBarcode(code, unit) {
+  const seed = (code || '') + '|' + (unit || '');
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  let digits = '20' + String(hash % 10000000000).padStart(10, '0');
+  digits = digits.slice(0, 12);
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    const d = Number(digits[i]);
+    sum += (i % 2 === 0) ? d : d * 3;
+  }
+  const checksum = (10 - (sum % 10)) % 10;
+  return digits + String(checksum);
+}
+
+let defaultLabel = {
+  indication: "",
+  route: "รับประทาน",
+  dose: 1,
+  doseUnit: "เม็ด",
+  perDay: 1,
+  times: { morning: true, noon: false, evening: false, bedtime: false },
+  mealTime: "หลังอาหาร",
+  every: { checked: false, hours: "" },
+  prn: { checked: false, note: "" },
+  note: { checked: true, text: "ทานยาหลังอาหารทันที" },
+};
+
+// ================= โหมด "เพิ่มสินค้าใหม่" — ฟอร์มเปล่า ยังไม่มีสินค้านี้อยู่จริงในระบบ =================
+let isNewProduct = false;
+
+function resetToNewProduct() {
+  isNewProduct = true;
+  currentProductCode = null;
+  currentProductRaw = {};
+
+  document.getElementById('fProductCode').value = '';
+  document.getElementById('fProductCode').disabled = true;
+  document.getElementById('fProductCode').classList.add('readonly');
+  document.getElementById('fProductCode').placeholder = 'จะรันรหัส PCU ให้อัตโนมัติตอนกดบันทึก';
+  document.getElementById('fProductName').value = '';
+  document.getElementById('fGenericSummary').value = '-';
+  document.getElementById('fIsDrug').checked = true;
+  document.getElementById('fActiveStatus').checked = true;
+  document.getElementById('fBonusEnabled').checked = false;
+
+  unitData = [{ unit: '', pack: 1, note: '', retail: true, base: true }];
+  barcodeData = [];
+  priceData = [];
+  safetyStockData = [];
+  shelfLocationData = [];
+  supplierHistoryData = [];
+  productGroupsSelected = ['', '', '', ''];
+  productTypeChecked = [];
+  genericNameData = [];
+  reqKY9 = false; reqKY10 = false; reqKY11 = false;
+  printKY9 = false; printKY10 = false; printKY11 = false;
+  treatmentClassChecked = [];
+  defaultLabel = {
+    indication: "", route: "รับประทาน", dose: 1, doseUnit: "เม็ด", perDay: 1,
+    times: { morning: true, noon: false, evening: false, bedtime: false },
+    mealTime: "หลังอาหาร", every: { checked: false, hours: "" }, prn: { checked: false, note: "" },
+    note: { checked: true, text: "ทานยาหลังอาหารทันที" },
+  };
+
+  const loadedTag = document.getElementById('loadedTag');
+  loadedTag.style.display = 'inline-block';
+  loadedTag.textContent = '＋ กำลังเพิ่มสินค้าใหม่ — กรอกข้อมูลแล้วกด "บันทึก" มุมล่างขวา';
+
+  switchTab('unit');
+}
+
+// ================= โหลดสินค้าจริงจาก Sheet =================
+async function loadProductByCode(code){
+  const loadedTag = document.getElementById('loadedTag');
+  loadedTag.style.display = 'inline-block';
+  loadedTag.textContent = 'กำลังโหลดข้อมูล ' + code + '...';
+
+  let detail;
+  try {
+    detail = await apiGet('getProduct', { code });
+  } catch (err) {
+    loadedTag.textContent = 'โหลดไม่สำเร็จ: ' + err.message;
+    return;
+  }
+
+  const product = detail.product || {};
+  currentProductRaw = product;
+  const drugInfo = detail.drugInfo || {};
+  currentProductCode = product['รหัสสินค้า'] || code;
+  isNewProduct = false;
+
+  document.getElementById('fProductCode').value = currentProductCode;
+  document.getElementById('fProductCode').disabled = true;
+  document.getElementById('fProductCode').classList.add('readonly');
+  document.getElementById('fProductName').value = product['ชื่อสินค้า'] || '';
+  document.getElementById('fGenericSummary').value = drugInfo['ชื่อยาสามัญ (Generic Name)'] || '-';
+  document.getElementById('fIsDrug').checked = String(product['เป็นสินค้าประเภทยา (Y/N)'] || '').toUpperCase() !== 'N';
+  document.getElementById('fActiveStatus').checked = String(product['สถานะเปิดใช้งาน (Y/N)'] || '').toUpperCase() !== 'N';
+
+  // ---------- หน่วยนับ ----------
+  const smallUnit = product['หน่วยเล็กสุด(อัตโนมัติ)'] || 'หน่วย';
+  unitData = (detail.units || []).map(u => ({
+    unit: u['หน่วย(ใหญ่)'],
+    pack: Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1,
+    note: '',
+    retail: (u['เป็นหน่วยขายปลีก (Y/N)'] || '') === 'Y',
+    base: u['หน่วย(ใหญ่)'] === smallUnit,
+  }));
+  if (!unitData.some(u => u.unit === smallUnit)) {
+    unitData.unshift({ unit: smallUnit, pack: 1, note: '', retail: true, base: true });
+  }
+
+  // ---------- บาร์โค้ด ----------
+  barcodeData = (detail.barcodes || [])
+    .filter(b => b['บาร์โค้ด'])
+    .map(b => ({ unit: b['หน่วย'], code: b['บาร์โค้ด'] }));
+
+  // ---------- ราคา ----------
+  priceData = (detail.prices || []).map(p => ({
+    branch: p['สาขา'] || '-',
+    unit: p['หน่วย'] || '-',
+    price: Number(p['ราคาขาย']) || 0,
+    lastSold: p['ณ วันที่ขายล่าสุด'] || '',
+  }));
+
+  // ---------- ข้อมูลทางยา ----------
+  genericNameData = parseGenericNameString(drugInfo['ชื่อยาสามัญ (Generic Name)'] || '');
+  // "ต้องรายงาน" — อ่านอย่างเดียว (ห้ามบันทึกทับจากหน้านี้ กันทำลายสูตร/ข้อมูลที่ยืนยันแล้วในชีต)
+  reqKY9 = (drugInfo['ต้องรายงาน ขย.9 (Y/N)'] || '') === 'Y';
+  reqKY10 = (drugInfo['ต้องรายงาน ขย.10 (Y/N)'] || '') === 'Y';
+  reqKY11 = (drugInfo['ต้องรายงาน ขย.11 (Y/N)'] || '') === 'Y';
+  // "พิมพ์รายงาน" — แก้ไข/บันทึกได้จริง
+  printKY9 = (drugInfo['พิมพ์รายงาน ขย.9 (Y/N)'] || '') === 'Y';
+  printKY10 = (drugInfo['พิมพ์รายงาน ขย.10 (Y/N)'] || '') === 'Y';
+  printKY11 = (drugInfo['พิมพ์รายงาน ขย.11 (Y/N)'] || '') === 'Y';
+  treatmentClassChecked = drugInfo['Treatment Class'] ? drugInfo['Treatment Class'].split(',').map(s => s.trim()).filter(Boolean) : [];
+
+  // ---------- ประเภทสินค้า ----------
+  // ลองอ่านจากคอลัมน์ JSON ใหม่ก่อน (ครบทั้ง 10 หมวด) ถ้ายังไม่เคยมี fallback ไปอ่านจาก 2 คอลัมน์เดิม (ยาอันตราย/ยาควบคุมพิเศษ)
+  let parsedTypes = null;
+  try { parsedTypes = JSON.parse(drugInfo['ประเภทสินค้าอื่นๆ(JSON)'] || 'null'); } catch (e) { parsedTypes = null; }
+  if (Array.isArray(parsedTypes)) {
+    productTypeChecked = parsedTypes;
+  } else {
+    productTypeChecked = [];
+    if ((drugInfo['เป็นยาอันตราย (Y/N)'] || '') === 'Y') productTypeChecked.push('ยาอันตราย');
+    if ((drugInfo['เป็นยาควบคุมพิเศษ (Y/N)'] || '') === 'Y') productTypeChecked.push('ยาควบคุมพิเศษ');
+  }
+
+  // ---------- Safety Stock ----------
+  safetyStockData = (detail.safetyStock || []).map(s => ({
+    unit: s['หน่วย'] || '', branch: s['สาขา'] || 'สำนักงานใหญ่',
+    max: s['Stock Max'] === '' || s['Stock Max'] == null ? '' : Number(s['Stock Max']),
+    min: s['Stock Min'] === '' || s['Stock Min'] == null ? '' : Number(s['Stock Min']),
+  }));
+
+  // ---------- ชั้นวางสินค้า ----------
+  shelfLocationData = (detail.shelfLocations || []).map(s => ({
+    branch: s['สาขา'] || 'สำนักงานใหญ่', cabinetCode: s['รหัสตู้'] || '',
+    cabinetName: s['ชื่อตู้'] || '', zone: s['โซน'] || '', shelf: s['ชั้น'] || '',
+  }));
+
+  // ---------- กลุ่มสินค้า 1-4 ----------
+  productGroupsSelected = [
+    product['กลุ่มสินค้า 1'] || '', product['กลุ่มสินค้า 2'] || '',
+    product['กลุ่มสินค้า 3'] || '', product['กลุ่มสินค้า 4'] || '',
+  ];
+
+  // ---------- ผู้แทนจำหน่าย: ดึงประวัติจริงจากใบรับสินค้า (อ่านอย่างเดียว) ----------
+  try {
+    supplierHistoryData = await apiGet('getSupplierHistory', { code: currentProductCode });
+  } catch (err) {
+    supplierHistoryData = [];
+  }
+
+  // ---------- ค่าเริ่มต้นฉลากยา ----------
+  let parsedDefaults = null;
+  const rawDefaults = drugInfo['ค่าเริ่มต้นฉลากยา (LabelDefaults)'];
+  if (rawDefaults) {
+    try { parsedDefaults = JSON.parse(rawDefaults); } catch (e) { parsedDefaults = null; }
+  }
+  defaultLabel = {
+    indication: (parsedDefaults && parsedDefaults.indication) || '',
+    route: (parsedDefaults && parsedDefaults.route) || "รับประทาน",
+    dose: (parsedDefaults && parsedDefaults.dose) || 1,
+    doseUnit: (parsedDefaults && parsedDefaults.doseUnit) || "เม็ด",
+    perDay: (parsedDefaults && parsedDefaults.perDay) || 1,
+    times: {
+      morning: parsedDefaults ? !!parsedDefaults.morning : true,
+      noon: parsedDefaults ? !!parsedDefaults.noon : false,
+      evening: parsedDefaults ? !!parsedDefaults.evening : false,
+      bedtime: parsedDefaults ? !!parsedDefaults.bedtime : false,
+    },
+    mealTime: (parsedDefaults && parsedDefaults.mealTime) || "หลังอาหาร",
+    every: { checked: parsedDefaults ? !!parsedDefaults.every : false, hours: (parsedDefaults && parsedDefaults.everyHr) || "" },
+    prn: { checked: parsedDefaults ? !!parsedDefaults.prn : false, note: (parsedDefaults && parsedDefaults.prnNote) || "" },
+    note: {
+      checked: parsedDefaults && parsedDefaults.noteChecked !== undefined ? parsedDefaults.noteChecked : true,
+      text: (parsedDefaults && parsedDefaults.note != null) ? parsedDefaults.note : "ทานยาหลังอาหารทันที",
+    },
+  };
+
+  loadedTag.textContent = '✓ กำลังแก้ไข: ' + currentProductCode + ' — ' + (product['ชื่อสินค้า'] || '');
+
+  // รีเฟรชแท็บที่กำลังเปิดอยู่ให้ตรงกับข้อมูลใหม่
+  const activeTab = document.querySelector('.tab-item.active');
+  switchTab(activeTab ? activeTab.dataset.tab : 'unit');
+}
+
+// เพิ่ม/ลบค่าออกจาก array แบบแก้ไขที่ตัวเดิม (ไม่สร้าง array ใหม่ กัน reference หลุด)
+// ---------- ส่วนผสมยา (Generic Name) — พิมพ์ชื่อ+ปริมาณ mg แยกช่อง แล้วรวมเป็นข้อความเดียวไปเก็บใน "ชื่อยาสามัญ" ----------
+function addGenericNameRow() {
+  genericNameData.push({ name: '', mg: '' });
+  switchTab('drug');
+}
+
+function removeGenericNameRow(i) {
+  genericNameData.splice(i, 1);
+  switchTab('drug');
+  syncGenericSummary();
+}
+
+// ---------- Safety Stock ----------
+function addSafetyStockRow() {
+  const defaultUnit = unitData.length ? unitData[0].unit : '';
+  safetyStockData.push({ unit: defaultUnit, branch: 'สำนักงานใหญ่', max: '', min: '' });
+  switchTab('stock');
+}
+function removeSafetyStockRow(i) {
+  safetyStockData.splice(i, 1);
+  switchTab('stock');
+}
+
+// ---------- ชั้นวางสินค้า ----------
+function addShelfLocationRow() {
+  shelfLocationData.push({ branch: 'สำนักงานใหญ่', cabinetCode: '', cabinetName: '', zone: '', shelf: '' });
+  switchTab('stock');
+}
+function removeShelfLocationRow(i) {
+  shelfLocationData.splice(i, 1);
+  switchTab('stock');
+}
+
+/** รวมรายการส่วนผสมทั้งหมดเป็นข้อความเดียว เช่น "Naproxen 250 mg, Paracetamol 500 mg" */
+function buildGenericNameString() {
+  return genericNameData
+    .filter(g => g.name && g.name.trim())
+    .map(g => {
+      const mg = (g.mg || '').toString().trim();
+      return mg ? `${g.name.trim()} ${mg} mg` : g.name.trim();
+    })
+    .join(', ');
+}
+
+/** อัปเดตช่อง "ชื่อยาสามัญ" ที่การ์ดข้อมูลพื้นฐานด้านบนสุดของหน้า ให้ตรงกับส่วนผสมที่พิมพ์ไว้แบบสดๆ */
+function syncGenericSummary() {
+  const combined = buildGenericNameString();
+  const el = document.getElementById('fGenericSummary');
+  if (el) el.value = combined || '-';
+}
+
+/** แยกข้อความ "ชื่อยาสามัญ" ก้อนเดียวจากข้อมูลเก่า กลับมาเป็นรายการ {name, mg} เท่าที่พอแยกได้ (รูปแบบ "ชื่อ ตัวเลข mg" คั่นด้วยจุลภาค) */
+function parseGenericNameString(str) {
+  if (!str || !str.trim() || str.trim() === '-') return [];
+  return str.split(',').map(part => {
+    part = part.trim();
+    const match = part.match(/^(.*?)\s+([\d.]+)\s*mg$/i);
+    return match ? { name: match[1].trim(), mg: match[2].trim() } : { name: part, mg: '' };
+  }).filter(g => g.name);
+}
+
+function toggleInArray(arr, value, checked){
+  const idx = arr.indexOf(value);
+  if (checked && idx === -1) arr.push(value);
+  else if (!checked && idx !== -1) arr.splice(idx, 1);
+}
+
+// ---------- ค้นหาสินค้า ----------
+const productSearchInput = document.getElementById('productSearchInput');
+const productSuggest = document.getElementById('productSuggest');
+let searchDebounceTimer = null;
+
+productSearchInput.addEventListener('input', () => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(doProductSearch, 300);
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.product-loader')) productSuggest.classList.remove('show');
+});
+
+async function doProductSearch(){
+  const kw = productSearchInput.value.trim();
+  if (!kw) { productSuggest.classList.remove('show'); return; }
+
+  productSuggest.innerHTML = '<div class="product-suggest-item"><span>กำลังค้นหา...</span></div>';
+  productSuggest.classList.add('show');
+
+  let results;
+  try {
+    results = await apiGet('searchProducts', { keyword: kw });
+  } catch (err) {
+    productSuggest.innerHTML = `<div class="product-suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
+    return;
+  }
+
+  productSuggest.innerHTML = results.length === 0
+    ? '<div class="product-suggest-item"><span>ไม่พบสินค้า</span></div>'
+    : results.map(p => `
+        <div class="product-suggest-item" onclick="pickProductToEdit('${p.code}')">
+          <span>${p.name}</span>
+          <b>${p.code}</b>
+        </div>
+      `).join('');
+  productSuggest.classList.add('show');
+}
+
+function pickProductToEdit(code){
+  productSuggest.classList.remove('show');
+  productSearchInput.value = '';
+  loadProductByCode(code);
+}
+
+// ================= ฟังก์ชันช่วยสร้าง SVG บาร์โค้ดง่ายๆ =================
+function renderBarcodeSVG(code) {
+  let bars = "";
+  let x = 0;
+  for (let i = 0; i < code.length; i++) {
+    const d = parseInt(code[i], 10) || 1;
+    const w = 1.6 + (d % 3) * 0.6;
+    if (i % 2 === 0) bars += `<rect x="${x}" y="0" width="${w}" height="34" fill="#24312a"/>`;
+    x += w + 1.1;
+  }
+  return `<svg class="barcode-svg" width="${Math.min(x, 220)}" height="42" viewBox="0 0 ${x} 42">${bars}<text x="0" y="41" font-size="7" fill="#4a5a4f">${code}</text></svg>`;
+}
+
+// ================= ฟังก์ชันเรนเดอร์แต่ละแท็บ =================
+function renderUnitTab() {
+  const smallUnit = unitData.find(u => u.base);
+  return `
+    <h3>หน่วย</h3>
+    <div class="inline-fields" style="margin-bottom:20px;">
+      <div class="field" style="max-width:220px;">
+        <label>หน่วยเล็กสุด</label>
+        ${isNewProduct
+          ? `<input type="text" list="unitNameList" value="${smallUnit ? smallUnit.unit : ''}" placeholder="เช่น เม็ด, แผง, ขวด" oninput="unitData[0].unit=this.value; syncBaseUnitDisplay(this.value);" onchange="registerCustomUnitName(this.value)">`
+          : `<input type="text" value="${smallUnit ? smallUnit.unit : '-'}" class="readonly" disabled>`}
+      </div>
+    </div>
+    ${isNewProduct ? '<div class="connected-hint" style="margin-top:-8px;">สินค้าใหม่: กรอก "หน่วยเล็กสุด" ก่อน (หน่วยที่แบ่งขายได้ละเอียดที่สุด เช่น เม็ด/แผง/ขวด) แล้วค่อยเพิ่มหน่วยใหญ่กว่า (เช่น กล่อง) เพิ่มเติมได้ด้านล่าง — พิมพ์ชื่อหน่วยใหม่ที่ไม่มีในลิสต์ได้เลย ระบบจะจำไว้ในลิสต์ให้เลือกใช้ได้อีกในครั้งถัดไป (เฉพาะรอบใช้งานนี้)</div>' : ''}
+    <datalist id="unitNameList">
+      ${commonUnitNames.map(n => `<option value="${n}">`).join('')}
+    </datalist>
+    ${unitData.length === 0 ? '<div class="empty-note">ยังไม่มีข้อมูลหน่วยนับของสินค้านี้</div>' : `
+    <table class="data-table">
+      <thead><tr><th>หน่วย</th><th>ขนาดบรรจุ (ต่อหน่วยเล็กสุด)</th><th>ปริมาตร/หมายเหตุ</th><th>เป็นหน่วยขายปลีก</th><th></th></tr></thead>
+      <tbody>
+        ${unitData.map((u,i) => `
+          <tr>
+            <td>${u.base
+              ? (isNewProduct ? `<i id="baseUnitDisplay" style="color:${u.unit ? '#24312a' : '#8fa198'};">${u.unit || '(หน่วยเล็กสุด — กรอกด้านบน)'}</i>` : u.unit)
+              : `<input type="text" list="unitNameList" value="${u.unit}" placeholder="เลือกจากลิสต์ หรือพิมพ์เอง" oninput="unitData[${i}].unit=this.value" onchange="registerCustomUnitName(this.value)">`}</td>
+            <td><input type="number" value="${u.pack}" ${u.base ? "disabled" : ""} oninput="unitData[${i}].pack=Number(this.value)||1"></td>
+            <td><input type="text" value="${u.note}" placeholder="-" oninput="unitData[${i}].note=this.value"></td>
+            <td><input type="checkbox" ${u.retail ? "checked" : ""} onchange="unitData[${i}].retail=this.checked"></td>
+            <td>${u.base ? "" : `<button class="del-icon-btn" onclick="removeUnitRow(${i})">ลบ</button>`}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    `}
+    <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — เพิ่ม/ลบ/แก้ไขหน่วยตรงนี้ แล้วกด "บันทึก" มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง</div>
+    <button class="add-row-btn" onclick="addUnitRow()">+ เพิ่มหน่วย</button>
+  `;
+}
+
+function addUnitRow() {
+  unitData.push({ unit: '', pack: 1, note: '', retail: false, base: false });
+  switchTab('unit');
+}
+
+function removeUnitRow(i) {
+  unitData.splice(i, 1);
+  switchTab('unit');
+}
+
+function renderBarcodeTab() {
+  return `
+    <h3>บาร์โค้ด</h3>
+    ${barcodeData.length === 0 ? '<div class="empty-note">ยังไม่มีบาร์โค้ดของสินค้านี้ในระบบ</div>' : `
+    <table class="data-table">
+      <thead><tr><th style="width:140px;">หน่วย</th><th>บาร์โค้ด</th><th style="width:150px;"></th><th>ตัวอย่าง</th></tr></thead>
+      <tbody>
+        ${barcodeData.map((b,i) => `
+          <tr>
+            <td>
+              <select onchange="barcodeData[${i}].unit=this.value">${unitData.map(u=>`<option ${u.unit===b.unit?'selected':''}>${u.unit}</option>`).join("")}</select>
+            </td>
+            <td><input type="text" class="barcode-preview" placeholder="ใส่บาร์โค้ดจริงจากสินค้า หรือกด &quot;สร้างบาร์โค้ด&quot;" value="${b.code}" oninput="barcodeData[${i}].code=this.value"></td>
+            <td>
+              <button class="add-row-btn" style="margin:0 6px 0 0;" onclick="generateBarcodeForRow(${i})">สร้างบาร์โค้ด</button>
+              <button class="del-icon-btn" onclick="removeBarcodeRow(${i})">ลบ</button>
+            </td>
+            <td>${b.code ? renderBarcodeSVG(b.code) : '<span style="color:#8fa198;font-size:12px;">ยังไม่มีบาร์โค้ด</span>'}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    `}
+    <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — ใส่บาร์โค้ดจริงเอง หรือกด "สร้างบาร์โค้ด" ให้ระบบสร้างให้อัตโนมัติถ้าสินค้าไม่มีบาร์โค้ดมาจากผู้ผลิต แล้วกด "บันทึก" มุมล่างขวาของหน้า</div>
+    <button class="add-row-btn" onclick="addBarcodeRow()">+ เพิ่ม</button>
+  `;
+}
+
+function addBarcodeRow() {
+  const defaultUnit = unitData.length ? unitData[0].unit : '';
+  barcodeData.push({ unit: defaultUnit, code: '' });
+  switchTab('barcode');
+}
+
+function removeBarcodeRow(i) {
+  barcodeData.splice(i, 1);
+  switchTab('barcode');
+}
+
+function generateBarcodeForRow(i) {
+  barcodeData[i].code = generateBarcode(currentProductCode, barcodeData[i].unit);
+  switchTab('barcode');
+}
+
+function renderPriceTab() {
+  return `
+    <h3>ราคา</h3>
+    ${priceData.length === 0 ? '<div class="empty-note">ยังไม่มีข้อมูลราคาขายของสินค้านี้ในระบบ</div>' : `
+    <table class="data-table">
+      <thead><tr><th>สาขา</th><th>หน่วย</th><th>ราคาขาย</th><th>ณ วันที่ขายล่าสุด</th><th></th></tr></thead>
+      <tbody>
+        ${priceData.map((row,i) => `
+          <tr>
+            <td>${row.branch}</td>
+            <td>
+              ${unitData.length
+                ? `<select onchange="priceData[${i}].unit=this.value">${unitData.map(u=>`<option ${u.unit===row.unit?'selected':''}>${u.unit}</option>`).join("")}</select>`
+                : row.unit}
+            </td>
+            <td><input type="number" value="${row.price}" step="0.01" oninput="priceData[${i}].price=Number(this.value)||0"></td>
+            <td>${row.lastSold || '-'}</td>
+            <td><button class="del-icon-btn" onclick="removePriceRow(${i})">ลบ</button></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    `}
+    <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — เพิ่มแถวราคาใหม่จะเลือกหน่วยได้จากหน่วยที่สร้างไว้ในแท็บ "หน่วย" เท่านั้น (ไปเพิ่มหน่วยที่แท็บนั้นก่อน ถ้ายังไม่มีหน่วยที่ต้องการ) กด "บันทึก" มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง</div>
+    <button class="add-row-btn" onclick="addPriceRow()" ${unitData.length === 0 ? 'disabled title="ต้องมีหน่วยอย่างน้อย 1 หน่วยก่อน (ไปเพิ่มที่แท็บ หน่วย)"' : ''}>+ เพิ่ม</button>
+  `;
+}
+
+function addPriceRow() {
+  if (unitData.length === 0) { alert('กรุณาเพิ่มหน่วยในแท็บ "หน่วย" ก่อน ถึงจะตั้งราคาได้'); return; }
+  priceData.push({ branch: 'สำนักงานใหญ่', unit: unitData[0].unit, price: 0, lastSold: '' });
+  switchTab('price');
+}
+
+function removePriceRow(i) {
+  priceData.splice(i, 1);
+  switchTab('price');
+}
+
+function renderStockTab() {
+  const allTypes = ["ยาสามัญประจำบ้าน","ยาบรรจุเสร็จ","ยาอันตราย","ยาควบคุมพิเศษ",
+    "วิตามิน / อาหารเสริม / อาหารทางการแพทย์","เวชภัณฑ์ / เครื่องมือแพทย์",
+    "เครื่องสำอาง / ผลิตภัณฑ์บำรุงผิว","เบ็ดเตล็ด อื่นๆ","ยาแผนโบราณ","วัตถุอันตราย"];
+  return `
+    <h3>ข้อมูลคลังสินค้า</h3>
+    <h4>ประเภทสินค้า</h4>
+    <div class="checkbox-grid" style="margin-bottom:8px;">
+      ${allTypes.map(t => `<label><input type="checkbox" ${productTypeChecked.includes(t)?"checked":""} onchange="toggleInArray(productTypeChecked, '${t.replace(/'/g,"\\'")}', this.checked)"> ${t}</label>`).join("")}
+    </div>
+    <div class="connected-hint" style="margin-bottom:24px;">✅ เชื่อมบันทึกจริงแล้ว (รวมถึง Safety Stock, ชั้นวางสินค้า, กลุ่มสินค้าด้านล่างทั้งหมด) — กด "บันทึก" มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง</div>
+
+    <h4>Safety Stock</h4>
+    ${unitData.length === 0 ? '<div class="empty-note">ต้องมีหน่วยอย่างน้อย 1 หน่วยก่อน (ไปเพิ่มที่แท็บ "หน่วย")</div>' : `
+    <table class="data-table" style="margin-bottom:8px;">
+      <thead><tr><th style="width:160px;">หน่วย</th><th>สาขา</th><th>Stock Max</th><th>Stock Min</th><th></th></tr></thead>
+      <tbody>
+        ${safetyStockData.length === 0 ? '<tr><td colspan="5"><div class="empty-note">ยังไม่มีข้อมูล Safety Stock ของสินค้านี้</div></td></tr>' : safetyStockData.map((s,i) => `
+          <tr>
+            <td><select onchange="safetyStockData[${i}].unit=this.value">${unitData.map(u=>`<option ${u.unit===s.unit?'selected':''}>${u.unit}</option>`).join("")}</select></td>
+            <td>${s.branch}</td>
+            <td><input type="number" value="${s.max}" placeholder="-" oninput="safetyStockData[${i}].max=this.value===''?'':Number(this.value)"></td>
+            <td><input type="number" value="${s.min}" placeholder="-" oninput="safetyStockData[${i}].min=this.value===''?'':Number(this.value)"></td>
+            <td><button class="del-icon-btn" onclick="removeSafetyStockRow(${i})">ลบ</button></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <button class="add-row-btn" onclick="addSafetyStockRow()">+ เพิ่ม Safety Stock</button>
+    `}
+
+    <h4 style="margin-top:26px;">ข้อมูลชั้นวางสินค้า</h4>
+    <table class="data-table" style="margin-bottom:8px;">
+      <thead><tr><th>สาขา</th><th>รหัสตู้</th><th>ชื่อตู้</th><th>โซน</th><th>ชั้น</th><th></th></tr></thead>
+      <tbody>
+        ${shelfLocationData.length === 0 ? '<tr><td colspan="6"><div class="empty-note">ยังไม่มีข้อมูลชั้นวางของสินค้านี้</div></td></tr>' : shelfLocationData.map((s,i) => `
+          <tr>
+            <td><input type="text" value="${s.branch}" placeholder="สำนักงานใหญ่" oninput="shelfLocationData[${i}].branch=this.value"></td>
+            <td><input type="text" value="${s.cabinetCode}" placeholder="เช่น A1" oninput="shelfLocationData[${i}].cabinetCode=this.value"></td>
+            <td><input type="text" value="${s.cabinetName}" placeholder="เช่น ตู้ยาแก้ปวด" oninput="shelfLocationData[${i}].cabinetName=this.value"></td>
+            <td><input type="text" value="${s.zone}" placeholder="-" oninput="shelfLocationData[${i}].zone=this.value"></td>
+            <td><input type="text" value="${s.shelf}" placeholder="-" oninput="shelfLocationData[${i}].shelf=this.value"></td>
+            <td><button class="del-icon-btn" onclick="removeShelfLocationRow(${i})">ลบ</button></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <button class="add-row-btn" onclick="addShelfLocationRow()">+ เพิ่มตำแหน่งชั้นวาง</button>
+
+    <h4 style="margin-top:26px;">กลุ่มสินค้า</h4>
+    <div class="inline-fields">
+      ${[0,1,2,3].map(i => `
+      <div class="field"><label>กลุ่มที่ ${i+1}</label><select onchange="productGroupsSelected[${i}]=this.value">
+        <option value="" ${!productGroupsSelected[i]?"selected":""}>-- เลือกกลุ่มสินค้า --</option>
+        ${realProductGroups.map(g => `<option value="${g}" ${productGroupsSelected[i]===g?"selected":""}>${g}</option>`).join("")}
+      </select></div>
+      `).join("")}
+    </div>
+    ${realProductGroups.length === 0 ? '<div class="kv-hint" style="margin-top:8px;">ยังไม่มีกลุ่มสินค้าที่นิยามไว้ในระบบ — ไปเพิ่มได้ที่หน้า "จัดการกลุ่มสินค้า" ก่อน</div>' : ''}
+  `;
+}
+
+function renderDrugTab() {
+  const treatClasses = [
+    "ระบบทางเดินอาหาร (Gastro-Intestinal System)","ระบบหัวใจและหลอดเลือด (Cardiovascular System)",
+    "ระบบทางเดินหายใจ (Respiratory System)","ระบบประสาท (Central Nervous System)",
+    "ยาปฏิชีวนะ/ยาฆ่าเชื้อ (Infections)","ระบบต่อมไร้ท่อ (Endocrine System)",
+    "ระบบสูตินรีเวช (Obstetrics, gynaecology and urinary-tract disorders)","มะเร็งและยากดภูมิคุ้มกัน (Malignant disease and immunosuppression)",
+    "สารอาหารและผลิตภัณฑ์เกี่ยวกับเลือด (Nutrition and blood)","กระดูก กล้ามเนื้อ และข้อ (Musculoskeletal and joint diseases)",
+    "ตา (Eye)","หู คอ จมูก และช่องปาก (Ear, nose, oropharynx and oral cavity)",
+    "ผิวหนัง (Skin)","วัคซีนและภูมิคุ้มกัน (Immunological products and vaccines)",
+    "ยาดมสลบ (Anaesthesia)","อื่นๆ ที่เป็นยา (Unclassified medicines)"
+  ];
+  return `
+    <h3>ข้อมูลทางยา</h3>
+    <h4>ส่วนผสมยา (Generic Name)</h4>
+    <table class="data-table" style="margin-bottom:8px;">
+      <thead><tr><th>ชื่อยา</th><th style="width:160px;">ปริมาณ (mg)</th><th></th></tr></thead>
+      <tbody>
+        ${genericNameData.length === 0
+          ? '<tr><td colspan="3" style="text-align:center;color:#8fa198;">ยังไม่มีข้อมูลส่วนผสม — กด "+ เพิ่มส่วนผสม" ด้านล่าง</td></tr>'
+          : genericNameData.map((g,i) => `
+          <tr>
+            <td><input type="text" value="${g.name}" placeholder="เช่น Naproxen" oninput="genericNameData[${i}].name=this.value; syncGenericSummary();"></td>
+            <td><input type="text" value="${g.mg}" placeholder="เช่น 250" oninput="genericNameData[${i}].mg=this.value; syncGenericSummary();"></td>
+            <td><button class="del-icon-btn" onclick="removeGenericNameRow(${i})">ลบ</button></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <button class="add-row-btn" style="height:38px;" onclick="addGenericNameRow()">+ เพิ่มส่วนผสม</button>
+    <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — พิมพ์ชื่อยา + ปริมาณ (mg) แล้วช่อง "ชื่อยาสามัญ" ที่ข้อมูลพื้นฐานด้านบนสุดของหน้าจะรวมให้อัตโนมัติ กด "บันทึก" มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง</div>
+
+    <h4>ข้อมูลทางยา</h4>
+    <div class="inline-fields" style="margin-bottom:24px;">
+      <div>
+        <div style="font-size:12.5px;font-weight:700;color:#3f4f45;margin-bottom:8px;">ต้องรายงาน ขย. <span style="font-weight:400;color:#8fa198;">(อ่านอย่างเดียว)</span></div>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${reqKY9?"checked":""} disabled> ต้องรายงาน ขย.9 <span style="color:#8fa198;font-size:11.5px;">(คำนวณอัตโนมัติ)</span></label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${reqKY10?"checked":""} disabled> ต้องรายงาน ขย.10</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;"><input type="checkbox" ${reqKY11?"checked":""} disabled> ต้องรายงาน ขย.11 <span style="color:#8fa198;font-size:11.5px;">(ยืนยันแล้วในระบบ)</span></label>
+      </div>
+      <div>
+        <div style="font-size:12.5px;font-weight:700;color:#3f4f45;margin-bottom:8px;">พิมพ์รายงาน ขย.</div>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${printKY9?"checked":""} onchange="printKY9=this.checked"> พิมพ์รายงาน ขย.9</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${printKY10?"checked":""} onchange="printKY10=this.checked"> พิมพ์รายงาน ขย.10</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;"><input type="checkbox" ${printKY11?"checked":""} onchange="printKY11=this.checked"> พิมพ์รายงาน ขย.11</label>
+      </div>
+    </div>
+    <div class="connected-hint" style="margin-top:-10px;margin-bottom:20px;">✅ "พิมพ์รายงาน ขย." และ "ประเภทยาแยกตามอาการ" ด้านล่างนี้เชื่อมบันทึกจริงแล้ว — ส่วน "ต้องรายงาน ขย." ตั้งใจทำเป็นอ่านอย่างเดียว เพราะเป็นค่าที่คำนวณอัตโนมัติ/ยืนยันไว้แล้วในระบบ ป้องกันไม่ให้แก้จากหน้านี้แล้วข้อมูลเพี้ยน</div>
+
+    <h4>ประเภทยาแยกตามอาการที่รักษา (Treatment Class)</h4>
+    <div class="checkbox-grid">
+      ${treatClasses.map(t => `<label><input type="checkbox" ${treatmentClassChecked.includes(t)?"checked":""} onchange="toggleInArray(treatmentClassChecked, '${t.replace(/'/g,"\\'")}', this.checked)"> ${t}</label>`).join("")}
+    </div>
+  `;
+}
+
+function renderSupplierTab() {
+  const realCost = Number(currentProductRaw['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0;
+  const realCostUnit = currentProductRaw['หน่วยเล็กสุด(อัตโนมัติ)'] || '';
+  return `
+    <h3>ผู้แทนจำหน่าย</h3>
+    <div class="inline-fields" style="margin-bottom:16px;">
+      <div class="field" style="max-width:260px;">
+        <label>ต้นทุนล่าสุด (จากคลังสินค้า)</label>
+        <input type="text" value="${realCost.toFixed(2)}${realCostUnit ? ' บ./' + realCostUnit : ''}" class="readonly" disabled>
+      </div>
+    </div>
+    <h4>ประวัติการรับสินค้าจริงจากผู้แทนจำหน่าย</h4>
+    ${supplierHistoryData.length === 0 ? '<div class="empty-note">ยังไม่เคยมีประวัติรับสินค้านี้เข้าคลังเลย (ยังไม่มีใบรับสินค้าของสินค้านี้ในระบบ)</div>' : `
+    <table class="data-table" style="margin-bottom:8px;">
+      <thead><tr><th>ผู้แทนจำหน่าย</th><th>วันที่รับ</th><th>เลขที่ใบรับสินค้า</th><th>เลขที่ใบกำกับภาษี</th><th>หน่วย</th><th style="text-align:right;">ราคา/หน่วย</th></tr></thead>
+      <tbody>
+        ${supplierHistoryData.map(s => `
+          <tr>
+            <td>${s.supplier || '-'}</td>
+            <td>${s.date || '-'}</td>
+            <td>${s.docNo || '-'}</td>
+            <td>${s.taxInvoiceNo || '-'}</td>
+            <td>${s.unit || '-'}</td>
+            <td style="text-align:right;">${s.cost.toFixed(2)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    `}
+    <div class="connected-hint">✅ ดึงจากประวัติใบรับสินค้าจริงทั้งหมด (ไม่ใช่ข้อมูลที่พิมพ์เอง) เรียงจากรับล่าสุดไปเก่าสุด — ถ้าอยากรับสินค้าจากผู้แทนรายใหม่ ให้ไปบันทึกที่หน้า "รับสินค้า" ตามปกติ ประวัติจะโผล่ที่นี่ให้อัตโนมัติ</div>
+  `;
+}
+
+function renderPrintTab() {
+  const t = defaultLabel.times;
+  return `
+    <h3>สำหรับพิมพ์</h3>
+    <div class="inline-fields" style="margin-bottom:18px;">
+      <div class="field">
+        <label>เทมเพลตฉลากยา</label>
+        <select><option>ฉลากยา (ไทย) — มาตรฐาน</option><option>ฉลากยา (English)</option><option selected>ฉลากสั้น (สำหรับซองยา)</option></select>
+      </div>
+      <div class="field">
+        <label>ขนาดฉลาก</label>
+        <select><option>60mm x 40mm</option><option>80mm x 50mm</option><option selected>100mm x 75mm</option><option>A4 (พิมพ์รวม)</option></select>
+      </div>
+    </div>
+    <div class="inline-fields" style="margin-bottom:20px;">
+      <div class="field" style="max-width:160px;">
+        <label>จำนวนสำเนาเริ่มต้น</label>
+        <input type="number" value="1" min="1">
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:7px;margin-top:10px;">
+          <input type="checkbox" checked style="width:16px;height:16px;accent-color:#2e8b4f;"> แสดงบาร์โค้ดบนฉลาก
+        </label>
+      </div>
+    </div>
+
+    <h4>ค่าเริ่มต้นฉลากยา (วิธีใช้)</h4>
+    <div class="template-banner">
+      ค่าด้านล่างนี้คือ <b>ค่าเริ่มต้น</b> ที่จะขึ้นในฟอร์มฉลากยาอัตโนมัติทุกครั้งที่ขายสินค้านี้ที่หน้าขาย —
+      เภสัชกร<b>แก้ไขวิธีใช้เป็นครั้งๆ ไปได้ที่หน้าขาย</b> ตามอาการ/คำสั่งแพทย์ของลูกค้าแต่ละคน โดย<b>ไม่กระทบค่าเริ่มต้นนี้</b> (ค่าเริ่มต้นนี้จะไม่ถูกเขียนทับ ต้องมาแก้ตรงนี้เท่านั้นถ้าต้องการเปลี่ยนค่าเริ่มต้นจริงๆ)
+      <br><br>
+      ✅ <b>ส่วนนี้เชื่อมบันทึกข้อมูลจริงแล้ว</b> — กด <b>"บันทึก"</b> ที่มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง (เหมือนแท็บอื่นๆ)
+    </div>
+
+    <div class="inline-fields" style="margin-bottom:16px;">
+      <div class="field">
+        <label>ข้อบ่งใช้</label>
+        <input type="text" id="dlIndication" value="${defaultLabel.indication}" oninput="defaultLabel.indication=this.value">
+      </div>
+    </div>
+
+    <div class="inline-fields" style="margin-bottom:6px;">
+      <div class="field" style="max-width:220px;">
+        <label>วิธีใช้ยา</label>
+        <select id="dlRoute" onchange="defaultLabel.route=this.value">
+          <option ${defaultLabel.route==="รับประทาน"?"selected":""}>รับประทาน</option>
+          <option ${defaultLabel.route==="ทา"?"selected":""}>ทา</option>
+          <option ${defaultLabel.route==="เหน็บช่องคลอด"?"selected":""}>เหน็บช่องคลอด</option>
+          <option ${defaultLabel.route==="เหน็บทวารหนัก"?"selected":""}>เหน็บทวารหนัก</option>
+          <option ${defaultLabel.route==="หยอดตา"?"selected":""}>หยอดตา</option>
+          <option ${defaultLabel.route==="พ่นจมูก"?"selected":""}>พ่นจมูก</option>
+          <option ${defaultLabel.route==="พ่นในปาก"?"selected":""}>พ่นในปาก</option>
+        </select>
+      </div>
+      <div class="field-inline" style="margin-top:22px;">
+        <label>ครั้งละ :</label>
+        <input type="number" id="dlDose" value="${defaultLabel.dose}" oninput="defaultLabel.dose=Number(this.value)||1">
+      </div>
+      <div class="field-inline" style="margin-top:22px;">
+        <label>หน่วย :</label>
+        <select id="dlDoseUnit" onchange="defaultLabel.doseUnit=this.value">
+          <option ${defaultLabel.doseUnit==="เม็ด"?"selected":""}>เม็ด</option>
+          <option ${defaultLabel.doseUnit==="แคปซูล"?"selected":""}>แคปซูล</option>
+          <option ${defaultLabel.doseUnit==="ช้อนชา"?"selected":""}>ช้อนชา</option>
+          <option ${defaultLabel.doseUnit==="ช้อนโต๊ะ"?"selected":""}>ช้อนโต๊ะ</option>
+          <option ${defaultLabel.doseUnit==="ซีซี"?"selected":""}>ซีซี</option>
+          <option ${defaultLabel.doseUnit==="หยด"?"selected":""}>หยด</option>
+          <option ${defaultLabel.doseUnit==="พ่น"?"selected":""}>พ่น</option>
+          <option ${defaultLabel.doseUnit==="แท่ง"?"selected":""}>แท่ง</option>
+          <option ${defaultLabel.doseUnit==="ป้าย"?"selected":""}>ป้าย</option>
+          <option ${defaultLabel.doseUnit==="ครั้ง"?"selected":""}>ครั้ง</option>
+        </select>
+      </div>
+      <div class="field-inline" style="margin-top:22px;">
+        <label>วันละ :</label>
+        <input type="number" id="dlPerDay" value="${defaultLabel.perDay}" oninput="defaultLabel.perDay=Number(this.value)||1">
+        <span>ครั้ง</span>
+      </div>
+    </div>
+
+    <div class="checkbox-row">
+      <b style="font-size:13.5px;color:#3f4f45;">ช่วงเวลา :</b>
+      <label><input type="checkbox" id="dlMorning" ${t.morning?"checked":""} onchange="defaultLabel.times.morning=this.checked"> เช้า</label>
+      <label><input type="checkbox" id="dlNoon" ${t.noon?"checked":""} onchange="defaultLabel.times.noon=this.checked"> กลางวัน</label>
+      <label><input type="checkbox" id="dlEvening" ${t.evening?"checked":""} onchange="defaultLabel.times.evening=this.checked"> เย็น</label>
+      <label><input type="checkbox" id="dlBedtime" ${t.bedtime?"checked":""} onchange="defaultLabel.times.bedtime=this.checked"> ก่อนนอน</label>
+    </div>
+
+    <div class="inline-fields" style="margin-bottom:16px;">
+      <div class="field" style="max-width:220px;">
+        <select id="dlMealTime" onchange="defaultLabel.mealTime=this.value">
+          <option ${defaultLabel.mealTime==="หลังอาหาร"?"selected":""}>หลังอาหาร</option>
+          <option ${defaultLabel.mealTime==="ก่อนอาหาร"?"selected":""}>ก่อนอาหาร</option>
+          <option ${defaultLabel.mealTime==="พร้อมอาหาร"?"selected":""}>พร้อมอาหาร</option>
+          <option ${defaultLabel.mealTime==="ไม่ระบุ"?"selected":""}>ไม่ระบุ</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="checkbox-row">
+      <label><input type="checkbox" id="dlEveryChk" ${defaultLabel.every.checked?"checked":""} onchange="defaultLabel.every.checked=this.checked"> ทุกๆ</label>
+      <input type="number" id="dlEveryHr" value="${defaultLabel.every.hours}" style="width:60px;padding:8px;border:1px solid #cfe0d3;border-radius:6px;" oninput="defaultLabel.every.hours=this.value">
+      <span>ชั่วโมง</span>
+      <label style="margin-left:10px;"><input type="checkbox" id="dlPrnChk" ${defaultLabel.prn.checked?"checked":""} onchange="defaultLabel.prn.checked=this.checked"> เฉพาะเมื่อมีอาการ :</label>
+      <input type="text" id="dlPrnNote" value="${defaultLabel.prn.note}" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #cfe0d3;border-radius:6px;font-family:inherit;" oninput="defaultLabel.prn.note=this.value">
+    </div>
+
+    <div class="inline-fields">
+      <div class="field-inline">
+        <label><input type="checkbox" id="dlNoteChk" ${defaultLabel.note.checked?"checked":""} style="width:16px;height:16px;accent-color:#2e8b4f;" onchange="defaultLabel.note.checked=this.checked"> แสดงหมายเหตุ</label>
+      </div>
+      <div class="field" style="flex:1;">
+        <input type="text" id="dlNoteText" value="${defaultLabel.note.text}" oninput="defaultLabel.note.text=this.value">
+      </div>
+    </div>
+  `;
+}
+
+async function saveAll(){
+  if (!isNewProduct && !currentProductCode) { alert('ยังไม่ได้เลือกสินค้า'); return; }
+
+  // ---------- โหมด "เพิ่มสินค้าใหม่": เช็คข้อมูลจำเป็นก่อน แล้วสร้างแถวสินค้าใหม่ในระบบ (รันรหัส PCU ให้อัตโนมัติ) ----------
+  if (isNewProduct) {
+    const newName = document.getElementById('fProductName').value.trim();
+    if (!newName) { alert('กรุณากรอกชื่อสินค้า'); return; }
+    if (unitData.length === 0 || !unitData[0].unit.trim()) {
+      alert('กรุณากรอก "หน่วยเล็กสุด" ในแท็บ "หน่วย" ก่อน (เช่น เม็ด, แผง, ขวด)');
+      return;
+    }
+
+    const btn = document.getElementById('mainSaveBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังสร้างสินค้าใหม่...';
+    try {
+      const result = await apiPost('createProduct', {
+        product: {
+          name: newName,
+          smallUnit: unitData[0].unit.trim(),
+          isDrug: document.getElementById('fIsDrug').checked,
+          active: document.getElementById('fActiveStatus').checked,
+        }
+      });
+      currentProductCode = result.code; // รหัสจริงที่ระบบรันให้อัตโนมัติ (เช่น PCU00501)
+      document.getElementById('fProductCode').value = currentProductCode;
+      isNewProduct = false;
+    } catch (err) {
+      alert('สร้างสินค้าใหม่ไม่สำเร็จ: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = '💾 บันทึก';
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = '💾 บันทึก';
+  }
+
+  // เช็คว่าทุกแถวหน่วยมีชื่อหน่วยกรอกไว้แล้ว (กันบันทึกแถวว่างเปล่าเข้าระบบ)
+  const emptyUnitRow = unitData.some((u, i) => i > 0 && !u.base && !u.unit.trim());
+  if (emptyUnitRow) { alert('กรุณากรอกชื่อหน่วยให้ครบทุกแถวในแท็บ "หน่วย" (หรือลบแถวที่ยังไม่ได้กรอกออกก่อน)'); return; }
+
+  // อ่านจาก defaultLabel โดยตรง (อัปเดตสดทุกครั้งที่พิมพ์ในแท็บสำหรับพิมพ์ ไม่ว่าจะเคยสลับไปแท็บอื่นแล้วกลับมาก็ตาม)
+  const defaults = {
+    indication: defaultLabel.indication,
+    route: defaultLabel.route,
+    dose: defaultLabel.dose,
+    doseUnit: defaultLabel.doseUnit,
+    perDay: defaultLabel.perDay,
+    mealTime: defaultLabel.mealTime,
+    morning: defaultLabel.times.morning,
+    noon: defaultLabel.times.noon,
+    evening: defaultLabel.times.evening,
+    bedtime: defaultLabel.times.bedtime,
+    every: defaultLabel.every.checked,
+    everyHr: defaultLabel.every.hours,
+    prn: defaultLabel.prn.checked,
+    prnNote: defaultLabel.prn.note,
+    noteChecked: defaultLabel.note.checked,
+    note: defaultLabel.note.text,
+  };
+
+  const btn = document.getElementById('mainSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+
+  try {
+    await apiPost('updateProduct', {
+      code: currentProductCode,
+      product: {
+        name: document.getElementById('fProductName').value.trim(),
+        isDrug: document.getElementById('fIsDrug').checked,
+        active: document.getElementById('fActiveStatus').checked,
+        groups: productGroupsSelected,
+      }
+    });
+    await apiPost('saveLabelDefaults', { code: currentProductCode, defaults });
+    await apiPost('saveGenericName', { code: currentProductCode, genericName: buildGenericNameString() });
+    await apiPost('saveUnits', { code: currentProductCode, units: unitData });
+    await apiPost('saveBarcodes', { code: currentProductCode, barcodes: barcodeData });
+    await apiPost('savePrices', { code: currentProductCode, prices: priceData });
+    await apiPost('saveDrugMeta', {
+      code: currentProductCode,
+      meta: {
+        productTypes: productTypeChecked,
+        printKY9: printKY9, printKY10: printKY10, printKY11: printKY11,
+        treatmentClass: treatmentClassChecked,
+      }
+    });
+    await apiPost('saveSafetyStock', { code: currentProductCode, rows: safetyStockData });
+    await apiPost('saveShelfLocations', { code: currentProductCode, rows: shelfLocationData });
+    alert('บันทึกเรียบร้อย\n\n✅ ข้อมูลสินค้า "' + currentProductCode + '" บันทึกเข้าระบบจริงแล้วทั้งหมด (ชื่อสินค้า, หน่วย, บาร์โค้ด, ราคา, ชื่อยาสามัญ, ประเภทสินค้า, รายงาน ขย., Treatment Class, Safety Stock, ชั้นวางสินค้า, กลุ่มสินค้า, ค่าเริ่มต้นฉลากยา)\n\n⚠️ เหลือแค่ "ผู้แทนจำหน่าย" ที่เปลี่ยนเป็นดึงประวัติจริงจากใบรับสินค้าให้อัตโนมัติแล้ว ไม่ต้องบันทึกอะไรเพิ่มในส่วนนั้น');
+    // โหลดข้อมูลสินค้าใหม่จาก sheet เพื่อยืนยันว่าที่บันทึกไปตรงกับที่ระบบเก็บจริง (เช่น ลำดับแถวใหม่)
+    await loadProductByCode(currentProductCode);
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึก';
+}
+
+const tabRenderers = {
+  unit: renderUnitTab,
+  barcode: renderBarcodeTab,
+  price: renderPriceTab,
+  stock: renderStockTab,
+  drug: renderDrugTab,
+  supplier: renderSupplierTab,
+  print: renderPrintTab,
+};
+
+function switchTab(key) {
+  document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === key));
+  document.getElementById('tabContent').innerHTML = tabRenderers[key]();
+}
+
+document.getElementById('tabMenu').addEventListener('click', e => {
+  const item = e.target.closest('.tab-item');
+  if (item) switchTab(item.dataset.tab);
+});
+
+const urlParams = new URLSearchParams(window.location.search);
+loadCommonUnitNames(); // โหลดรายชื่อหน่วยที่ใช้บ่อยจากชีตจริง (ไม่ต้องรอ ให้โหลดขนานไปกับข้อมูลสินค้าด้านล่าง)
+loadRealProductGroups(); // โหลดรายชื่อกลุ่มสินค้าจริงจากระบบเช่นกัน
+if (urlParams.get('new')) {
+  resetToNewProduct();
+} else {
+  switchTab(urlParams.get('code') ? 'print' : 'unit');
+  loadProductByCode(urlParams.get('code') || 'PCU00309'); // ถ้ามี ?code=... ต่อท้าย URL จะเปิดสินค้านั้นโดยตรง (เช่น ลิงก์มาจากหน้าขาย)
+}
+</script>
+
+</body>
+</html>

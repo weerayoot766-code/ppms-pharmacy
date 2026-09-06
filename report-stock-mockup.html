@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - รายงานคลังสินค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1300px; margin: 0 auto; padding: 22px 22px 60px; }
+
+  .report-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+  .report-tabs a {
+    display: block; text-decoration: none; padding: 11px 20px; font-size: 13.5px; font-weight: 600;
+    color: #cfe6d2; background: #226a44; border-radius: 8px 8px 0 0; cursor: pointer;
+  }
+  .report-tabs a.active { background: #fff; color: #1e6b3c; }
+  .report-tabs a:hover:not(.active) { background: #2a7a4f; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .panel-title {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    font-size: 14.5px;
+    font-weight: 700;
+    padding: 12px 20px;
+  }
+
+  .filter-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+  .filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 170px; }
+  .filter-field label { font-size: 12.5px; font-weight: 600; color: #3f4f45; }
+  .filter-field select, .filter-field input {
+    padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 13.5px; font-family: inherit; color: #24312a; background: #fff;
+  }
+  .filter-field select:focus, .filter-field input:focus { outline: none; border-color: #2e8b4f; }
+  .filter-field.grow { flex: 1; min-width: 220px; }
+  .filter-check {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; color: #3f4f45; padding-bottom: 10px;
+  }
+  .view-btn {
+    background: #e69a1f; color: #fff; border: none; border-radius: 8px;
+    padding: 11px 22px; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .view-btn:hover { background: #cc8815; }
+
+  .result-header {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 12px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  }
+  .result-header .rh-title { font-size: 14.5px; font-weight: 700; }
+  .result-header .rh-actions { display: flex; gap: 8px; }
+  .rh-btn {
+    border: none; border-radius: 7px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .rh-btn.excel { background: #2e8b4f; color: #fff; }
+  .rh-btn.excel:hover { background: #257a43; }
+  .rh-btn.print { background: rgba(255,255,255,.22); color: #fff; }
+  .rh-btn.print:hover { background: rgba(255,255,255,.34); }
+
+  .result-body { padding: 20px; }
+  .company-name { font-size: 17px; font-weight: 700; color: #1e6b3c; }
+  .branch-line { font-size: 12.5px; color: #8fa198; margin-top: 2px; }
+  .report-title { font-size: 15.5px; font-weight: 700; margin: 10px 0 4px; }
+  .purpose-text { font-size: 12px; color: #8fa198; line-height: 1.6; max-width: 720px; }
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-top: 6px;
+  }
+  .meta-right { font-size: 12px; color: #8fa198; text-align: right; }
+
+  .extra-filter-row { margin: 14px 0 4px; }
+  .extra-filter-row label { font-size: 13px; font-weight: 700; color: #3f4f45; margin-right: 10px; }
+  .extra-filter-row input, .extra-filter-row select {
+    padding: 9px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 13.5px; font-family: inherit; min-width: 260px;
+  }
+
+  .summary-stats {
+    display: flex; flex-wrap: wrap; gap: 26px; margin: 16px 0 4px; font-size: 13.5px; color: #3f4f45;
+  }
+  .summary-stats b { color: #1e6b3c; }
+
+  table.report-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  table.report-table th {
+    text-align: left; font-size: 12px; color: #4a5a4f; font-weight: 700;
+    border-bottom: 2px solid #2e8b4f; padding: 9px 12px; white-space: nowrap; background: #f6faf7;
+  }
+  table.report-table th.num, table.report-table td.num { text-align: right; }
+  table.report-table td {
+    padding: 9px 12px; border-bottom: 1px solid #eef2ef; font-size: 13px; vertical-align: middle; white-space: nowrap;
+  }
+  table.report-table tbody tr:hover td { background: #f6faf7; }
+  .neg { color: #c0392b; }
+  .warn { color: #c0392b; font-weight: 600; }
+  .empty-row { text-align: center; color: #8fa198; font-size: 13px; padding: 30px; }
+  .tbl-scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> รายงาน <span class="sep">/</span> <b>รายงานคลังสินค้า</b>
+</div>
+
+<div class="content">
+
+  <div class="report-tabs">
+    <a onclick="window.location.href='report-sales-mockup.html'">รายงานการขาย</a>
+    <a class="active">รายงานคลังสินค้า</a>
+    <a onclick="window.location.href='report-khy-mockup.html'">รายงาน ขย.</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">รายงานคลังสินค้า</div>
+    <div class="filter-body">
+      <div class="filter-field grow">
+        <label>รายงาน</label>
+        <select id="reportType" onchange="onReportChange()"></select>
+      </div>
+      <div class="filter-field">
+        <label>สาขา</label>
+        <select id="branch">
+          <option selected>สำนักงานใหญ่</option>
+          <option>สาขา 2</option>
+        </select>
+      </div>
+      <div class="filter-field" id="productTypeField" style="display:none;">
+        <label>ประเภทสินค้า</label>
+        <select id="productType">
+          <option selected>ทั้งหมด</option><option>ยา</option><option>สินค้าทั่วไป</option>
+        </select>
+      </div>
+      <div class="filter-field" id="expireLeftField" style="display:none;">
+        <label>เหลืออีก</label>
+        <select id="expireLeft">
+          <option>1 เดือน</option><option>3 เดือน</option><option selected>6 เดือน</option><option>12 เดือน</option>
+        </select>
+      </div>
+      <div class="filter-field" id="periodField" style="display:none;">
+        <label>ระยะเวลา</label>
+        <select id="period">
+          <option>30 วัน</option><option>60 วัน</option><option selected>90 วัน</option><option>180 วัน</option>
+        </select>
+      </div>
+      <div class="filter-field" id="lotModeField" style="display:none;">
+        <label>รวมล็อตสินค้าจำลอง</label>
+        <select id="lotMode">
+          <option selected>ไม่รวมล็อตสินค้าจำลอง</option><option>รวมล็อตสินค้าจำลอง</option>
+        </select>
+      </div>
+      <div class="filter-field" id="fromField" style="display:none;">
+        <label>จาก</label>
+        <input type="date" id="dateFrom" value="2026-08-26">
+      </div>
+      <div class="filter-field" id="toField" style="display:none;">
+        <label>ถึง</label>
+        <input type="date" id="dateTo" value="2026-08-26">
+      </div>
+      <div class="filter-check" id="includeExpiredField" style="display:none;">
+        <input type="checkbox" id="includeExpired"> <label for="includeExpired" style="margin:0;">รวมรายการสินค้าที่หมดอายุแล้วในรายงาน</label>
+      </div>
+      <div class="filter-check" id="onlyCreditorField" style="display:none;">
+        <input type="checkbox" id="onlyCreditor" checked> <label for="onlyCreditor" style="margin:0;">แสดงเฉพาะการรับสินค้าที่ระบุเจ้าหนี้</label>
+      </div>
+      <button class="view-btn" onclick="renderReport()">🔍 ดูรายงาน</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="result-header">
+      <div class="rh-title" id="resultTitle"></div>
+      <div class="rh-actions">
+        <button class="rh-btn excel" onclick="alert('มอคอัพ: บันทึกรายงานเป็นไฟล์ Excel')">📥 บันทึกเป็น Excel</button>
+        <button class="rh-btn print" onclick="alert('มอคอัพ: เปิดหน้าต่างพิมพ์รายงาน')">🖨️ พิมพ์รายงาน</button>
+      </div>
+    </div>
+    <div class="result-body">
+      <div class="company-name">ปรุงยาเภสัช</div>
+      <div class="branch-line" id="branchLine">สาขา สำนักงานใหญ่</div>
+      <div class="report-title" id="reportTitle2"></div>
+      <div class="purpose-text" id="purposeText"></div>
+
+      <div class="meta-row">
+        <div class="summary-stats" id="summaryStats"></div>
+        <div class="meta-right" id="metaRight"></div>
+      </div>
+
+      <div class="tbl-scroll">
+        <table class="report-table">
+          <thead><tr id="tableHead"></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+function fmtDate(d) {
+  if (!d) return '';
+  try { return new Date(d).toISOString().slice(0, 10); } catch (e) { return d; }
+}
+
+// แคชไว้ไม่ให้ยิง API ซ้ำทุกครั้งที่สลับแท็บไปมา — โหลดครั้งแรกครั้งเดียวต่อประเภทรายงาน
+const stockDataLoaded = { stockAll: false, nearExpire: false };
+
+/** โหลด 'รายงานสรุปสินค้าคงคลังทั้งหมด ณ ปัจจุบัน' จริงจาก action getStockReport(type:'all') */
+async function loadStockAll() {
+  const rows = await apiGet('getStockReport', { type: 'all' });
+  reportData.stockAll.rows = rows.map((r, i) => [
+    i + 1,
+    r['รหัสสินค้า'] || '',
+    r['ชื่อสินค้า'] || '',
+    r['รหัสสต็อค'] || '',
+    r['เลขที่ผลิต'] || '',
+    fmtDate(r['วันที่ผลิต (MFG)']),
+    fmtDate(r['วันหมดอายุ (EXP)']),
+    Number(r['ราคาซื้อ']) || 0,
+    r['หน่วยซื้อ'] || '',
+    Number(r['ต้นทุนต่อหน่วยนับสต๊อก']) || 0,
+    Number(r['จำนวนคงเหลือ']) || 0,
+    r['หน่วยนับสต๊อก'] || '',
+    Number(r['รวมมูลค่าต้นทุน']) || 0,
+  ]);
+  stockDataLoaded.stockAll = true;
+}
+
+/** โหลด 'รายงานสินค้าใกล้หมดอายุ' จริงจาก action getStockReport(type:'nearExpire') */
+async function loadNearExpire() {
+  const rows = await apiGet('getStockReport', { type: 'nearExpire', months: 6 });
+  const today = new Date();
+  reportData.nearExpire.rows = rows.map((r, i) => {
+    const exp = new Date(r['วันหมดอายุ (EXP)']);
+    const daysLeft = Math.round((exp - today) / (1000 * 60 * 60 * 24));
+    const qty = Number(r['จำนวนคงเหลือ']) || 0;
+    const unitCost = Number(r['ต้นทุนต่อหน่วยนับสต๊อก']) || 0;
+    return [
+      i + 1,
+      r['รหัสสินค้า'] || '',
+      r['ชื่อสินค้า'] || '',
+      r['เลขที่ผลิต'] || '',
+      fmtDate(r['วันที่ผลิต (MFG)']),
+      fmtDate(r['วันหมดอายุ (EXP)']),
+      qty,
+      r['หน่วยนับสต๊อก'] || '',
+      unitCost,
+      qty * unitCost,
+      daysLeft,
+    ];
+  });
+  stockDataLoaded.nearExpire = true;
+}
+
+const reportTypes = [
+  { id:"stockAll",  label:"รายงานสรุปสินค้าคงคลังทั้งหมด ณ ปัจจุบัน" },
+  { id:"nearExpire",label:"รายงานสินค้าใกล้หมดอายุ" },
+  { id:"nonMoving", label:"รายงานสินค้าไม่เคลื่อนไหว" },
+  { id:"receiving",  label:"รายงานสรุปการรับสินค้า / ภาษีซื้อ" },
+];
+
+const sel = document.getElementById('reportType');
+reportTypes.forEach(r => {
+  const opt = document.createElement('option');
+  opt.value = r.id; opt.textContent = r.label;
+  sel.appendChild(opt);
+});
+
+function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtInt(n) { return Number(n).toLocaleString(); }
+
+const reportData = {
+  stockAll: {
+    purpose: "จุดประสงค์รายงานสรุปสินค้าคงคลังทั้งหมด ณ ปัจจุบัน : แสดงรายการสินค้าคงเหลือทุกรายการในคลัง พร้อมต้นทุนต่อหน่วยและมูลค่าต้นทุนรวม ณ วันที่ทำรายงาน",
+    fields: ["productType"],
+    columns: ["#","รหัสสินค้า","ชื่อสินค้า","รหัสสต็อค","เลขที่ผลิต","วันที่ผลิต (MFG)","วันหมดอายุ (EXP)","ราคาซื้อ","หน่วยซื้อ","ต้นทุนต่อหน่วยนับสต็อก","จำนวนคงเหลือ","หน่วยนับสต็อก","รวมมูลค่าต้นทุน"],
+    numCols: [7,9,10,12],
+    rows: [], // โหลดจริงจาก action 'getStockReport' (type: 'all') — ดู loadStockAll()
+    summary: (rows) => `<span>จำนวนทั้งหมด <b>${fmtInt(rows.length)}</b> รายการ</span><span>รวมมูลค่าทั้งสิ้น <b>${fmt(rows.reduce((s,r)=>s+(Number(r[12])||0),0))}</b> บาท</span>`,
+  },
+  nearExpire: {
+    purpose: "จุดประสงค์รายงานสินค้าใกล้หมดอายุ : แสดงรายการสินค้าที่จะหมดอายุภายในระยะเวลาที่กำหนด เพื่อวางแผนการขายหรือจัดการสต๊อกก่อนหมดอายุ",
+    fields: ["productType","expireLeft","includeExpired"],
+    columns: ["#","รหัสสินค้า","ชื่อสินค้า","เลขที่ผลิต","วันที่ผลิต (MFG)","วันหมดอายุ (EXP)","จำนวนคงเหลือ","หน่วย","ต้นทุนต่อหน่วย","มูลค่าคงเหลือ","เหลืออีก (วัน)"],
+    numCols: [6,8,9,10],
+    rows: [], // โหลดจริงจาก action 'getStockReport' (type: 'nearExpire') — ดู loadNearExpire()
+    summary: (rows) => `<span>จำนวนทั้งหมด <b>${fmtInt(rows.length)}</b> รายการ</span><span>รวมมูลค่าคงเหลือ <b>${fmt(rows.reduce((s,r)=>s+r[9],0))}</b> บาท</span>`,
+  },
+  nonMoving: {
+    purpose: "จุดประสงค์รายงานสินค้าไม่เคลื่อนไหว : แสดงรายการสินค้าที่ไม่มีการขายออกเป็นเวลานานตามระยะเวลาที่กำหนด เพื่อพิจารณาจัดโปรโมชันหรือเคลียร์สต๊อก (⚠️ ยังไม่เชื่อมข้อมูลจริง — backend ยังไม่มี action รองรับ ตัวอย่างด้านล่างเป็นข้อมูลจำลอง)",
+    fields: ["period"],
+    columns: ["#","หมายเลขอ้างอิง","ชื่อสินค้า","จำนวนคงเหลือ","หน่วย","ทุนล่าสุด","วันที่รับเข้าล่าสุด","วันที่ขายล่าสุด (วัน)","วันผลิต","วันหมดอายุ"],
+    numCols: [3,5],
+    rows: [
+      [1,"PCU08682","เจลล้างมือแอลกอฮอล์ 450 ซีซี",3,"ขวด",55.00,"2026-08-03","2022-01-03 (1,696)","2026-08-02","2029-06-15"],
+      [2,"PCU06868","กระดาษเช็ดหน้าสองชั้น Doraemon 150 แผ่น 25 บาท",4,"ห่อ",16.50,"2022-01-05","2022-01-05 (1,694)","2022-01-04","2024-05-08"],
+      [3,"PCU06568","คิตตี้โคน กล่องแดง 5 บาท",1,"กล่อง",4.20,"2021-04-17","2022-01-06 (1,693)","2021-04-16","2022-08-31"],
+      [4,"PCO01249","D-COATE TABLETS 10'S",6,"แผง",18.00,"2022-02-11","2022-02-14 (1,654)","2022-02-10","2023-08-20"],
+    ],
+    summary: (rows) => `<span>จำนวนทั้งหมด <b>${fmtInt(2109)}</b> รายการ</span>`,
+  },
+  receiving: {
+    purpose: "จุดประสงค์รายงานสรุปการรับสินค้า / ภาษีซื้อ : สรุปมูลค่าการรับสินค้าเข้าคลังและภาษีซื้อในแต่ละใบรับสินค้า สำหรับใช้ตรวจสอบยอดเจ้าหนี้และภาษี (⚠️ ยังไม่เชื่อมข้อมูลจริง — backend ยังไม่มี action รองรับ ตัวอย่างด้านล่างเป็นข้อมูลจำลอง)",
+    fields: ["lotMode","from","to","onlyCreditor"],
+    columns: ["#","วันที่สร้าง","วันที่รับล่าสุด","เลขที่เอกสาร","สาขา","เจ้าหนี้","มูลค่าสินค้า","ลดก่อนภาษี","การคิดภาษี","ภาษีมูลค่าเพิ่ม","ลดหลังภาษี","ยอดสุทธิ","การชำระเงิน"],
+    numCols: [6,7,9,10,11],
+    rows: [
+      [1,"2026-08-26","2026-08-26","GR2633206","สำนักงานใหญ่","บริษัท บีร์ช ประเทศไทย จำกัด",1820.50,0.00,"ไม่มีภาษี",0.00,0.00,1820.50,"ยังไม่จ่าย"],
+      [2,"2026-08-26","2026-08-26","GR2633207","สำนักงานใหญ่","บริษัท สนั่นฟาร์มาซี จำกัด",8132.00,0.00,"ไม่มีภาษี",0.00,0.00,8132.00,"ยังไม่จ่าย"],
+      [3,"2026-08-26","2026-08-26","GR2633208","สำนักงานใหญ่","บริษัท ฟาร์มาไลน์ จำกัด",2660.00,0.00,"ไม่มีภาษี",0.00,0.00,2660.00,"ยังไม่จ่าย"],
+    ],
+    summary: (rows) => `<span>จำนวนทั้งหมด <b>${fmtInt(rows.length)}</b> รายการ</span><span>รวมยอดสุทธิ <b>${fmt(rows.reduce((s,r)=>s+r[11],0))}</b> บาท</span><span>รวมภาษีซื้อ <b>${fmt(rows.reduce((s,r)=>s+r[9],0))}</b> บาท</span>`,
+  },
+};
+
+function fieldRow(id, show) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+async function onReportChange() {
+  const cfg = reportData[sel.value];
+  const f = cfg.fields || [];
+
+  fieldRow('productTypeField', f.includes('productType'));
+  fieldRow('expireLeftField', f.includes('expireLeft'));
+  fieldRow('periodField', f.includes('period'));
+  fieldRow('lotModeField', f.includes('lotMode'));
+  fieldRow('fromField', f.includes('from'));
+  fieldRow('toField', f.includes('to'));
+  fieldRow('includeExpiredField', f.includes('includeExpired'));
+  fieldRow('onlyCreditorField', f.includes('onlyCreditor'));
+
+  if (sel.value === 'stockAll' && !stockDataLoaded.stockAll) {
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="1"><div class="empty-row">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+    try { await loadStockAll(); } catch (err) {
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="1"><div class="empty-row">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
+      return;
+    }
+  } else if (sel.value === 'nearExpire' && !stockDataLoaded.nearExpire) {
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="1"><div class="empty-row">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+    try { await loadNearExpire(); } catch (err) {
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="1"><div class="empty-row">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
+      return;
+    }
+  }
+
+  renderReport();
+}
+
+function renderReport() {
+  const cfg = reportData[sel.value];
+  const label = reportTypes.find(r => r.id === sel.value).label;
+  const branch = document.getElementById('branch').value;
+
+  document.getElementById('resultTitle').textContent = label;
+  document.getElementById('reportTitle2').textContent = label;
+  document.getElementById('purposeText').textContent = cfg.purpose;
+  document.getElementById('branchLine').textContent = 'สาขา ' + branch;
+
+  const hasRange = (cfg.fields || []).includes('from');
+  document.getElementById('metaRight').innerHTML = hasRange
+    ? `ข้อมูล ณ วันที่ 2026-08-26<br>ข้อมูลจากวันที่ ${document.getElementById('dateFrom').value} ถึงวันที่ ${document.getElementById('dateTo').value}`
+    : `ข้อมูล ณ วันที่ 2026-08-26`;
+
+  document.getElementById('summaryStats').innerHTML = cfg.summary(cfg.rows);
+
+  const thead = document.getElementById('tableHead');
+  thead.innerHTML = cfg.columns.map((c, i) => `<th class="${(cfg.numCols||[]).includes(i) ? 'num' : ''}">${c}</th>`).join('');
+
+  const tbody = document.getElementById('tableBody');
+  if (!cfg.rows.length) {
+    tbody.innerHTML = `<tr><td colspan="${cfg.columns.length}"><div class="empty-row">ไม่พบรายการ</div></td></tr>`;
+  } else {
+    tbody.innerHTML = cfg.rows.map(row => `
+      <tr>
+        ${row.map((cell, i) => {
+          const isNum = (cfg.numCols||[]).includes(i);
+          let display = cell;
+          if (isNum && typeof cell === 'number') display = fmt(cell);
+          const warnClass = (sel.value === 'nonMoving' && i === 7) ? 'warn' : '';
+          return `<td class="${isNum ? 'num' : ''} ${warnClass}">${display}</td>`;
+        }).join('')}
+      </tr>
+    `).join('');
+  }
+}
+
+sel.value = 'stockAll';
+onReportChange();
+</script>
+
+</body>
+</html>

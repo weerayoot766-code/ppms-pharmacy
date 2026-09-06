@@ -1,0 +1,2717 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - หน้าขาย + พิมพ์ฉลากยา (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    padding: 0 0 20px;
+    color: #24312a;
+  }
+
+  /* ---------- แถบหัวโปรแกรม ---------- */
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(20, 60, 35, .18);
+    margin-bottom: 20px;
+  }
+  .topbar .logo-badge {
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+  }
+  .topbar .titles { line-height: 1.25; }
+  .topbar .titles .th-name { font-size: 17px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 12px; letter-spacing: .04em; opacity: .85; }
+  .backoffice-btn {
+    margin-left: auto;
+    background: #3b82f6;
+    border: 1px solid #60a5fa;
+    color: #fff;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .backoffice-btn:hover { background: #2b6fe0; }
+
+  .telepharmacy-btn {
+    background: #fdf6e3;
+    border: 1px solid #ecdfb0;
+    color: #7a5c1e;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .telepharmacy-btn:hover { background: #faedc4; }
+
+  .delivery-btn {
+    background: #ec4899;
+    border: 1px solid #f472b6;
+    color: #fff;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .delivery-btn:hover { background: #db2777; }
+
+  .delivery-btn {
+    background: #ec5c9d;
+    border: 1px solid #f48ab8;
+    color: #fff;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .delivery-btn:hover { background: #e14b8e; }
+
+  .pharmacist-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.35;
+    padding: 0 4px;
+    white-space: nowrap;
+  }
+  .pharmacist-chip .ph-label { font-size: 10.5px; color: rgba(255,255,255,.75); }
+  .pharmacist-chip .ph-name { font-size: 13.5px; font-weight: 700; color: #fff; }
+
+  .logout-btn {
+    background: rgba(0,0,0,.15);
+    border: 1px solid rgba(255,255,255,.4);
+    color: #fff;
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .logout-btn:hover { background: rgba(0,0,0,.28); }
+
+  .layout {
+    display: flex;
+    gap: 18px;
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 20px;
+    align-items: flex-start;
+  }
+  .left { flex: 0 0 60%; max-width: 60%; }
+  .right { flex: 0 0 40%; max-width: 40%; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(30, 90, 50, .08);
+    padding: 18px 20px;
+  }
+
+  /* ---------- ซ้าย: รายการยา ---------- */
+  .search-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .search-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    border: 2px solid #4a90d9;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .search-box .member-btn {
+    padding: 0 14px;
+    color: #fff;
+    background: #2e8b4f;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    height: 42px;
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .search-box .member-btn:hover { background: #257a43; }
+  .search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .search-box button {
+    background: #4a90d9;
+    border: none;
+    color: #fff;
+    width: 46px;
+    height: 42px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .check-all {
+    font-size: 13px;
+    color: #445;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .member-row .search-suggest {
+    flex: 1;
+    max-width: 340px;
+  }
+  .member-row .search-box { border-color: #2e8b4f; }
+  .member-row .search-box button { background: #2e8b4f; }
+  .member-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #eef6ee;
+    border: 1px solid #cfe6d2;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13.5px;
+    color: #2c3a32;
+    white-space: nowrap;
+  }
+  .member-chip.is-member { background: #e4f6e8; border-color: #7fc794; font-weight: 600; }
+  .register-member-btn {
+    background: #2e8b4f;
+    border: 1px solid #2e8b4f;
+    color: #fff;
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .register-member-btn:hover { background: #257a43; }
+  .member-chip .change-link {
+    color: #4a90d9;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: underline;
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  .points-redeem-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fdf6e8;
+    border: 1px solid #f0d9a8;
+    border-radius: 8px;
+    padding: 9px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #a9701a;
+    font-weight: 600;
+  }
+  .points-redeem-row select, .points-redeem-row input[type=number] {
+    padding: 6px 10px;
+    border: 1px solid #f0d9a8;
+    border-radius: 7px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #24312a;
+    background: #fff;
+  }
+  .search-suggest, .member-suggest {
+    position: relative;
+  }
+  .search-row .search-suggest { flex: 1; }
+  .suggest-list {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #cfe0f5;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.1);
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 5;
+    display: none;
+  }
+  .suggest-list.show { display: block; }
+  .suggest-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    border-bottom: 1px solid #f1f4f8;
+  }
+  .suggest-item:hover { background: #f0f7ff; }
+  .suggest-item small { color: #888; }
+
+  .sale-header {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 4px 0 14px;
+    color: #1f2d24;
+  }
+  .sale-header span { color: #4a90d9; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    font-size: 13px;
+    color: #5b6b60;
+    border-bottom: 2px solid #4a90d9;
+    padding: 8px 6px;
+    font-weight: 600;
+  }
+  tbody td {
+    padding: 10px 6px;
+    font-size: 14px;
+    border-bottom: 1px solid #eef2ef;
+  }
+  tbody tr.selectable:hover { background: #f4fbf5; cursor: pointer; }
+  tbody tr.active-row { background: #e4f6e8; }
+  .empty-row td {
+    text-align: center;
+    background: #fdf6d9;
+    color: #8a7a2a;
+    padding: 16px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  .bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #eef2ef;
+    flex-wrap: nowrap;
+  }
+  .bottom-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex: 1 1 auto;
+    max-width: 62%;
+  }
+  .hold-btn, .today-bill-btn, .held-bills-btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .hold-btn {
+    background: #fff3d6;
+    border: 1px solid #f0cf7c;
+    color: #8a6d00;
+  }
+  .hold-btn:hover { background: #fdecbd; }
+  .held-bills-btn {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    color: #3730a3;
+  }
+  .held-bills-btn:hover { background: #e0e7ff; }
+  .today-bill-btn {
+    background: #eef3ee;
+    border: 1px solid #cfe0d3;
+    color: #2c3a32;
+  }
+  .today-bill-btn:hover { background: #e2ece3; }
+
+  .print-all-btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    background: #1e6b3c;
+    border: 1px solid #1e6b3c;
+    color: #fff;
+  }
+  .print-all-btn:hover { background: #17552f; }
+
+  .summary-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+  .summary-line {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    max-width: 320px;
+    font-size: 14px;
+    color: #4a5a4f;
+  }
+  .summary-line span:first-child { color: #6b7a70; }
+  .summary-line span:last-child { min-width: 90px; text-align: right; font-weight: 600; color: #24312a; }
+  .summary-discount input {
+    width: 90px;
+    padding: 6px 8px;
+    border: 1px solid #cfd8d3;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: right;
+  }
+  .summary-grand {
+    font-size: 19px;
+    font-weight: 700;
+    color: #1e6b3c;
+    padding-top: 8px;
+    border-top: 1px dashed #d6e4da;
+    margin-top: 4px;
+  }
+  .summary-grand span:first-child { color: #1e6b3c; font-weight: 700; }
+  .qty-input {
+    width: 52px;
+    padding: 5px;
+    border: 1px solid #cfd8d3;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .del-btn {
+    background: #f2544a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .print-btn {
+    background: transparent;
+    border: 1px solid #4a90d9;
+    color: #4a90d9;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-right: 6px;
+  }
+  .print-btn.active { background: #4a90d9; color: #fff; }
+
+  /* ---------- ขวา: ฉลากยา ---------- */
+  .label-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 10px;
+  }
+  .label-top h2 { font-size: 16px; margin: 0; color: #1f2d24; white-space: nowrap; }
+  .label-top-actions { display: flex; align-items: center; gap: 8px; }
+  .label-top select {
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: 1px solid #cdd7d1;
+    font-size: 13px;
+  }
+  .label-top-print-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .label-sub {
+    font-size: 12px;
+    color: #6b7a70;
+    margin: 0 0 8px;
+  }
+
+  .label-card {
+    border: 1px solid #bfe0c8;
+    border-radius: 12px;
+    padding: 14px 18px;
+    background: #eef8ef;
+  }
+  .shop-name-line {
+    font-size: 12px;
+    color: #4a5a4f;
+    line-height: 1.5;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #cfe6d2;
+    margin-bottom: 10px;
+  }
+  .shop-name-line b { font-size: 14px; color: #1e6b3c; }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: #4a7a57;
+    text-transform: uppercase;
+    margin: 12px 0 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #d3ecd8;
+  }
+  .section-title:first-of-type { margin-top: 0; }
+
+  .field-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    align-items: flex-end;
+  }
+  .field { flex: 1; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #3f4f45;
+    margin-bottom: 4px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cfe0d3;
+    border-radius: 7px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+    color: #24312a;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: #2e8b4f;
+    box-shadow: 0 0 0 3px rgba(46,139,79,.12);
+  }
+  .field.readonly-look input {
+    background: #e4f1e7;
+    color: #1e6b3c;
+    font-weight: 700;
+    border-color: #cfe6d2;
+  }
+  .field-inline { display: flex; align-items: center; gap: 7px; font-size: 13.5px; white-space: nowrap; }
+  .field-inline label { font-weight: 600; color: #3f4f45; }
+  .field-inline input[type=number] {
+    width: 60px; padding: 7px 8px; border: 1px solid #cfe0d3; border-radius: 7px; background: #fff; font-size: 14px;
+  }
+  .field-inline input[type=text] {
+    width: 100px; padding: 7px 8px; border: 1px solid #cfe0d3; border-radius: 7px; background: #fff; font-size: 14px;
+  }
+  .field-inline select {
+    padding: 7px 8px; border: 1px solid #cfe0d3; border-radius: 7px; background: #fff; font-size: 14px; font-family: inherit;
+  }
+  .field-hint { font-size: 11px; color: #7e9186; margin: -6px 0 8px 2px; }
+
+  .checkbox-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 13.5px;
+    margin: 2px 0 8px;
+    align-items: center;
+    color: #3f4f45;
+  }
+  .checkbox-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500; }
+  .checkbox-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #2e8b4f; }
+
+  .note-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    margin-top: 2px;
+  }
+  .note-row label { font-weight: 600; color: #3f4f45; }
+  .note-row input[type=text] {
+    flex: 1;
+    padding: 8px 11px;
+    border: 1px solid #cfe0d3;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: #fff;
+  }
+
+  .save-label-row {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f6faf7;
+    border: 1px solid #e3efe5;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: #24312a;
+  }
+  .save-label-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #2e8b4f; }
+  .save-label-hint { color: #8fa198; font-size: 11.5px; }
+
+  .empty-label {
+    text-align: center;
+    color: #6b8a75;
+    font-size: 13.5px;
+    padding: 40px 10px;
+    line-height: 1.7;
+  }
+
+  .print-action {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #cfe6d2;
+    display: flex;
+    gap: 10px;
+  }
+  .print-action button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: #2e8b4f; color: #fff; }
+  .btn-primary:hover { background: #257a43; }
+  .btn-secondary { background: #fff; color: #3f4f45; border: 1px solid #cfe0d3; }
+  .btn-secondary:hover { background: #e4f1e7; }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .left, .right { flex: 1 1 100%; max-width: 100%; }
+    .bottom-row { flex-wrap: wrap; }
+    .bottom-actions { max-width: 100%; }
+    .summary-box { align-items: flex-start; }
+  }
+  /* ---------- Popup เลือกสินค้า ---------- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 40, 28, .45);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal-card {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 34px rgba(20, 60, 35, .25);
+  }
+  .modal-header {
+    background: #eaf7ec;
+    border-bottom: 1px solid #d3ecd8;
+    border-radius: 16px 16px 0 0;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; color: #1e6b3c; }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #6b7a70;
+    cursor: pointer;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+  }
+  .modal-close:hover { background: #dcefe0; color: #2c3a32; }
+
+  .modal-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 18px;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .modal-tab {
+    padding: 12px 4px;
+    font-size: 14px;
+    color: #8fa198;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .modal-tab.active { color: #1e6b3c; font-weight: 700; border-bottom-color: #2e8b4f; }
+
+  .modal-body { padding: 18px; }
+
+  /* ---------- ปุ่มชำระเงิน ---------- */
+  .checkout-btn {
+    width: 100%;
+    margin-top: 12px;
+    background: #2e8b4f;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .checkout-btn:hover { background: #257a43; }
+
+  /* ---------- โมดัลหน้าจอชำระเงิน ---------- */
+  .pay-modal-card { max-width: 460px; }
+  .pay-total-box {
+    text-align: center; padding: 18px; background: #eaf7ec; border-bottom: 1px solid #d3ecd8;
+  }
+  .pay-total-label { font-size: 13px; color: #4a7a5a; font-weight: 600; }
+  .pay-total-amount { font-size: 34px; font-weight: 800; color: #1e6b3c; margin-top: 2px; }
+
+  .pay-method-tabs { display: flex; gap: 8px; padding: 16px 18px 0; }
+  .pay-method-tab {
+    flex: 1; text-align: center; padding: 11px; border-radius: 9px; border: 1px solid #cfe0d3;
+    font-size: 13.5px; font-weight: 700; color: #4a5a4f; cursor: pointer; background: #fff;
+  }
+  .pay-method-tab.active { background: #2e8b4f; border-color: #2e8b4f; color: #fff; }
+
+  .pay-section { padding: 18px; }
+  .pay-field label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 6px; }
+  .pay-field input {
+    width: 100%; padding: 12px 14px; border: 1px solid #cfe0d3; border-radius: 9px;
+    font-size: 20px; font-weight: 700; font-family: inherit; color: #24312a; text-align: right;
+  }
+  .pay-field input:focus { outline: none; border-color: #2e8b4f; }
+
+  .quick-amount-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .quick-amount-btn {
+    flex: 1 1 auto; min-width: 70px; padding: 9px 6px; border: 1px solid #cfe0d3; border-radius: 8px;
+    background: #f6faf7; color: #3f4f45; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .quick-amount-btn:hover { background: #eef6ee; border-color: #2e8b4f; }
+
+  .change-box {
+    display: flex; justify-content: space-between; align-items: center; margin-top: 16px;
+    padding: 14px 16px; border-radius: 10px; background: #f6faf7; border: 1px solid #e3efe5;
+  }
+  .change-box .lbl { font-size: 14px; font-weight: 700; color: #3f4f45; }
+  .change-box .amt { font-size: 22px; font-weight: 800; color: #1e6b3c; }
+  .change-box.insufficient .amt { color: #c0392b; }
+
+  .qr-box { text-align: center; padding: 6px 0 4px; }
+  .qr-placeholder {
+    width: 190px; height: 190px; margin: 0 auto 14px; border-radius: 12px;
+    background: repeating-linear-gradient(45deg, #24312a, #24312a 8px, #fff 8px, #fff 16px);
+    display: flex; align-items: center; justify-content: center; font-size: 46px; color: #fff;
+    border: 6px solid #fff; box-shadow: 0 0 0 1px #cfe0d3;
+  }
+  .qr-hint { font-size: 13px; color: #6b7a70; margin-bottom: 4px; }
+  .qr-amount { font-size: 15px; font-weight: 700; color: #1e6b3c; }
+
+  .pay-actions { display: flex; gap: 10px; padding: 4px 18px 20px; }
+  .pay-actions button { flex: 1; }
+
+  .pay-enter-hint { font-size: 11.5px; color: #8fa198; font-weight: 500; }
+
+  .pay-result { text-align: center; padding: 6px 18px 18px; }
+  .pay-result-icon { font-size: 44px; line-height: 1; margin-bottom: 6px; }
+  .pay-result-title { font-size: 18px; font-weight: 800; color: #1e6b3c; margin-bottom: 14px; }
+  .pay-result .change-box { margin-top: 10px; text-align: left; }
+
+  .pay-change-big {
+    background: #eaf7ec; border: 1px solid #d3ecd8; border-radius: 12px;
+    padding: 16px; text-align: center; margin-top: 4px;
+  }
+  .pay-change-big.insufficient { background: #fbe4e2; border-color: #f0c9c4; }
+  .pcb-label { font-size: 14px; font-weight: 700; color: #4a7a5a; }
+  .pcb-amount { font-size: 46px; font-weight: 800; color: #1e6b3c; line-height: 1.15; }
+  .pay-change-big.insufficient .pcb-amount { color: #c0392b; }
+  .pay-received-line { font-size: 13.5px; color: #6b7a70; margin-top: 10px; }
+  .pay-received-line b { color: #24312a; }
+
+  /* ---------- โมดัลบิลที่พักไว้ ---------- */
+  .held-bill-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 13px 14px; border: 1px solid #e3efe5; border-radius: 10px; margin-bottom: 10px; background: #f9fcfa;
+  }
+  .held-bill-item:last-child { margin-bottom: 0; }
+  .held-bill-info .hb-id { font-size: 14px; font-weight: 700; color: #1e6b3c; }
+  .held-bill-info .hb-meta { font-size: 12px; color: #8fa198; margin-top: 3px; }
+  .held-bill-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .held-bill-actions button {
+    border: none; border-radius: 7px; padding: 8px 13px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .hb-restore-btn { background: #2e8b4f; color: #fff; }
+  .hb-restore-btn:hover { background: #257a43; }
+  .hb-delete-btn { background: #fbe4e2; color: #c0392b; }
+  .hb-delete-btn:hover { background: #f6cdc9; }
+  .held-bills-empty { text-align: center; color: #8fa198; font-size: 13.5px; padding: 30px 10px; }
+
+  /* ---------- โมดัลรายการบิลวันนี้ ---------- */
+  .tb-summary {
+    display: flex; gap: 20px; flex-wrap: wrap; font-size: 12.5px; color: #4a5a4f;
+    background: #f6faf7; border: 1px solid #e3efe5; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  }
+  .tb-summary b { color: #1e6b3c; }
+  .tb-bill-item { border: 1px solid #e3efe5; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .tb-bill-item:last-child { margin-bottom: 0; }
+  .tb-bill-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 14px; background: #f9fcfa; cursor: pointer;
+  }
+  .tb-bill-head:hover { background: #f0f6f1; }
+  .tb-bill-info .tb-id { font-size: 14px; font-weight: 700; color: #1e6b3c; }
+  .tb-bill-info .tb-meta { font-size: 12px; color: #8fa198; margin-top: 3px; }
+  .tb-pay-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-right: 6px;
+  }
+  .tb-pay-cash { background: #fdf0da; color: #a9701a; }
+  .tb-pay-qr { background: #eaf3fb; color: #1c5f9c; }
+  .tb-bill-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .tb-bill-actions button {
+    border: none; border-radius: 7px; padding: 8px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .tb-print-btn { background: #2e8b4f; color: #fff; }
+  .tb-print-btn:hover { background: #257a43; }
+  .tb-view-btn { background: #eef6ee; color: #1e6b3c; border: 1px solid #2e8b4f !important; }
+  .tb-view-btn:hover { background: #dcefe0; }
+  .tb-bill-detail { display: none; padding: 4px 14px 14px; border-top: 1px dashed #e3efe5; }
+  .tb-bill-detail.show { display: block; }
+  .tb-bill-detail table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .tb-bill-detail th { text-align: left; font-size: 11.5px; color: #8fa198; font-weight: 600; padding: 5px 6px; }
+  .tb-bill-detail td { font-size: 12.5px; padding: 5px 6px; border-top: 1px solid #eef2ef; }
+  .tb-bill-detail td.num, .tb-bill-detail th.num { text-align: right; }
+  .modal-label { display: block; font-size: 12.5px; color: #6b7a70; margin: 14px 0 8px; }
+  .modal-label:first-child { margin-top: 0; }
+
+  .unit-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .unit-opt {
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: 1px solid #d3dcd6;
+    background: #fff;
+    color: #445;
+    font-size: 13.5px;
+    cursor: pointer;
+  }
+  .unit-opt.active { background: #2e8b4f; border-color: #2e8b4f; color: #fff; font-weight: 600; }
+  .unit-opt .unit-warn-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #e0665a;
+    margin-left: 5px; vertical-align: middle;
+  }
+
+  .price-estimate-warning {
+    background: #fff3d6; border: 1px solid #f0d9a8; color: #8a6416;
+    border-radius: 8px; padding: 9px 11px; font-size: 12px; line-height: 1.6; margin-top: 8px;
+  }
+  .price-estimate-warning b { color: #7a5510; }
+
+  .qty-stepper {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #d3dcd6;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .qty-stepper input {
+    flex: 1;
+    border: none;
+    padding: 10px 12px;
+    font-size: 16px;
+    text-align: center;
+    font-family: inherit;
+  }
+  .qty-arrows { display: flex; flex-direction: column; border-left: 1px solid #e5ebe6; }
+  .qty-arrows button {
+    border: none;
+    background: #f6f9f6;
+    width: 32px;
+    flex: 1;
+    cursor: pointer;
+    font-size: 10px;
+    color: #4a5a4f;
+  }
+  .qty-arrows button:hover { background: #eaf3ea; }
+  .qty-unit-tag {
+    background: #eef3ee;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    font-size: 13.5px;
+    color: #2c3a32;
+    border-left: 1px solid #e5ebe6;
+    white-space: nowrap;
+  }
+
+  .modal-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: #6b7a70;
+    margin-top: 8px;
+  }
+  .modal-meta-row b { color: #2c3a32; }
+
+  .price-row {
+    display: flex;
+    border: 1px solid #d3dcd6;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .price-row input {
+    flex: 1 1 40px;
+    min-width: 0;
+    border: none;
+    padding: 10px 10px;
+    font-size: 16px;
+    font-family: inherit;
+  }
+  .price-currency {
+    background: #eef3ee;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    font-size: 13.5px;
+    color: #2c3a32;
+    border-left: 1px solid #e5ebe6;
+    flex-shrink: 0;
+  }
+  .cost-price-box {
+    background: #526b5a;
+    color: #e6efe8;
+    padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1px;
+    font-size: 10.5px;
+    line-height: 1.3;
+    white-space: nowrap;
+    border-left: 1px solid #45604d;
+    flex-shrink: 0;
+  }
+  .cost-price-box b { color: #fff; font-size: 13.5px; }
+  .price-total-row { font-size: 12.5px; color: #6b7a70; margin-top: 8px; }
+  .price-total-row b { color: #1e6b3c; font-size: 14px; }
+
+  .modal-confirm-btn {
+    width: 100%;
+    margin-top: 18px;
+    background: #2e8b4f;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-confirm-btn:hover { background: #257a43; }
+
+  /* ---------- โมดัลพิมพ์ฉลากยา 100x75มม. ---------- */
+  .label-print-overlay {
+    position: fixed; inset: 0; background: rgba(20,30,24,.6);
+    display: none; align-items: center; justify-content: center; z-index: 999;
+  }
+  .label-print-overlay.show { display: flex; }
+  .label-print-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .label-print-toolbar { display: flex; gap: 10px; }
+  .label-print-toolbar button {
+    border: none; border-radius: 8px; padding: 10px 20px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+  }
+  .label-print-toolbar .btn-do-print { background: #2e8b4f; color: #fff; }
+  .label-print-toolbar .btn-do-print:hover { background: #257a43; }
+  .label-print-toolbar .btn-close-print { background: #fff; color: #4a5a4f; border: 1px solid #cfd8d2; }
+  .label-print-toolbar .btn-close-print:hover { background: #f0f4f1; }
+
+  /* แผ่นฉลาก จำลองขนาดจริง 100 x 75 มม. แนวนอน */
+  .label-sheet {
+    width: 100mm; height: 75mm;
+    background: #fff;
+    box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    padding: 2.5mm 4mm;
+    box-sizing: border-box;
+    font-family: 'Sarabun','Segoe UI',Arial,sans-serif;
+    color: #111;
+    overflow: hidden;
+  }
+  .label-sheet .ls-shop { font-size: 2.5mm; line-height: 1.35; margin-bottom: 1mm; }
+  .label-sheet .ls-shop b { font-size: 2.9mm; }
+  .label-sheet .ls-hr { border-top: 0.25mm solid #333; margin: 0.8mm 0 1.2mm; }
+  .label-sheet .ls-grid {
+    display: flex; flex-direction: column; gap: 1mm; font-size: 2.8mm; line-height: 1.4;
+  }
+  .label-sheet .ls-grid b { font-weight: 700; }
+  .label-sheet .ls-small-row { font-size: 2.5mm; }
+  .label-sheet .ls-indication { font-size: 3.2mm; font-weight: 700; }
+  .label-sheet .ls-highlight {
+    font-size: 4.6mm; font-weight: 700; line-height: 1.3; margin-top: 0.8mm;
+  }
+  .label-sheet .ls-flex-between { display: flex; justify-content: space-between; gap: 3mm; flex-wrap: nowrap; }
+  .label-sheet .ls-exp-qty-group { display: flex; gap: 2.5mm; flex-wrap: nowrap; }
+  .label-sheet .ls-usage {
+    font-size: 3.3mm; font-weight: 700; line-height: 1.3; margin-top: 0.8mm;
+  }
+  .label-sheet .ls-note { font-size: 3.2mm; margin-top: 1mm; line-height: 1.3; }
+  .label-sheet .ls-pharm { font-size: 2.3mm; margin-top: 1mm; line-height: 1.3; }
+  .label-sheet .ls-check { color: #111; margin-right: 1mm; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge">💊</div>
+  <div class="titles">
+    <div class="th-name">ปรุงยาเภสัช — ระบบร้านขายยา</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="backoffice-btn" onclick="window.open('backoffice-mockup.html', '_blank')">🗂️ ระบบหลังบ้านและคลังสินค้า</button>
+  <button class="telepharmacy-btn" onclick="alert('มอคอัพ: ยังไม่เชื่อมต่อระบบ Telepharmacy จริง')">💊📱 เชื่อมต่อระบบ Telepharmacy</button>
+  <button class="delivery-btn" onclick="alert('มอคอัพ: ยังไม่เชื่อมต่อพระแสงเดลิเวอรี่จริง')">🏍️ เชื่อมต่อพระแสงเดลิเวอรี่</button>
+  <div class="pharmacist-chip">
+    <span class="ph-label">เภสัชกรที่กำลังใช้งาน</span>
+    <span class="ph-name" id="phNameDisplay">ภก.วีระยุทธิ์ เพชรทอง</span>
+  </div>
+  <button class="logout-btn" onclick="doLogout()">🚪 Log Out</button>
+</div>
+
+<div class="layout">
+
+  <!-- ========== ซ้าย 60% : รายการยา ========== -->
+  <div class="left panel">
+
+    <div class="member-row">
+      <div class="member-suggest" id="memberSearchWrap">
+        <div class="search-box">
+          <input id="memberSearchInput" placeholder="ค้นหาสมาชิก (ชื่อ/เบอร์โทร/รหัสสมาชิก)" autocomplete="off">
+          <button onclick="doMemberSearch()">🔍</button>
+        </div>
+        <div class="suggest-list" id="memberSuggestList"></div>
+      </div>
+      <div class="member-chip" id="memberChip">👤 ลูกค้าทั่วไป</div>
+      <button class="register-member-btn" onclick="window.open('customer-mockup.html', '_blank')">➕ สมัครสมาชิก</button>
+    </div>
+
+    <div class="points-redeem-row" id="pointsRedeemRow" style="display:none;">
+      <label for="redeemPointsInput">🎁 แลกแต้มสะสมเป็นส่วนลด (1 แต้ม = 1 บาท):</label>
+      <input type="number" id="redeemPointsInput" min="0" step="1" value="0" oninput="onRedeemPointsChange()" style="width:90px;">
+      <span id="redeemPointsHint" style="font-weight:400;"></span>
+    </div>
+
+    <div class="search-row">
+      <div class="search-suggest" id="searchWrap">
+        <div class="search-box">
+          <input id="searchInput" placeholder="ค้นหาสินค้า (ctrl + Q)" autocomplete="off">
+          <button onclick="doSearch()">🔍</button>
+        </div>
+        <div class="suggest-list" id="suggestList"></div>
+      </div>
+    </div>
+
+    <div class="sale-header">เลขที่บิล : <span id="saleId">SR26082400001</span></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:56px;">ลำดับที่</th>
+          <th>รายการยา</th>
+          <th style="width:70px;">ราคา</th>
+          <th style="width:70px;">จำนวน</th>
+          <th style="width:60px;">หน่วย</th>
+          <th style="width:70px;">รวม</th>
+          <th style="width:130px;">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="cartBody">
+        <tr class="empty-row"><td colspan="7">ยังไม่ได้เลือกรายการ</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bottom-row">
+      <div class="bottom-actions">
+        <button class="hold-btn" onclick="holdCurrentBill()">📋 พักบิลนี้ไว้ก่อน</button>
+        <button class="held-bills-btn" id="heldBillsBtn" onclick="openHeldBills()">🗃️ บิลที่พักไว้</button>
+        <button class="today-bill-btn" onclick="openTodayBills()">🧾 รายการบิลวันนี้</button>
+        <button class="print-all-btn" onclick="alert('มอคอัพ: จะพิมพ์ฉลากของทุกรายการในตะกร้าต่อกัน')">🖨️ พิมพ์ฉลากทุกรายการ</button>
+      </div>
+
+      <div class="summary-box">
+        <div class="summary-line">
+          <span>ราคารวม</span>
+          <span id="sumSubtotal">0.00</span>
+        </div>
+        <div class="summary-line">
+          <span>ภาษี (7% รวมในราคา)</span>
+          <span id="sumTax">0.00</span>
+        </div>
+        <div class="summary-line summary-discount">
+          <span>ส่วนลด</span>
+          <input type="number" id="discountInput" value="0" min="0" oninput="renderCart()">
+        </div>
+        <div class="summary-line" id="pointsDiscountLine" style="display:none;color:#a9701a;">
+          <span>ส่วนลดจากแต้มสะสม</span>
+          <span id="pointsDiscountAmount">0.00</span>
+        </div>
+        <div class="summary-line summary-grand">
+          <span>ยอดรวม</span>
+          <span id="sumTotal">0.00</span>
+        </div>
+        <button class="checkout-btn" onclick="openPaymentModal()">💳 ชำระเงิน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ขวา 40% : ฉลากยา ========== -->
+  <div class="right panel">
+    <div class="label-top">
+      <h2>🏷️ พิมพ์ฉลากยา</h2>
+      <div class="label-top-actions">
+        <select id="labelLang">
+          <option>ไทย</option>
+          <option>English</option>
+        </select>
+        <button class="btn-primary label-top-print-btn" onclick="openLabelPrint()">🖨️ พิมพ์ฉลาก</button>
+      </div>
+    </div>
+    <p class="label-sub">รูปแบบฉลาก — เลือกรายการทางซ้ายเพื่อแก้ไขฉลาก</p>
+
+    <div id="labelEmpty" class="label-card">
+      <div class="empty-label">ยังไม่ได้เลือกรายการยา<br>คลิกที่แถวสินค้าทางซ้ายเพื่อออกฉลาก</div>
+    </div>
+
+    <div id="labelCard" class="label-card" style="display:none;">
+      <div class="shop-name-line">
+        ร้านขายยา<br>
+        <b id="lblShopName">ปรุงยาเภสัช (สำนักงานใหญ่)</b><br>
+        3/5 หมู่ 1 ต.อิปัน อ.พระแสง จ.สุราษฎร์ธานี 84210 (0862892295)
+      </div>
+
+      <div class="section-title">ข้อมูลผู้ป่วย</div>
+      <div class="field-row">
+        <div class="field">
+          <label>ชื่อผู้ใช้ยา</label>
+          <input type="text" id="lblPatient" placeholder="พิมพ์ชื่อผู้ป่วย...">
+        </div>
+        <div class="field" style="flex:0 0 120px;">
+          <label>วันที่</label>
+          <input type="text" id="lblDate" readonly>
+        </div>
+      </div>
+
+      <div class="section-title">ข้อมูลยา</div>
+      <div class="field-row">
+        <div class="field readonly-look">
+          <label>ชื่อยา</label>
+          <input type="text" id="lblDrugName" readonly>
+        </div>
+        <div class="field" style="flex:0 0 130px;">
+          <label>วันหมดอายุ</label>
+          <input type="text" id="lblExpiry" placeholder="วว/ดด/ปปปป">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>ข้อบ่งใช้</label>
+          <input type="text" id="lblIndication">
+        </div>
+        <div class="field-inline">
+          <label style="margin:0;">จำนวน :</label>
+          <input type="number" id="lblQty" value="1">
+          <span id="lblUnit">แผง</span>
+        </div>
+      </div>
+
+      <div class="section-title">ขนาดและวิธีใช้</div>
+      <div class="field-row">
+        <div class="field">
+          <label>วิธีใช้ยา</label>
+          <select id="lblRoute" onchange="onRouteChange()">
+            <option value="รับประทาน">รับประทาน</option>
+            <option value="ทา">ทา</option>
+            <option value="เหน็บช่องคลอด">เหน็บช่องคลอด</option>
+            <option value="เหน็บทวารหนัก">เหน็บทวารหนัก</option>
+            <option value="หยอดตา">หยอดตา</option>
+            <option value="พ่นจมูก">พ่นจมูก</option>
+            <option value="พ่นในปาก">พ่นในปาก</option>
+          </select>
+        </div>
+        <div class="field-inline">
+          <label style="margin:0;">ครั้งละ :</label>
+          <input type="number" id="lblDose" value="1">
+        </div>
+        <div class="field-inline">
+          <label style="margin:0;">หน่วย :</label>
+          <select id="lblDoseUnit">
+            <option value="เม็ด">เม็ด</option>
+            <option value="แคปซูล">แคปซูล</option>
+            <option value="ช้อนชา">ช้อนชา</option>
+            <option value="ช้อนโต๊ะ">ช้อนโต๊ะ</option>
+            <option value="ซีซี">ซีซี</option>
+            <option value="หยด">หยด</option>
+            <option value="พ่น">พ่น</option>
+            <option value="แท่ง">แท่ง</option>
+            <option value="ป้าย">ป้าย</option>
+            <option value="ครั้ง">ครั้ง</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-inline">
+          <label style="margin:0;">วันละ :</label>
+          <input type="number" id="lblPerDay" value="1">
+          <span>ครั้ง</span>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <b style="font-size:13.5px;color:#3f4f45;">ช่วงเวลา :</b>
+        <label><input type="checkbox" id="chkMorning" checked> เช้า</label>
+        <label><input type="checkbox" id="chkNoon"> กลางวัน</label>
+        <label><input type="checkbox" id="chkEvening"> เย็น</label>
+        <label><input type="checkbox" id="chkBedtime"> ก่อนนอน</label>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <select id="lblMealTime">
+            <option>หลังอาหาร</option>
+            <option>ก่อนอาหาร</option>
+            <option>พร้อมอาหาร</option>
+            <option>ไม่ระบุ</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <label><input type="checkbox" id="chkEvery"> ทุกๆ</label>
+        <input type="number" id="lblEveryHr" style="width:50px;padding:9px 8px;border:1px solid #cfe0d3;border-radius:7px;background:#fff;">
+        <span>ชั่วโมง</span>
+        <label style="margin-left:10px;"><input type="checkbox" id="chkPRN"> เฉพาะเมื่อมีอาการ :</label>
+        <input type="text" id="lblPRNNote" style="flex:1;padding:9px 10px;border:1px solid #cfe0d3;border-radius:7px;background:#fff;font-family:inherit;">
+      </div>
+
+      <div class="section-title">หมายเหตุ</div>
+      <div class="note-row">
+        <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+          <input type="checkbox" id="chkNote" checked> แสดงหมายเหตุ
+        </label>
+        <input type="text" id="lblNote" value="ทานยาหลังอาหารทันที">
+      </div>
+
+      <div class="save-label-row">
+        <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="chkSaveLabelData" style="margin-top:2px;">
+          <span>บันทึกข้อมูลฉลากยา <span class="save-label-hint">(ข้อมูลที่จะไม่ถูกบันทึก : ชื่อผู้ใช้ยา, วันหมดอายุ, จำนวน)</span></span>
+        </label>
+      </div>
+
+      <div class="field-row" style="margin-top:14px;">
+        <div class="field">
+          <label>เภสัชกรผู้จ่ายยา</label>
+          <input type="text" id="lblPharmacist" value="เภสัชกรวีระยุทธิ์ เพชรทอง">
+        </div>
+      </div>
+
+      <div class="print-action">
+        <button class="btn-secondary" onclick="resetLabel()">ล้างฟอร์ม</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== Popup เลือกสินค้า ========== -->
+<div class="modal-overlay" id="productModalOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title" id="modalProductName">ชื่อยา</div>
+      <button class="modal-close" onclick="closeProductModal()">✕</button>
+    </div>
+
+    <div class="modal-tabs">
+      <div class="modal-tab active">ขาย</div>
+      <div class="modal-tab" onclick="window.open('product-edit-mockup.html?code=' + encodeURIComponent(modalProduct.id), '_blank')">ตั้งค่าสินค้า</div>
+    </div>
+
+    <div class="modal-body">
+      <label class="modal-label">หน่วย</label>
+      <div class="unit-options" id="modalUnitOptions"></div>
+
+      <label class="modal-label">จำนวน</label>
+      <div class="qty-stepper">
+        <input type="number" id="modalQtyInput" min="1" value="1" onchange="setModalQty(this.value)">
+        <div class="qty-arrows">
+          <button onclick="stepModalQty(1)">▲</button>
+          <button onclick="stepModalQty(-1)">▼</button>
+        </div>
+        <div class="qty-unit-tag" id="modalUnitLabel">แผง</div>
+      </div>
+
+      <div class="modal-meta-row">
+        <span>จำนวนคงเหลือ: <b id="modalStock">-</b></span>
+        <span>EXP: <b id="modalExpiry">-</b></span>
+      </div>
+
+      <label class="modal-label">ราคา / หน่วย</label>
+      <div class="price-row">
+        <input type="number" id="modalPriceInput" step="0.01" onchange="setModalPrice(this.value)">
+        <span class="price-currency">บาท</span>
+        <span class="cost-price-box"><span>ราคาทุน</span><b id="modalCostPrice">0.00</b></span>
+      </div>
+      <div class="price-estimate-warning" id="priceEstimateWarning" style="display:none;">
+        ⚠️ ยังไม่เคยตั้งราคาขายของหน่วยนี้ในระบบ — ราคาที่โชว์นี้คือ<b>ราคาทุน</b>ที่ระบบใส่ให้ชั่วคราว
+        (เท่ากับต้นทุน = ไม่มีกำไร) กรุณาตรวจสอบ/แก้ไขราคาก่อนขายจริง
+      </div>
+      <div class="price-total-row">
+        รวม <b id="modalPriceTotal">0.00</b> บาท
+      </div>
+
+      <button class="modal-confirm-btn" onclick="confirmAddToCart()">🛒 ลงตะกร้า</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== โมดัลพิมพ์ฉลากยา (ขนาดจริง 100x75มม. แนวนอน) ========== -->
+<div class="label-print-overlay" id="labelPrintOverlay">
+  <div class="label-print-wrap">
+    <div class="label-print-toolbar">
+      <button class="btn-do-print" onclick="printLabelNow()">🖨️ พิมพ์ (100×75 มม.)</button>
+      <button class="btn-close-print" onclick="closeLabelPrintModal()">ปิด</button>
+    </div>
+    <div class="label-sheet" id="labelSheetContent"></div>
+  </div>
+</div>
+
+<!-- ========== โมดัลหน้าจอชำระเงิน ========== -->
+<div class="modal-overlay" id="paymentModalOverlay">
+  <div class="modal-card pay-modal-card">
+    <div class="modal-header">
+      <div class="modal-title">💳 ชำระเงิน</div>
+      <button class="modal-close" onclick="closePaymentModal()">✕</button>
+    </div>
+
+    <div class="pay-total-box">
+      <div class="pay-total-label">ยอดที่ต้องชำระ</div>
+      <div class="pay-total-amount" id="payTotalAmount">0.00</div>
+    </div>
+
+    <!-- ========== ฟอร์มก่อนยืนยันชำระเงิน ========== -->
+    <div id="payFormArea">
+      <div class="pay-method-tabs">
+        <div class="pay-method-tab active" id="tabCash" onclick="switchPayMethod('cash')">💵 เงินสด</div>
+        <div class="pay-method-tab" id="tabQR" onclick="switchPayMethod('qr')">📱 QR Code</div>
+      </div>
+
+      <!-- เงินสด -->
+      <div class="pay-section" id="paySectionCash">
+        <div class="pay-field">
+          <label>รับเงินมา <span class="pay-enter-hint">(กด Enter เพื่อยืนยันชำระเงิน)</span></label>
+          <input type="number" id="cashReceived" placeholder="0.00" min="0" oninput="updateChange()">
+        </div>
+        <div class="quick-amount-row" id="quickAmountRow"></div>
+        <div class="change-box" id="changeBox">
+          <span class="lbl">เงินทอน</span>
+          <span class="amt" id="changeAmount">0.00</span>
+        </div>
+      </div>
+
+      <!-- QR Code -->
+      <div class="pay-section" id="paySectionQR" style="display:none;">
+        <div class="qr-box">
+          <div class="qr-placeholder">📱</div>
+          <div class="qr-hint">ให้ลูกค้าสแกน QR PromptPay เพื่อชำระเงิน</div>
+          <div class="qr-amount">ยอดชำระ <span id="qrAmount">0.00</span> บาท</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== ผลลัพธ์หลังยืนยันชำระเงินแล้ว (ค้างยอดทอนไว้ให้ดู) ========== -->
+    <div id="payResultArea" style="display:none;">
+      <div class="pay-result">
+        <div class="pay-result-icon">✅</div>
+        <div class="pay-result-title">ชำระเงินเรียบร้อย</div>
+        <div id="payResultDetail"></div>
+        <div class="pay-enter-hint" style="margin-top:14px;">กด Enter อีกครั้งเพื่อจบรายการโดยไม่พิมพ์ใบเสร็จ</div>
+      </div>
+    </div>
+
+    <!-- ปุ่มด้านล่าง: สลับตามสถานะ -->
+    <div class="pay-actions" id="payActionsForm">
+      <button class="btn-secondary" onclick="closePaymentModal()">ยกเลิก</button>
+      <button class="btn-primary" onclick="confirmPayment()">✅ ยืนยันการชำระเงิน</button>
+    </div>
+    <div class="pay-actions" id="payActionsResult" style="display:none;">
+      <button class="btn-secondary" onclick="printReceiptAndFinish()">🖨️ พิมพ์ใบเสร็จ</button>
+      <button class="btn-primary" onclick="finishSale()">✅ เสร็จสิ้น (Enter)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== โมดัลเลือกบิลที่พักไว้ ========== -->
+<div class="modal-overlay" id="heldBillsModalOverlay">
+  <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-header">
+      <div class="modal-title">🗃️ บิลที่พักไว้</div>
+      <button class="modal-close" onclick="closeHeldBillsModal()">✕</button>
+    </div>
+    <div class="modal-body" id="heldBillsBody"></div>
+  </div>
+</div>
+
+<!-- ========== โมดัลรายการบิลวันนี้ ========== -->
+<div class="modal-overlay" id="todayBillsModalOverlay">
+  <div class="modal-card" style="max-width: 620px;">
+    <div class="modal-header">
+      <div class="modal-title">🧾 รายการบิลวันนี้</div>
+      <button class="modal-close" onclick="closeTodayBillsModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tb-summary" id="tbSummary"></div>
+      <div id="todayBillsBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// เชื่อมต่อ Apps Script (Google Sheet) — ระบบจริง ไม่ใช่ข้อมูลตัวอย่างแล้ว
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }), // ห้ามตั้ง Content-Type เอง ไม่งั้นชน CORS preflight
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+let currentUser = null;
+(function () {
+  const raw = localStorage.getItem('ppms_user');
+  if (!raw) {
+    window.location.href = 'login-mockup.html';
+    return;
+  }
+  try {
+    currentUser = JSON.parse(raw);
+    const displayName = currentUser['ชื่อ-นามสกุล'] || currentUser['Username'] || 'ไม่ระบุ';
+    document.getElementById('phNameDisplay').textContent = displayName;
+    document.getElementById('lblPharmacist').value = displayName;
+  } catch (e) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+function doLogout() {
+  localStorage.removeItem('ppms_user');
+  window.location.href = 'login-mockup.html';
+}
+
+// ---------- ข้อมูลยาตัวอย่าง (mock) — เก็บไว้เผื่อ API ล่มชั่วคราว ไม่ได้ใช้เป็นค่าเริ่มต้นแล้ว ----------
+const mockProducts = [
+  { id:"D001", name:"Sonap Forte 550 mg", strength:"550 mg", price:3, unit:"เม็ด", indication:"ยาแก้ปวดอักเสบ กล้ามเนื้อ", expiry:"23/04/2029", stock:27,
+    units:[ {label:"แผง", price:3, cost:1.8}, {label:"กล่อง", price:28, cost:17}, {label:"กล่อง 10", price:270, cost:170} ] },
+  { id:"D002", name:"Amoxicillin", strength:"500 mg", price:2.5, unit:"แคปซูล", indication:"ยาปฏิชีวนะ ฆ่าเชื้อแบคทีเรีย", expiry:"10/11/2027", stock:140,
+    units:[ {label:"แคปซูล", price:2.5, cost:1.4}, {label:"แผง 10", price:23, cost:13} ] },
+  { id:"D003", name:"Paracetamol", strength:"500 mg", price:1, unit:"เม็ด", indication:"ยาแก้ปวด ลดไข้", expiry:"01/06/2028", stock:8,
+    units:[ {label:"เม็ด", price:1, cost:0.5}, {label:"แผง 10", price:9, cost:4.8} ] },
+  { id:"D004", name:"Cetirizine", strength:"10 mg", price:2, unit:"เม็ด", indication:"ยาแก้แพ้ ลดน้ำมูก", expiry:"15/02/2028", stock:52,
+    units:[ {label:"เม็ด", price:2, cost:1.1} ] },
+];
+
+let cart = [];
+let saleCounter = 1;
+let activeCartIndex = null;
+let labelLoadedForKey = null; // กันข้อบ่งใช้ที่พิมพ์เองถูกรีเซ็ตทิ้งเวลาตะกร้ามีการเปลี่ยนแปลงอื่นที่ไม่เกี่ยวกับแถวนี้
+let heldBills = [];
+
+// ---------- รายการบิลวันนี้ (มอคอัพ: ใส่ตัวอย่างบิลก่อนหน้าไว้ล่วงหน้าให้ดูของจริง) ----------
+let todaySales = [
+  {
+    saleId: "PPMS2608260001", time: "09:12:05",
+    items: [
+      { name:"Paracetamol", strength:"500 mg", unit:"เม็ด", price:1, qty:10 },
+      { name:"Cetirizine", strength:"10 mg", unit:"เม็ด", price:2, qty:5 },
+    ],
+    subtotal: 20, tax: 1.31, discount: 0, total: 20, method: "cash", received: 20, change: 0,
+  },
+  {
+    saleId: "PPMS2608260002", time: "10:47:31",
+    items: [
+      { name:"Sonap Forte 550 mg", strength:"550 mg", unit:"แผง", price:3, qty:2 },
+    ],
+    subtotal: 6, tax: 0.39, discount: 0, total: 6, method: "qr", received: null, change: null,
+  },
+  {
+    saleId: "PPMS2608260003", time: "13:22:47",
+    items: [
+      { name:"Amoxicillin", strength:"500 mg", unit:"แคปซูล", price:2.5, qty:20 },
+    ],
+    subtotal: 50, tax: 3.27, discount: 5, total: 45, method: "cash", received: 50, change: 5,
+  },
+];
+
+function todayStr(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+(d.getFullYear()+543);
+}
+
+function genSaleId(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const id = "PPMS"+String(d.getFullYear()).slice(2)+pad(d.getMonth()+1)+pad(d.getDate())+String(saleCounter).padStart(5,'0');
+  saleCounter++;
+  return id;
+}
+document.getElementById('saleId').textContent = genSaleId();
+
+// ---------- พักบิล / บิลที่พักไว้ ----------
+function updateHeldBillsButton(){
+  const btn = document.getElementById('heldBillsBtn');
+  btn.textContent = heldBills.length > 0
+    ? `🗃️ บิลที่พักไว้ (${heldBills.length} บิล)`
+    : `🗃️ บิลที่พักไว้`;
+}
+
+function holdCurrentBill(){
+  if(cart.length === 0){
+    alert('ยังไม่มีรายการในบิลปัจจุบันให้พักไว้');
+    return;
+  }
+
+  heldBills.push({
+    saleId: document.getElementById('saleId').textContent,
+    cart: JSON.parse(JSON.stringify(cart)),
+    discount: Number(document.getElementById('discountInput').value) || 0,
+    heldAt: new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' })
+  });
+
+  // เริ่มบิลใหม่
+  cart = [];
+  activeCartIndex = null;
+  document.getElementById('discountInput').value = 0;
+  document.getElementById('saleId').textContent = genSaleId();
+  renderCart();
+  renderLabel();
+  updateHeldBillsButton();
+  focusSearchInput();
+}
+
+function openHeldBills(){
+  if(heldBills.length === 0){
+    alert('ไม่มีบิลที่พักไว้');
+    return;
+  }
+  if(heldBills.length === 1){
+    // มีบิลเดียว ดึงกลับมาขายต่อได้เลยไม่ต้องเลือก
+    restoreHeldBill(0);
+    return;
+  }
+  renderHeldBillsList();
+  document.getElementById('heldBillsModalOverlay').classList.add('show');
+}
+
+function closeHeldBillsModal(){
+  document.getElementById('heldBillsModalOverlay').classList.remove('show');
+}
+
+function renderHeldBillsList(){
+  const body = document.getElementById('heldBillsBody');
+  if(heldBills.length === 0){
+    body.innerHTML = '<div class="held-bills-empty">ไม่มีบิลที่พักไว้</div>';
+    return;
+  }
+  body.innerHTML = heldBills.map((b, i) => {
+    const qty = b.cart.reduce((s, it) => s + it.qty, 0);
+    const total = b.cart.reduce((s, it) => s + it.price * it.qty, 0) - b.discount;
+    return `
+      <div class="held-bill-item">
+        <div class="held-bill-info">
+          <div class="hb-id">${b.saleId}</div>
+          <div class="hb-meta">${b.cart.length} รายการ (${qty} ชิ้น) · ยอดรวม ${total.toFixed(2)} บาท · พักไว้เมื่อ ${b.heldAt}</div>
+        </div>
+        <div class="held-bill-actions">
+          <button class="hb-restore-btn" onclick="restoreHeldBill(${i})">เลือกบิลนี้</button>
+          <button class="hb-delete-btn" onclick="deleteHeldBill(${i})">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function restoreHeldBill(i){
+  const bill = heldBills[i];
+  if(!bill) return;
+
+  if(cart.length > 0){
+    const ok = confirm('ตะกร้าปัจจุบันมีรายการค้างอยู่ ถ้าดึงบิลที่พักไว้มา รายการปัจจุบันจะถูกแทนที่\nต้องการดำเนินการต่อหรือไม่?');
+    if(!ok) return;
+  }
+
+  heldBills.splice(i, 1);
+  cart = bill.cart;
+  activeCartIndex = null;
+  document.getElementById('discountInput').value = bill.discount;
+  document.getElementById('saleId').textContent = bill.saleId;
+
+  renderCart();
+  renderLabel();
+  updateHeldBillsButton();
+  closeHeldBillsModal();
+  focusSearchInput();
+}
+
+function deleteHeldBill(i){
+  const bill = heldBills[i];
+  if(!bill) return;
+  if(confirm(`ยืนยันลบบิลที่พักไว้ "${bill.saleId}" ใช่หรือไม่?\n(รายการในบิลนี้จะหายไปทั้งหมด)`)){
+    heldBills.splice(i, 1);
+    updateHeldBillsButton();
+    renderHeldBillsList();
+    if(heldBills.length === 0) closeHeldBillsModal();
+  }
+}
+
+// ---------- รายการบิลวันนี้ ----------
+function openTodayBills(){
+  renderTodayBillsList();
+  document.getElementById('todayBillsModalOverlay').classList.add('show');
+}
+
+function closeTodayBillsModal(){
+  document.getElementById('todayBillsModalOverlay').classList.remove('show');
+}
+
+function renderTodayBillsList(){
+  const summaryEl = document.getElementById('tbSummary');
+  const body = document.getElementById('todayBillsBody');
+
+  if(todaySales.length === 0){
+    summaryEl.innerHTML = '';
+    body.innerHTML = '<div class="held-bills-empty">ยังไม่มีบิลที่ขายวันนี้</div>';
+    return;
+  }
+
+  const billCount = todaySales.length;
+  const totalAmount = todaySales.reduce((s, b) => s + b.total, 0);
+  summaryEl.innerHTML = `<span>วันนี้ขายแล้ว <b>${billCount}</b> บิล</span><span>ยอดขายรวม <b>${totalAmount.toFixed(2)}</b> บาท</span>`;
+
+  body.innerHTML = todaySales.map((b, i) => {
+    const qty = b.items.reduce((s, it) => s + it.qty, 0);
+    const payTag = b.method === 'cash'
+      ? `<span class="tb-pay-tag tb-pay-cash">เงินสด</span>`
+      : `<span class="tb-pay-tag tb-pay-qr">QR Code</span>`;
+    return `
+      <div class="tb-bill-item">
+        <div class="tb-bill-head" onclick="toggleBillDetail(${i})">
+          <div class="tb-bill-info">
+            <div class="tb-id">${b.saleId}</div>
+            <div class="tb-meta">${payTag}${b.time} · ${b.items.length} รายการ (${qty} ชิ้น) · ยอดรวม ${b.total.toFixed(2)} บาท</div>
+          </div>
+          <div class="tb-bill-actions" onclick="event.stopPropagation()">
+            <button class="tb-view-btn" onclick="toggleBillDetail(${i})">📄 ดูรายการ</button>
+            <button class="tb-print-btn" onclick="printBillReceipt(${i})">🖨️ พิมพ์ใบเสร็จ</button>
+          </div>
+        </div>
+        <div class="tb-bill-detail" id="tbDetail${i}">
+          <table>
+            <thead>
+              <tr><th>รายการยา</th><th class="num">ราคา</th><th class="num">จำนวน</th><th class="num">รวม</th></tr>
+            </thead>
+            <tbody>
+              ${b.items.map(it => `
+                <tr>
+                  <td>${it.name} <span style="color:#8fa198;">${it.strength}</span></td>
+                  <td class="num">${it.price.toFixed(2)}</td>
+                  <td class="num">${it.qty} ${it.unit}</td>
+                  <td class="num">${(it.price * it.qty).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="text-align:right; font-size:12.5px; color:#4a5a4f; margin-top:8px; line-height:1.7;">
+            ราคารวม ${b.subtotal.toFixed(2)} &nbsp;·&nbsp; ภาษี ${b.tax.toFixed(2)} &nbsp;·&nbsp; ส่วนลด ${b.discount.toFixed(2)}<br>
+            ${b.method === 'cash' ? `รับเงิน ${b.received.toFixed(2)} · เงินทอน ${b.change.toFixed(2)}` : 'ชำระผ่าน QR PromptPay'}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleBillDetail(i){
+  const el = document.getElementById('tbDetail' + i);
+  if(el) el.classList.toggle('show');
+}
+
+function printBillReceipt(i){
+  const b = todaySales[i];
+  if(!b) return;
+  alert('มอคอัพ: กำลังพิมพ์ใบเสร็จบิล ' + b.saleId + ' ยอดรวม ' + b.total.toFixed(2) + ' บาท');
+}
+
+// ---------- ค้นหาสมาชิก (แยกจากค้นหายา) — เชื่อมจริงกับชีตลูกค้าแล้ว ----------
+let currentMember = null;
+let redeemPointsAmount = 0;
+const LOYALTY_MAX_REDEEM_PERCENT = 20; // เพดานส่วนลดจากแต้มสะสมสูงสุดต่อบิล (% ของยอดซื้อ) ต้องตรงกับฝั่ง backend (LOYALTY_MAX_REDEEM_PERCENT_)
+
+const memberSearchInput = document.getElementById('memberSearchInput');
+const memberSuggestList = document.getElementById('memberSuggestList');
+
+async function doMemberSearch(){
+  const kw = memberSearchInput.value.trim();
+  if(kw === ""){ memberSuggestList.classList.remove('show'); return; }
+  let results;
+  try {
+    results = await apiGet('listCustomers', { keyword: kw });
+  } catch (err) {
+    memberSuggestList.innerHTML = `<div class="suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
+    memberSuggestList.classList.add('show');
+    return;
+  }
+  if(results.length === 0){
+    memberSuggestList.innerHTML = `
+      <div class="suggest-item">
+        <span>ไม่พบสมาชิก</span>
+        <b style="color:#4a90d9;cursor:pointer;" onclick="useGeneralCustomer()">ใช้ลูกค้าทั่วไป</b>
+      </div>`;
+  } else {
+    memberSuggestList.innerHTML = results.map(m =>
+      `<div class="suggest-item" onclick='selectMember("${m.id}")'>
+        <span>${m.prefix||''}${m.first} ${m.last} <small>${m.phone||''}</small></span>
+        <b>${(m.points||0).toLocaleString()} แต้ม</b>
+      </div>`
+    ).join('');
+  }
+  memberSuggestList.classList.add('show');
+}
+memberSearchInput.addEventListener('input', doMemberSearch);
+memberSearchInput.addEventListener('keyup', e => { if(e.key === 'Enter') doMemberSearch(); });
+document.addEventListener('click', e => {
+  if(!document.getElementById('memberSearchWrap').contains(e.target)) memberSuggestList.classList.remove('show');
+});
+
+async function selectMember(id){
+  memberSearchInput.value = "";
+  memberSuggestList.classList.remove('show');
+  try {
+    currentMember = await apiGet('getCustomer', { id });
+  } catch (err) {
+    alert('โหลดข้อมูลสมาชิกไม่สำเร็จ: ' + err.message);
+    return;
+  }
+  redeemPointsAmount = 0;
+  renderMemberChip();
+  renderPointsRedeemUI();
+  document.getElementById('lblPatient').value = currentMember ? `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim() : "";
+}
+
+function useGeneralCustomer(){
+  currentMember = null;
+  redeemPointsAmount = 0;
+  renderMemberChip();
+  renderPointsRedeemUI();
+  memberSearchInput.value = "";
+  memberSuggestList.classList.remove('show');
+  document.getElementById('lblPatient').value = "";
+}
+
+function renderMemberChip(){
+  const chip = document.getElementById('memberChip');
+  if(currentMember){
+    chip.classList.add('is-member');
+    const fullName = `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim();
+    chip.innerHTML = `👤 ${fullName} (${(currentMember.points||0).toLocaleString()} แต้ม) <span class="change-link" onclick="useGeneralCustomer()">เปลี่ยน</span>`;
+  } else {
+    chip.classList.remove('is-member');
+    chip.innerHTML = `👤 ลูกค้าทั่วไป`;
+  }
+}
+
+// ---------- แลกแต้มสะสมเป็นส่วนลด (1 แต้ม = 1 บาท) ----------
+function renderPointsRedeemUI(){
+  const row = document.getElementById('pointsRedeemRow');
+  if(!row) return;
+
+  if(!currentMember || (currentMember.points || 0) <= 0){
+    row.style.display = 'none';
+    redeemPointsAmount = 0;
+    renderCart();
+    return;
+  }
+
+  row.style.display = 'flex';
+  const input = document.getElementById('redeemPointsInput');
+  if (input) input.value = redeemPointsAmount;
+  renderCart(); // renderCart -> renderSummary -> calcPointsDiscountBaht จะไป sync เพดาน/ข้อความ hint ให้ตรงกันอีกที
+}
+
+function onRedeemPointsChange(){
+  redeemPointsAmount = Math.max(0, Math.floor(Number(document.getElementById('redeemPointsInput').value) || 0));
+  renderCart();
+}
+
+/** จำกัดแต้มที่แลกไม่ให้เกินยอดคงเหลือ / เพดาน % ของยอดซื้อ / ยอดซื้อจริง แล้วอัปเดตช่องกรอก+ข้อความ hint ให้ตรงกัน */
+function clampRedeemPoints(subtotal){
+  if(!currentMember){ redeemPointsAmount = 0; return; }
+  const balance = currentMember.points || 0;
+  const maxByCap = Math.floor(subtotal * LOYALTY_MAX_REDEEM_PERCENT / 100);
+  const maxRedeemable = Math.max(0, Math.min(balance, maxByCap, Math.floor(subtotal)));
+  if(redeemPointsAmount > maxRedeemable) redeemPointsAmount = maxRedeemable;
+
+  const input = document.getElementById('redeemPointsInput');
+  const hint = document.getElementById('redeemPointsHint');
+  if(input){
+    input.max = maxRedeemable;
+    if(Number(input.value) !== redeemPointsAmount) input.value = redeemPointsAmount;
+  }
+  if(hint){
+    hint.textContent = `(มี ${balance.toLocaleString()} แต้ม · แลกได้สูงสุด ${maxRedeemable.toLocaleString()} แต้ม)`;
+  }
+}
+
+function calcPointsDiscountBaht(subtotal){
+  if(currentMember) clampRedeemPoints(subtotal); // เช็ค/ปรับเพดานใหม่ทุกครั้งที่คำนวณยอด (เผื่อยอดซื้อเปลี่ยนไปหลังเพิ่ม/ลบสินค้า)
+  if(!redeemPointsAmount) return 0;
+  return redeemPointsAmount * 1; // 1 แต้ม = ส่วนลด 1 บาท
+}
+
+const searchInput = document.getElementById('searchInput');
+const suggestList = document.getElementById('suggestList');
+
+function focusSearchInput(){
+  // เคลียร์ช่องค้นหาแล้วคืนโฟกัส/เคอร์เซอร์กระพริบไว้ พร้อมกด Enter ต่อได้ทันทีโดยไม่ต้องใช้เมาส์
+  searchInput.value = "";
+  suggestList.classList.remove('show');
+  setTimeout(() => searchInput.focus(), 30);
+}
+
+let searchToken = 0;
+let searchDebounceTimer = null;
+
+async function doSearch(){
+  const kw = searchInput.value.trim();
+  if(kw === ""){ suggestList.classList.remove('show'); return; }
+
+  const myToken = ++searchToken;
+  suggestList.innerHTML = '<div class="suggest-item"><span>กำลังค้นหา...</span></div>';
+  suggestList.classList.add('show');
+
+  let results;
+  try {
+    results = await apiGet('searchProducts', { keyword: kw });
+  } catch (err) {
+    if (myToken !== searchToken) return; // มีการค้นหาคำใหม่แล้ว ทิ้งผลลัพธ์เก่า
+    suggestList.innerHTML = `<div class="suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
+    return;
+  }
+  if (myToken !== searchToken) return;
+
+  if(results.length === 0){
+    suggestList.innerHTML = '<div class="suggest-item"><span>ไม่พบสินค้า</span></div>';
+  } else {
+    suggestList.innerHTML = results.map(p =>
+      p.type === 'bundle'
+        ? `<div class="suggest-item" onclick="selectBundle('${p.code}')">
+            <span>📦 ${p.name} <b style="color:#a9701a;font-weight:700;">[ชุด]</b></span>
+            <b>฿${(Number(p.price)||0).toFixed(2)}</b>
+          </div>`
+        : `<div class="suggest-item" onclick="openProductModal('${p.code}')">
+            <span>${p.name}</span>
+            <b>คงเหลือ ${p.stock || 0} ${p.unit || ''}</b>
+          </div>`
+    ).join('');
+  }
+  suggestList.classList.add('show');
+}
+
+/** เลือกชุดสินค้าจากผลค้นหา — โหลดรายละเอียดชุดแล้วเพิ่มสินค้าทุกตัวในชุดลงตะกร้าให้อัตโนมัติทีเดียว */
+async function selectBundle(code){
+  suggestList.classList.remove('show');
+  let bundle;
+  try {
+    bundle = await apiGet('getBundle', { code });
+  } catch (err) {
+    alert('โหลดข้อมูลชุดสินค้าไม่สำเร็จ: ' + err.message);
+    return;
+  }
+  if (!bundle.items || bundle.items.length === 0) {
+    alert('ชุดสินค้า "' + bundle.name + '" ยังไม่มีรายการสินค้าอยู่ในชุดเลย ไปตั้งค่าที่หน้า "ชุดสินค้า" ก่อน');
+    return;
+  }
+  addBundleToCart(bundle);
+  focusSearchInput();
+}
+
+/**
+ * เพิ่มสินค้าทุกตัวในชุดลงตะกร้าทีละตัว (ไม่ได้ลงเป็นแถวเดียวรวม) ที่ราคาต่อหน่วยตามที่ตั้งไว้ในชุด
+ * เพื่อให้ตัดสต๊อกแต่ละตัวถูกต้องตอนชำระเงินจริง (ใช้ตรรกะตะกร้าเดิมทุกอย่าง ไม่ต้องแก้ฝั่งตัดสต๊อก)
+ * หมายเหตุ: ยังไม่เช็คสต๊อกคงเหลือของแต่ละตัวตอนเพิ่ม (ต่างจากสินค้าเดี่ยวที่เช็คตั้งแต่ตอนลงตะกร้า)
+ * ถ้าสต๊อกไม่พอจริง จะเจอตอนกดชำระเงินแทน (backend เช็คให้อยู่แล้ว ไม่มีทางขายเกินสต๊อกหลุดออกไปได้)
+ */
+function addBundleToCart(bundle){
+  (bundle.items || []).forEach(item => {
+    const cartKey = item.code + "-" + item.unit;
+    const existing = cart.find(c => c.cartKey === cartKey);
+    if (existing) {
+      existing.qty += Number(item.qty) || 1;
+    } else {
+      cart.push({
+        cartKey: cartKey,
+        id: item.code,
+        name: item.name,
+        strength: '',
+        unit: item.unit,
+        price: Number(item.price) || 0,
+        qty: Number(item.qty) || 1,
+        indication: '',
+        expiry: '',
+        labelDefaults: null,
+      });
+    }
+  });
+  renderCart();
+}
+
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(doSearch, 300); // ดีเลย์กันยิง API ถี่เกินไปทุกตัวอักษรที่พิมพ์
+});
+searchInput.addEventListener('keyup', e => {
+  if(e.key !== 'Enter') return;
+  // กัน Enter ค้างจากการกด "เสร็จสิ้น (Enter)" ในโมดัลชำระเงิน ไม่ให้เปิดโมดัลซ้ำทันที
+  if(Date.now() - lastPaymentModalCloseAt < 400) return;
+  if(searchInput.value.trim() === ''){
+    // ช่องค้นหาว่าง + กด Enter = ไปหน้าจอชำระเงินเลย
+    openPaymentModal();
+  } else {
+    clearTimeout(searchDebounceTimer);
+    doSearch();
+  }
+});
+document.addEventListener('click', e => {
+  if(!document.getElementById('searchWrap').contains(e.target)) suggestList.classList.remove('show');
+});
+
+// ---------- Popup เลือกสินค้า ----------
+let modalProduct = null;
+let modalUnitIndex = 0;
+let modalQty = 1;
+let editingCartIndex = null;
+const productDetailCache = {}; // เก็บผลลัพธ์ getProduct ไว้ กันเรียก API ซ้ำโดยไม่จำเป็น
+
+async function fetchProductDetail(code){
+  if (productDetailCache[code]) return productDetailCache[code];
+
+  const detail = await apiGet('getProduct', { code });
+  const product = detail.product || {};
+  const costPerSmallUnit = Number(product['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0;
+  const smallUnitLabel = product['หน่วยเล็กสุด(อัตโนมัติ)'] || 'หน่วย';
+
+  // คงเหลือแยกตาม "หน่วยที่ระบุในล็อตเป๊ะๆ" (ไม่แปลงหน่วยข้ามกัน) — ต้องตรงกับที่ backend
+  // ใช้เช็คตอนกันขายเกินสต๊อกจริงใน createSale (getExactUnitStock_) ไม่งั้นจะลงตะกร้าได้แต่บันทึกบิลไม่ผ่าน
+  const stockByUnit = {};
+  (detail.stockLots || []).forEach(l => {
+    const u = l['หน่วยนับสต๊อก'];
+    stockByUnit[u] = (stockByUnit[u] || 0) + (Number(l['จำนวนคงเหลือ']) || 0);
+  });
+
+  let units = (detail.units || []).map(u => {
+    const multiplier = Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1;
+    const priceRow = (detail.prices || []).find(p => p['หน่วย'] === u['หน่วย(ใหญ่)']);
+    const cost = Math.round(costPerSmallUnit * multiplier * 100) / 100;
+    return {
+      label: u['หน่วย(ใหญ่)'],
+      price: priceRow ? (Number(priceRow['ราคาขาย']) || 0) : cost, // ยังไม่เคยตั้งราคาขาย → ใช้ต้นทุนไปพลางก่อน ต้องไปตั้งราคาจริงทีหลัง
+      cost: cost,
+      multiplier: multiplier,
+      priceIsEstimate: !priceRow, // true = ยังไม่มีราคาขายจริงในชีต ใช้ต้นทุนแทนไปก่อน ต้องระวังตอนขาย
+      stock: stockByUnit[u['หน่วย(ใหญ่)']] || 0,
+    };
+  });
+
+  // บางสินค้าในชีต 'หน่วยนับ (Units)' มีข้อมูลไม่ครบ (เช่น มีแต่ "กล่อง" ไม่มี "แผง" ซึ่งเป็นหน่วยเล็กสุดที่ขายจริงบ่อยสุด)
+  // จึงต้องเช็คและเติมหน่วยเล็กสุดเข้าไปเอง ถ้ายังไม่มีอยู่ในลิสต์ กันไม่ให้ค่าเริ่มต้นเป็นหน่วยใหญ่ที่ไม่ได้ตั้งใจขาย
+  if (!units.some(u => u.label === smallUnitLabel)) {
+    const priceRow = (detail.prices || []).find(p => p['หน่วย'] === smallUnitLabel);
+    units.unshift({
+      label: smallUnitLabel,
+      price: priceRow ? (Number(priceRow['ราคาขาย']) || 0) : costPerSmallUnit,
+      cost: costPerSmallUnit,
+      multiplier: 1,
+      priceIsEstimate: !priceRow,
+      stock: stockByUnit[smallUnitLabel] || 0,
+    });
+  }
+
+  // เรียงหน่วยเล็กสุดไว้ก่อนเสมอ (ตัวคูณน้อยสุด) เพราะเป็นหน่วยที่ขายบ่อยที่สุด ให้เป็นค่าเริ่มต้นตอนเปิด popup
+  units.sort((a, b) => (a.multiplier || 1) - (b.multiplier || 1));
+
+  if (units.length === 0) {
+    units = [{ label: smallUnitLabel, price: costPerSmallUnit, cost: costPerSmallUnit, multiplier: 1, priceIsEstimate: true, stock: stockByUnit[smallUnitLabel] || 0 }];
+  }
+
+  const lots = (detail.stockLots || []).filter(l => Number(l['จำนวนคงเหลือ']) > 0);
+  lots.sort((a, b) => new Date(a['วันหมดอายุ (EXP)']) - new Date(b['วันหมดอายุ (EXP)']));
+
+  // ค่าเริ่มต้นฉลากยาที่เคยบันทึกไว้สำหรับสินค้านี้ (ถ้ามี) — เก็บเป็น JSON ไว้ในชีต DrugInfo
+  let labelDefaults = null;
+  const rawDefaults = detail.drugInfo ? detail.drugInfo['ค่าเริ่มต้นฉลากยา (LabelDefaults)'] : null;
+  if (rawDefaults) {
+    try { labelDefaults = JSON.parse(rawDefaults); } catch (e) { labelDefaults = null; }
+  }
+
+  const result = {
+    id: product['รหัสสินค้า'],
+    name: product['ชื่อสินค้า'],
+    strength: '',
+    indication: (labelDefaults && labelDefaults.indication) || (detail.drugInfo ? (detail.drugInfo['ชื่อยาสามัญ (Generic Name)'] || '') : ''),
+    expiry: lots[0] ? lots[0]['วันหมดอายุ (EXP)'] : '',
+    stock: detail.liveStock != null ? detail.liveStock : (product['คงเหลือรวมทุกล็อต(อัตโนมัติ)'] || 0),
+    units,
+    labelDefaults,
+  };
+  productDetailCache[code] = result;
+  return result;
+}
+
+async function openProductModal(code){
+  searchInput.value = "";
+  suggestList.classList.remove('show');
+
+  let p;
+  try {
+    p = await fetchProductDetail(code);
+  } catch (err) {
+    alert('ดึงข้อมูลสินค้าไม่สำเร็จ: ' + err.message);
+    return;
+  }
+
+  modalProduct = p;
+  modalUnitIndex = 0;
+  modalQty = 1;
+  editingCartIndex = null;
+
+  document.getElementById('modalProductName').textContent = p.name + (p.strength ? " " + p.strength : "");
+  document.getElementById('modalExpiry').textContent = p.expiry;
+  renderModalUnits();
+  renderModalQtyPrice(); // ตั้งค่า modalStock ให้ตรงกับหน่วยที่เลือกอยู่ (ไม่ใช่ยอดรวมข้ามหน่วย) ในนี้แล้ว
+
+  document.getElementById('productModalOverlay').classList.add('show');
+}
+
+async function editCartItem(i){
+  const line = cart[i];
+  if(!line) return;
+
+  let p;
+  try {
+    p = await fetchProductDetail(line.id);
+  } catch (err) {
+    alert('ดึงข้อมูลสินค้าไม่สำเร็จ: ' + err.message);
+    return;
+  }
+
+  modalProduct = p;
+  modalQty = line.qty;
+  editingCartIndex = i;
+
+  let uIdx = p.units.findIndex(u => u.label === line.unit);
+  if(uIdx === -1) uIdx = 0;
+  modalUnitIndex = uIdx;
+  p.units[modalUnitIndex].price = line.price; // สะท้อนราคาที่เคยแก้ไว้ตอนลงตะกร้า
+
+  document.getElementById('modalProductName').textContent = p.name + (p.strength ? " " + p.strength : "");
+  document.getElementById('modalExpiry').textContent = p.expiry;
+  renderModalUnits();
+  renderModalQtyPrice(); // ตั้งค่า modalStock ให้ตรงกับหน่วยที่เลือกอยู่ (ไม่ใช่ยอดรวมข้ามหน่วย) ในนี้แล้ว
+
+  document.getElementById('productModalOverlay').classList.add('show');
+}
+
+function renderModalUnits(){
+  const box = document.getElementById('modalUnitOptions');
+  box.innerHTML = modalProduct.units.map((u, i) =>
+    `<button class="unit-opt ${i === modalUnitIndex ? 'active' : ''}" onclick="selectModalUnit(${i})">${u.label}${u.priceIsEstimate ? '<span class="unit-warn-dot" title="ยังไม่ได้ตั้งราคาขาย"></span>' : ''}</button>`
+  ).join('');
+}
+
+function selectModalUnit(i){
+  modalUnitIndex = i;
+  renderModalUnits();
+  renderModalQtyPrice();
+}
+
+function renderModalQtyPrice(){
+  const u = modalProduct.units[modalUnitIndex];
+  document.getElementById('modalQtyInput').value = modalQty;
+  document.getElementById('modalUnitLabel').textContent = u.label;
+  document.getElementById('modalStock').textContent = u.stock || 0; // อัปเดตตามหน่วยที่เลือกอยู่ ไม่ใช่ยอดรวมข้ามหน่วย
+  document.getElementById('modalPriceInput').value = u.price;
+  document.getElementById('modalCostPrice').textContent = (u.cost || 0).toFixed(2);
+  document.getElementById('modalPriceTotal').textContent = (u.price * modalQty).toFixed(2);
+  document.getElementById('priceEstimateWarning').style.display = u.priceIsEstimate ? 'block' : 'none';
+}
+
+function stepModalQty(delta){
+  modalQty = Math.max(1, modalQty + delta);
+  renderModalQtyPrice();
+}
+
+function setModalQty(val){
+  modalQty = Math.max(1, Number(val) || 1);
+  renderModalQtyPrice();
+}
+
+function setModalPrice(val){
+  modalProduct.units[modalUnitIndex].price = Math.max(0, Number(val) || 0);
+  modalProduct.units[modalUnitIndex].priceIsEstimate = false; // แก้ราคาเองแล้ว ถือว่ายืนยันราคาแล้ว เอาป้ายเตือนออก
+  document.getElementById('modalPriceTotal').textContent = (modalProduct.units[modalUnitIndex].price * modalQty).toFixed(2);
+  document.getElementById('priceEstimateWarning').style.display = 'none';
+  renderModalUnits(); // อัปเดตจุดแดงบนปุ่มหน่วยด้วย
+}
+
+function closeProductModal(){
+  document.getElementById('productModalOverlay').classList.remove('show');
+  modalProduct = null;
+  editingCartIndex = null;
+  focusSearchInput();
+}
+
+function confirmAddToCart(){
+  const u = modalProduct.units[modalUnitIndex];
+  const cartKey = modalProduct.id + "-" + u.label;
+
+  // ---------- กันขายเกินสต๊อกตั้งแต่ตอนลงตะกร้า (ไม่ต้องรอไปเจอตอนกดชำระเงิน) ----------
+  // รวมจำนวนของสินค้า+หน่วยเดียวกันที่มีอยู่ในตะกร้าแล้ว (ถ้ากำลังแก้ไขรายการเดิม ไม่นับซ้ำรายการที่กำลังแก้)
+  let alreadyInCart = 0;
+  cart.forEach((c, i) => {
+    if (c.cartKey === cartKey && i !== editingCartIndex) alreadyInCart += c.qty;
+  });
+  const totalNeeded = alreadyInCart + modalQty;
+  const available = u.stock || 0;
+  if (totalNeeded > available) {
+    alert(
+      `สต๊อกไม่พอ: ${modalProduct.name} (${u.label})\n` +
+      `คงเหลือ ${available} ${u.label}` +
+      (alreadyInCart > 0 ? ` — ในตะกร้ามีอยู่แล้ว ${alreadyInCart} ${u.label}` : '') +
+      `\nลดจำนวนที่จะเพิ่มลงเหลือไม่เกิน ${Math.max(0, available - alreadyInCart)} ${u.label}`
+    );
+    return;
+  }
+
+  if(editingCartIndex !== null){
+    // แก้ไขรายการเดิมในตะกร้า
+    cart[editingCartIndex] = {
+      cartKey: cartKey,
+      id: modalProduct.id,
+      name: modalProduct.name,
+      strength: modalProduct.strength,
+      unit: u.label,
+      price: u.price,
+      qty: modalQty,
+      indication: modalProduct.indication,
+      expiry: modalProduct.expiry,
+      labelDefaults: modalProduct.labelDefaults || null,
+    };
+    activeCartIndex = editingCartIndex;
+  } else {
+    const existing = cart.find(c => c.cartKey === cartKey);
+    if(existing){
+      existing.qty += modalQty;
+      activeCartIndex = cart.findIndex(c => c.cartKey === cartKey);
+    } else {
+      cart.push({
+        cartKey: cartKey,
+        id: modalProduct.id,
+        name: modalProduct.name,
+        strength: modalProduct.strength,
+        unit: u.label,
+        price: u.price,
+        qty: modalQty,
+        indication: modalProduct.indication,
+        expiry: modalProduct.expiry,
+        labelDefaults: modalProduct.labelDefaults || null,
+      });
+      activeCartIndex = cart.length - 1;
+    }
+  }
+
+  closeProductModal();
+  renderCart();
+  renderLabel();
+}
+
+function renderCart(){
+  const body = document.getElementById('cartBody');
+  if(cart.length === 0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="7">ยังไม่ได้เลือกรายการ</td></tr>';
+  } else {
+    body.innerHTML = cart.map((item, i) => `
+      <tr class="selectable ${i === activeCartIndex ? 'active-row' : ''}" onclick="selectRow(${i})">
+        <td>${i+1}</td>
+        <td>${item.name} <small style="color:#8a978f;">${item.strength}</small></td>
+        <td>${item.price.toFixed(2)}</td>
+        <td onclick="event.stopPropagation()"><input class="qty-input" type="number" min="1" value="${item.qty}" onchange="changeQty(${i}, this.value)"></td>
+        <td>${item.unit}</td>
+        <td>${(item.price*item.qty).toFixed(2)}</td>
+        <td onclick="event.stopPropagation()">
+          <button class="print-btn ${i === activeCartIndex ? 'active' : ''}" onclick="editCartItem(${i})">แก้ไข</button>
+          <button class="del-btn" onclick="removeItem(${i})">ลบ</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+  renderSummary();
+}
+
+function renderSummary(){
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const manualDiscount = Number(document.getElementById('discountInput').value) || 0;
+  const pointsDiscount = calcPointsDiscountBaht(subtotal);
+  const totalDiscount = manualDiscount + pointsDiscount;
+  const afterDiscount = Math.max(0, subtotal - totalDiscount);
+  const tax = afterDiscount - (afterDiscount / 1.07); // ราคาสินค้าตั้งไว้รวมภาษีแล้ว แยกให้ดูเฉยๆ
+
+  document.getElementById('sumSubtotal').textContent = subtotal.toFixed(2);
+  document.getElementById('sumTax').textContent = tax.toFixed(2);
+  document.getElementById('sumTotal').textContent = afterDiscount.toFixed(2);
+
+  const pointsLine = document.getElementById('pointsDiscountLine');
+  if (pointsDiscount > 0) {
+    pointsLine.style.display = 'flex';
+    document.getElementById('pointsDiscountAmount').textContent = '-' + pointsDiscount.toFixed(2);
+  } else {
+    pointsLine.style.display = 'none';
+  }
+}
+
+function changeQty(i, val){
+  cart[i].qty = Math.max(1, Number(val));
+  renderCart();
+  if(i === activeCartIndex) renderLabel();
+}
+
+function removeItem(i){
+  cart.splice(i, 1);
+  if(activeCartIndex === i) activeCartIndex = null;
+  else if(activeCartIndex > i) activeCartIndex -= 1;
+  renderCart();
+  renderLabel();
+}
+
+function selectRow(i){
+  activeCartIndex = i;
+  renderCart();
+  renderLabel();
+}
+
+// ---------- ฉลากยา ----------
+// ---------- วิธีใช้ยา: หน่วยเริ่มต้นตามเส้นทางการให้ยา ----------
+const routeUnitDefaults = {
+  "รับประทาน": "เม็ด",
+  "ทา": "ครั้ง",
+  "เหน็บช่องคลอด": "เม็ด",
+  "เหน็บทวารหนัก": "แท่ง",
+  "หยอดตา": "หยด",
+  "พ่นจมูก": "พ่น",
+  "พ่นในปาก": "พ่น"
+};
+
+function onRouteChange(){
+  const route = document.getElementById('lblRoute').value;
+  document.getElementById('lblDoseUnit').value = routeUnitDefaults[route] || "";
+}
+
+// ใส่ค่าเริ่มต้นของฟอร์มฉลาก (วิธีใช้/ขนาดยา/ช่วงเวลา) — ถ้ามี d (ค่าที่เคยบันทึกไว้สำหรับยาตัวนี้) ใช้ค่านั้น ไม่มีก็ใช้ค่ามาตรฐาน
+function applyLabelDefaults(d){
+  document.getElementById('lblRoute').value = (d && d.route) || "รับประทาน";
+  document.getElementById('lblDose').value = (d && d.dose) || 1;
+  document.getElementById('lblDoseUnit').value = (d && d.doseUnit) || "เม็ด";
+  document.getElementById('lblPerDay').value = (d && d.perDay) || 1;
+  document.getElementById('lblMealTime').value = (d && d.mealTime) || "หลังอาหาร";
+  document.getElementById('chkMorning').checked = d ? !!d.morning : true;
+  document.getElementById('chkNoon').checked = d ? !!d.noon : false;
+  document.getElementById('chkEvening').checked = d ? !!d.evening : false;
+  document.getElementById('chkBedtime').checked = d ? !!d.bedtime : false;
+  document.getElementById('chkEvery').checked = d ? !!d.every : false;
+  document.getElementById('lblEveryHr').value = (d && d.everyHr) || "";
+  document.getElementById('chkPRN').checked = d ? !!d.prn : false;
+  document.getElementById('lblPRNNote').value = (d && d.prnNote) || "";
+  document.getElementById('chkNote').checked = d && d.noteChecked !== undefined ? d.noteChecked : true;
+  document.getElementById('lblNote').value = (d && d.note != null) ? d.note : "ทานยาหลังอาหารทันที";
+}
+
+function renderLabel(){
+  const empty = document.getElementById('labelEmpty');
+  const card = document.getElementById('labelCard');
+
+  if(activeCartIndex === null || !cart[activeCartIndex]){
+    empty.style.display = 'block';
+    card.style.display = 'none';
+    labelLoadedForKey = null;
+    return;
+  }
+
+  const item = cart[activeCartIndex];
+  empty.style.display = 'none';
+  card.style.display = 'block';
+
+  const rowKey = item.cartKey + '#' + activeCartIndex;
+  const isNewRow = labelLoadedForKey !== rowKey;
+
+  document.getElementById('lblDate').value = todayStr();
+  document.getElementById('lblDrugName').value = item.name + " " + item.strength;
+  document.getElementById('lblExpiry').value = item.expiry;
+  document.getElementById('lblQty').value = item.qty;
+  document.getElementById('lblUnit').textContent = item.unit;
+
+  if(isNewRow){
+    // เพิ่งเปลี่ยนมาเป็นสินค้า/แถวใหม่จริงๆ ค่อยตั้งค่าเริ่มต้นให้ (ดึงค่าที่เคยบันทึกไว้สำหรับยาตัวนี้ถ้ามี)
+    // ถ้ายังเป็นแถวเดิมอยู่ ไม่แตะข้อมูลที่พิมพ์เองไว้เลย
+    document.getElementById('lblIndication').value = item.indication;
+    applyLabelDefaults(item.labelDefaults);
+    document.getElementById('chkSaveLabelData').checked = false; // ติ๊กเฉพาะครั้งนี้ ไม่จำค่าไว้ให้ครั้งหน้า
+    labelLoadedForKey = rowKey;
+  }
+}
+
+function resetLabel(){
+  if(activeCartIndex === null) return;
+  document.getElementById('lblPatient').value = "";
+  document.getElementById('lblIndication').value = "";
+  applyLabelDefaults(null);
+  document.getElementById('lblPharmacist').value = currentUser ? (currentUser['ชื่อ-นามสกุล'] || currentUser['Username']) : "ไม่ระบุ";
+  document.getElementById('chkSaveLabelData').checked = false;
+}
+
+renderCart();
+renderLabel();
+
+// ---------- พิมพ์ฉลากยา ขนาดจริง 100x75มม. แนวนอน ----------
+async function openLabelPrint(){
+  if(activeCartIndex === null || !cart[activeCartIndex]){
+    alert('กรุณาเลือกรายการยาทางซ้ายก่อนพิมพ์ฉลาก');
+    return;
+  }
+
+  const patient = document.getElementById('lblPatient').value.trim() || 'ลูกค้าทั่วไป ไม่ระบุชื่อ';
+  const date = document.getElementById('lblDate').value;
+  const drugName = document.getElementById('lblDrugName').value;
+  const expiry = document.getElementById('lblExpiry').value;
+  const indication = document.getElementById('lblIndication').value;
+  const qty = document.getElementById('lblQty').value;
+  const unit = document.getElementById('lblUnit').textContent;
+  const route = document.getElementById('lblRoute').value;
+  const dose = document.getElementById('lblDose').value;
+  const doseUnit = document.getElementById('lblDoseUnit').value;
+  const perDay = document.getElementById('lblPerDay').value;
+  const mealTime = document.getElementById('lblMealTime').value;
+  const pharmacist = document.getElementById('lblPharmacist').value;
+  const saveLabelData = document.getElementById('chkSaveLabelData').checked;
+
+  // รวมช่วงเวลาที่ติ๊กไว้ (แสดงเครื่องหมาย ✓ นำหน้าเฉพาะรายการที่เลือก)
+  const chkMorning = document.getElementById('chkMorning').checked;
+  const chkNoon = document.getElementById('chkNoon').checked;
+  const chkEvening = document.getElementById('chkEvening').checked;
+  const chkBedtime = document.getElementById('chkBedtime').checked;
+  const chkEvery = document.getElementById('chkEvery').checked;
+  const everyHr = document.getElementById('lblEveryHr').value;
+  const chkPRN = document.getElementById('chkPRN').checked;
+  const prnNote = document.getElementById('lblPRNNote').value;
+  const noteChecked = document.getElementById('chkNote').checked;
+  const note = document.getElementById('lblNote').value;
+
+  const periods = [];
+  if(chkMorning) periods.push('เช้า');
+  if(chkNoon) periods.push('กลางวัน');
+  if(chkEvening) periods.push('เย็น');
+  if(chkBedtime) periods.push('ก่อนนอน');
+  if(chkEvery) periods.push('ทุกๆ ' + (everyHr || '-') + ' ชม.');
+  if(chkPRN) periods.push('เฉพาะเมื่อมีอาการ' + (prnNote ? ': ' + prnNote : ''));
+  const periodsHtml = periods.map(p => `<span class="ls-check">${p}</span>`).join(' - ');
+
+  // บันทึกข้อมูลฉลากยานี้ไว้เป็นค่าเริ่มต้นของยาตัวนี้จริงๆ ผ่าน API (ยกเว้นชื่อผู้ใช้ยา/วันหมดอายุ/จำนวน ซึ่งเปลี่ยนทุกครั้ง)
+  if(saveLabelData){
+    const productCode = cart[activeCartIndex].id;
+    const defaults = {
+      indication, route, dose, doseUnit, perDay, mealTime,
+      morning: chkMorning, noon: chkNoon, evening: chkEvening, bedtime: chkBedtime,
+      every: chkEvery, everyHr, prn: chkPRN, prnNote,
+      noteChecked, note,
+    };
+    try {
+      await apiPost('saveLabelDefaults', { code: productCode, defaults });
+      delete productDetailCache[productCode]; // เคลียร์ cache กันข้อมูลเก่าค้าง ครั้งหน้าจะดึงค่าที่เพิ่งบันทึกใหม่
+      alert('บันทึกข้อมูลฉลากยา "' + drugName + '" ไว้เป็นค่าเริ่มต้นของยานี้เรียบร้อย\n(ไม่บันทึกชื่อผู้ใช้ยา, วันหมดอายุ, จำนวน — ค่าเหล่านี้ต้องกรอกใหม่ทุกครั้ง)');
+    } catch (err) {
+      alert('บันทึกข้อมูลฉลากยาไม่สำเร็จ: ' + err.message + '\n(จะยังพิมพ์ฉลากนี้ให้ตามปกติ)');
+    }
+    document.getElementById('chkSaveLabelData').checked = false; // ติ๊กแค่ครั้งนี้ครั้งเดียว
+  }
+
+  const sheet = document.getElementById('labelSheetContent');
+  sheet.innerHTML = `
+    <div class="ls-shop">
+      ร้านขายยา<br>
+      <b>ปรุงยาเภสัช (สำนักงานใหญ่)</b><br>
+      3/5 หมู่ 1 ต.อิปัน อ.พระแสง จ.สุราษฎร์ธานี 84210 (0862892295)
+    </div>
+    <div class="ls-hr"></div>
+    <div class="ls-grid">
+      <div>ชื่อผู้ใช้ยา : ${patient}</div>
+      <div>ชื่อยา : ${drugName}</div>
+      <div class="ls-indication">ข้อบ่งใช้ : ${indication}</div>
+      <div class="ls-flex-between ls-small-row">
+        <span>วันที่ : ${date}</span>
+        <span class="ls-exp-qty-group">
+          <span>วันหมดอายุ : ${expiry}</span>
+          <span>จำนวน : ${qty} ${unit}</span>
+        </span>
+      </div>
+      <div class="ls-highlight">${route}ครั้งละ : ${dose} ${doseUnit}</div>
+      <div class="ls-highlight">วันละ : ${perDay} ครั้ง</div>
+      <div class="ls-usage">วิธีใช้ : ${mealTime} &nbsp; ${periodsHtml}</div>
+    </div>
+    ${noteChecked ? `<div class="ls-note">หมายเหตุ : ${note}</div>` : ''}
+    <div class="ls-pharm">เภสัชกรผู้จ่ายยา : ${pharmacist}</div>
+  `;
+
+  document.getElementById('labelPrintOverlay').classList.add('show');
+}
+
+function closeLabelPrintModal(){
+  document.getElementById('labelPrintOverlay').classList.remove('show');
+}
+
+/**
+ * พิมพ์ฉลากด้วยการเปิดหน้าต่างใหม่แยกต่างหาก ที่มี "แค่ฉลาก" อยู่ในนั้นอย่างเดียว แล้วสั่งพิมพ์จากหน้าต่างนั้น
+ * (แทนที่จะใช้เทคนิค "ซ่อนทุกอย่างในหน้าเดิมแล้วโชว์แค่ฉลาก" แบบเดิม ซึ่งเจอปัญหาพิมพ์ซ้ำหลายใบ/พิมพ์ออกมาว่างเปล่า
+ * เพราะเบราว์เซอร์/ไดรเวอร์เครื่องพิมพ์บางรุ่นจัดการ position:fixed หรือ visibility ระหว่างพิมพ์ได้ไม่แน่นอน)
+ * วิธีนี้แน่นอนกว่ามาก เพราะหน้าต่างใหม่มีแค่เนื้อหาฉลากอย่างเดียว ไม่มีอะไรให้เบราว์เซอร์สับสนระหว่างคำนวณหน้ากระดาษ
+ */
+function printLabelNow(){
+  const labelHtml = document.getElementById('labelSheetContent').innerHTML;
+  const printWindow = window.open('', '_blank', 'width=500,height=400');
+  if (!printWindow) {
+    alert('เบราว์เซอร์บล็อกการเปิดหน้าต่างพิมพ์ กรุณาอนุญาต pop-up สำหรับเว็บนี้แล้วลองใหม่');
+    return;
+  }
+  printWindow.document.open();
+  printWindow.document.write(`<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>พิมพ์ฉลากยา</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 100mm; height: 75mm;
+    overflow: hidden;
+  }
+  @page { size: 100mm 75mm; margin: 0; }
+  .label-sheet {
+    width: 100mm; height: 75mm;
+    background: #fff;
+    padding: 2.5mm 4mm;
+    box-sizing: border-box;
+    font-family: 'Sarabun','Segoe UI',Arial,sans-serif;
+    color: #111;
+    overflow: hidden;
+  }
+  .label-sheet .ls-shop { font-size: 2.5mm; line-height: 1.35; margin-bottom: 1mm; }
+  .label-sheet .ls-shop b { font-size: 2.9mm; }
+  .label-sheet .ls-hr { border-top: 0.25mm solid #333; margin: 0.8mm 0 1.2mm; }
+  .label-sheet .ls-grid {
+    display: flex; flex-direction: column; gap: 1mm; font-size: 2.8mm; line-height: 1.4;
+  }
+  .label-sheet .ls-grid b { font-weight: 700; }
+  .label-sheet .ls-small-row { font-size: 2.5mm; }
+  .label-sheet .ls-indication { font-size: 3.2mm; font-weight: 700; }
+  .label-sheet .ls-highlight { font-size: 4.6mm; font-weight: 700; line-height: 1.3; margin-top: 0.8mm; }
+  .label-sheet .ls-flex-between { display: flex; justify-content: space-between; gap: 3mm; flex-wrap: nowrap; }
+  .label-sheet .ls-exp-qty-group { display: flex; gap: 2.5mm; flex-wrap: nowrap; }
+  .label-sheet .ls-usage { font-size: 3.3mm; font-weight: 700; line-height: 1.3; margin-top: 0.8mm; }
+  .label-sheet .ls-note { font-size: 3.2mm; margin-top: 1mm; line-height: 1.3; }
+  .label-sheet .ls-pharm { font-size: 2.3mm; margin-top: 1mm; line-height: 1.3; }
+  .label-sheet .ls-check { color: #111; margin-right: 1mm; }
+</style>
+</head>
+<body>
+  <div class="label-sheet">${labelHtml}</div>
+</body>
+</html>`);
+  printWindow.document.close();
+
+  // รอให้เนื้อหา/ฟอนต์โหลดเสร็จก่อนค่อยสั่งพิมพ์ กันหน้าต่างใหม่พิมพ์ก่อนเนื้อหาขึ้นครบ (สาเหตุที่พิมพ์ออกมาว่างเปล่าได้)
+  printWindow.onload = function () {
+    printWindow.focus();
+    printWindow.print();
+  };
+}
+
+// ---------- หน้าจอชำระเงิน ----------
+function getGrandTotal(){
+  return Number(document.getElementById('sumTotal').textContent) || 0;
+}
+
+let paymentResultShown = false;
+let lastPaymentModalCloseAt = 0;
+
+function openPaymentModal(){
+  if(cart.length === 0){
+    alert('ยังไม่มีรายการสินค้าในบิล กรุณาเพิ่มรายการก่อนชำระเงิน');
+    return;
+  }
+  const total = getGrandTotal();
+  document.getElementById('payTotalAmount').textContent = total.toFixed(2);
+  document.getElementById('qrAmount').textContent = total.toFixed(2);
+  document.getElementById('cashReceived').value = '';
+  switchPayMethod('cash');
+  buildQuickAmounts(total);
+  updateChange();
+  showPayForm();
+  document.getElementById('paymentModalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('cashReceived').focus(), 50);
+}
+
+function closePaymentModal(){
+  document.getElementById('paymentModalOverlay').classList.remove('show');
+  paymentResultShown = false;
+  lastPaymentModalCloseAt = Date.now();
+}
+
+function showPayForm(){
+  paymentResultShown = false;
+  document.getElementById('payFormArea').style.display = 'block';
+  document.getElementById('payResultArea').style.display = 'none';
+  document.getElementById('payActionsForm').style.display = 'flex';
+  document.getElementById('payActionsResult').style.display = 'none';
+}
+
+function switchPayMethod(method){
+  const isCash = method === 'cash';
+  document.getElementById('tabCash').classList.toggle('active', isCash);
+  document.getElementById('tabQR').classList.toggle('active', !isCash);
+  document.getElementById('paySectionCash').style.display = isCash ? 'block' : 'none';
+  document.getElementById('paySectionQR').style.display = isCash ? 'none' : 'block';
+}
+
+function buildQuickAmounts(total){
+  const exact = Math.ceil(total);
+  const suggestions = Array.from(new Set([
+    exact,
+    Math.ceil((total + 20) / 20) * 20,
+    Math.ceil((total + 50) / 50) * 50,
+    Math.ceil((total + 100) / 100) * 100,
+    Math.ceil((total + 500) / 500) * 500,
+  ])).filter(v => v >= total).slice(0, 5);
+
+  document.getElementById('quickAmountRow').innerHTML = suggestions.map(v => `
+    <button type="button" class="quick-amount-btn" onclick="setCashReceived(${v})">${v.toLocaleString()}</button>
+  `).join('');
+}
+
+function setCashReceived(v){
+  document.getElementById('cashReceived').value = v;
+  updateChange();
+}
+
+function updateChange(){
+  const total = getGrandTotal();
+  const received = Number(document.getElementById('cashReceived').value) || 0;
+  const change = received - total;
+  const box = document.getElementById('changeBox');
+  const amtEl = document.getElementById('changeAmount');
+
+  if(received === 0){
+    box.classList.remove('insufficient');
+    amtEl.textContent = '0.00';
+  } else if(change < 0){
+    box.classList.add('insufficient');
+    amtEl.textContent = 'ขาดอีก ' + Math.abs(change).toFixed(2);
+  } else {
+    box.classList.remove('insufficient');
+    amtEl.textContent = change.toFixed(2);
+  }
+}
+
+// ---------- ขั้นที่ 1: ยืนยันการชำระเงิน (ค้างยอดทอนไว้ให้ดู ยังไม่ปิดโมดัล) ----------
+async function confirmPayment(){
+  const total = getGrandTotal();
+  const isCash = document.getElementById('tabCash').classList.contains('active');
+  let detailHtml = '';
+  let received = 0, change = 0;
+
+  if(isCash){
+    received = Number(document.getElementById('cashReceived').value) || 0;
+    if(received < total){
+      alert('รับเงินมาไม่พอกับยอดที่ต้องชำระ กรุณาตรวจสอบอีกครั้ง');
+      return;
+    }
+    change = received - total;
+    detailHtml = `
+      <div class="pay-change-big">
+        <div class="pcb-label">เงินทอน</div>
+        <div class="pcb-amount">${change.toFixed(2)}</div>
+      </div>
+      <div class="pay-received-line">รับเงินมา <b>${received.toFixed(2)}</b> บาท</div>
+    `;
+  } else {
+    detailHtml = `
+      <div class="pay-change-big">
+        <div class="pcb-label">ยอดชำระ</div>
+        <div class="pcb-amount">${total.toFixed(2)}</div>
+      </div>
+      <div class="pay-received-line">ชำระผ่าน <b>QR PromptPay</b></div>
+    `;
+  }
+
+  const saleId = document.getElementById('saleId').textContent;
+  const subtotal = Number(document.getElementById('sumSubtotal').textContent) || 0;
+  const tax = Number(document.getElementById('sumTax').textContent) || 0;
+  const manualDiscount = Number(document.getElementById('discountInput').value) || 0;
+  const pointsDiscount = calcPointsDiscountBaht(subtotal);
+  const discount = manualDiscount + pointsDiscount; // ยอดส่วนลดรวมที่บันทึกลงบิล (ปกติ + จากแต้มสะสม)
+  const userId = currentUser ? (currentUser['Username'] || currentUser['ชื่อ-นามสกุล']) : 'ไม่ระบุ';
+  const patientName = document.getElementById('lblPatient').value.trim();
+
+  // บันทึกบิลขายจริงเข้า Google Sheet + ตัดสต๊อกอัตโนมัติฝั่ง Apps Script + คิดแต้มสะสม (ถ้าเป็นสมาชิก)
+  const confirmBtn = document.querySelector('#payActionsForm .btn-primary');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '⏳ กำลังบันทึก...'; }
+  let saleResult;
+  try {
+    saleResult = await apiPost('createSale', {
+      sale: {
+        saleId, branch: 'สำนักงานใหญ่', userId,
+        customer: patientName || (currentMember ? `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim() : ''),
+        customerId: currentMember ? currentMember.id : null,
+        redeemPoints: redeemPointsAmount || 0,
+        subtotal, discount, tax, total,
+        method: isCash ? 'cash' : 'qr',
+        received: isCash ? received : null,
+        change: isCash ? change : null,
+        items: cart.map(it => ({ code: it.id, name: it.name, unit: it.unit, price: it.price, qty: it.qty })),
+      }
+    });
+  } catch (err) {
+    alert('บันทึกบิลขายไม่สำเร็จ: ' + err.message + '\nกรุณาลองกดยืนยันอีกครั้ง (ยังไม่ตัดสต๊อก ยังไม่ปิดบิล)');
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ ยืนยันการชำระเงิน'; }
+    return;
+  }
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ ยืนยันการชำระเงิน'; }
+
+  // แจ้งแต้มสะสมที่ได้รับจากบิลนี้ (ถ้าเป็นสมาชิก) ต่อท้ายรายละเอียดการชำระเงิน
+  if (currentMember && saleResult && saleResult.earnedPoints > 0) {
+    detailHtml += `<div class="pay-received-line" style="color:#1e6b3c;font-weight:600;">🎁 ได้รับแต้มสะสม +${saleResult.earnedPoints.toLocaleString()} แต้ม จากบิลนี้</div>`;
+  }
+
+  // บันทึกบิลนี้ลงรายการบิลวันนี้ (แสดงในเครื่องนี้ทันที ไม่ต้องรอโหลดจาก Sheet ใหม่)
+  todaySales.unshift({
+    saleId,
+    time: new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
+    items: JSON.parse(JSON.stringify(cart)),
+    subtotal, tax, discount, total,
+    method: isCash ? 'cash' : 'qr',
+    received: isCash ? received : null,
+    change: isCash ? change : null,
+  });
+
+  // ล้าง cache สินค้าที่เพิ่งขาย เพราะสต๊อกเปลี่ยนไปแล้วฝั่ง Sheet
+  cart.forEach(it => delete productDetailCache[it.id]);
+
+  document.getElementById('payResultDetail').innerHTML = detailHtml;
+  paymentResultShown = true;
+  document.getElementById('payFormArea').style.display = 'none';
+  document.getElementById('payResultArea').style.display = 'block';
+  document.getElementById('payActionsForm').style.display = 'none';
+  document.getElementById('payActionsResult').style.display = 'flex';
+}
+
+// ---------- ขั้นที่ 2: เลือกพิมพ์ใบเสร็จ หรือกด Enter ผ่านจบรายการเลย ----------
+function printReceiptAndFinish(){
+  alert('มอคอัพ: กำลังพิมพ์ใบเสร็จ...');
+  finishSale();
+}
+
+function finishSale(){
+  closePaymentModal();
+
+  // เริ่มบิลใหม่
+  cart = [];
+  activeCartIndex = null;
+  document.getElementById('discountInput').value = 0;
+  document.getElementById('saleId').textContent = genSaleId();
+  useGeneralCustomer(); // เคลียร์สมาชิกเก่า กันชื่อลูกค้าค้างไปบิลถัดไป
+  renderCart();
+  renderLabel();
+  focusSearchInput();
+}
+
+// ---------- กด Enter ในโมดัลชำระเงิน: ขั้นฟอร์ม = ยืนยันชำระเงิน, ขั้นผลลัพธ์ = จบรายการโดยไม่พิมพ์ ----------
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  const overlay = document.getElementById('paymentModalOverlay');
+  if(!overlay.classList.contains('show')) return;
+  e.preventDefault();
+  if(paymentResultShown){
+    finishSale();
+  } else {
+    confirmPayment();
+  }
+});
+</script>
+
+</body>
+</html>

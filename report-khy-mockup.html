@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - รายงาน ขย. (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1300px; margin: 0 auto; padding: 22px 22px 60px; }
+
+  .report-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+  .report-tabs a {
+    display: block; text-decoration: none; padding: 11px 20px; font-size: 13.5px; font-weight: 600;
+    color: #cfe6d2; background: #226a44; border-radius: 8px 8px 0 0; cursor: pointer;
+  }
+  .report-tabs a.active { background: #fff; color: #1e6b3c; }
+  .report-tabs a:hover:not(.active) { background: #2a7a4f; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .panel-title {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    font-size: 14.5px;
+    font-weight: 700;
+    padding: 12px 20px;
+  }
+
+  .filter-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+  .filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 170px; }
+  .filter-field label { font-size: 12.5px; font-weight: 600; color: #3f4f45; }
+  .filter-field select, .filter-field input {
+    padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 13.5px; font-family: inherit; color: #24312a; background: #fff;
+  }
+  .filter-field select:focus, .filter-field input:focus { outline: none; border-color: #2e8b4f; }
+  .view-btn {
+    background: #e69a1f; color: #fff; border: none; border-radius: 8px;
+    padding: 11px 22px; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .view-btn:hover { background: #cc8815; }
+  .print-btn {
+    background: #eef6ee; color: #1e6b3c; border: 1px solid #2e8b4f; border-radius: 8px;
+    padding: 11px 18px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .print-btn:hover { background: #dcefe0; }
+
+  .panel-body { padding: 20px; }
+  .panel-sub-title { font-size: 14.5px; font-weight: 700; color: #1e6b3c; margin-bottom: 12px; }
+
+  .search-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .search-row input { flex: 1; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 13.5px; font-family: inherit; }
+  .search-row button { background: #2e8b4f; color: #fff; border: none; border-radius: 8px; padding: 0 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+  .search-row button:hover { background: #257a43; }
+
+  table.simple-table { width: 100%; border-collapse: collapse; }
+  table.simple-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 10px 14px;
+  }
+  table.simple-table td {
+    padding: 11px 14px; border-bottom: 1px solid #eef2ef; font-size: 13.5px;
+  }
+  table.simple-table tr:hover td { background: #f6faf7; }
+  .code-link { color: #1e6b3c; font-weight: 600; }
+
+  /* ---- เอกสารตัวอย่างสำหรับพิมพ์ ---- */
+  .doc-preview {
+    background: #fff; border: 1px solid #e3efe5; border-radius: 10px;
+    padding: 30px 34px; position: relative; margin-top: 4px;
+  }
+  .doc-form-code { position: absolute; top: 16px; right: 22px; font-size: 12.5px; font-weight: 700; color: #4a5a4f; }
+  .doc-header { text-align: center; margin-bottom: 18px; }
+  .doc-header .doc-title { font-size: 16px; font-weight: 700; }
+  .doc-header .doc-sub { font-size: 14px; margin-top: 2px; }
+  .doc-header .doc-range { font-size: 13px; color: #4a5a4f; margin-top: 4px; }
+
+  .doc-info-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 24px;
+    font-size: 13px; margin-bottom: 18px; padding: 14px 16px; background: #f6faf7; border-radius: 8px;
+  }
+  .doc-info-grid div b { color: #1e6b3c; }
+
+  table.doc-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.doc-table th, table.doc-table td {
+    border: 1px solid #cfe0d3; padding: 8px 10px; text-align: center; vertical-align: middle;
+  }
+  table.doc-table th { background: #eef6ee; font-weight: 700; color: #1e6b3c; }
+  table.doc-table td.left { text-align: left; }
+
+  .empty-state { padding: 40px; text-align: center; color: #8fa198; font-size: 13.5px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> <b>รายงาน ขย.</b>
+</div>
+
+<div class="content">
+
+  <div class="report-tabs">
+    <a onclick="window.location.href='report-sales-mockup.html'">รายงานการขาย</a>
+    <a onclick="window.location.href='report-stock-mockup.html'">รายงานคลังสินค้า</a>
+    <a class="active">รายงาน ขย.</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">เรียกดูรายงาน ขย.</div>
+    <div class="filter-body">
+      <div class="filter-field">
+        <label>ประเภทรายงาน ขย.</label>
+        <select id="reportType" onchange="onReportChange()">
+          <option value="khy9">รายงาน ขย.9</option>
+          <option value="khy11">รายงาน ขย.11</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>สาขา</label>
+        <select id="branch">
+          <option selected>สำนักงานใหญ่</option>
+          <option>สาขา 2</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>เลือกผู้ปฏิบัติการ</label>
+        <select id="operator">
+          <option selected>เภสัชกรวีระยุทธิ์ เพชรทอง</option>
+          <option>เภสัชกรสมชาย ใจดี</option>
+          <option>เภสัชกรหญิงนภัสสร แสงทอง</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>ตั้งแต่วันที่</label>
+        <input type="date" id="dateFrom" value="2026-07-01">
+      </div>
+      <div class="filter-field">
+        <label>ถึงวันที่</label>
+        <input type="date" id="dateTo" value="2026-08-26">
+      </div>
+      <button class="view-btn" onclick="renderReport()">🔍 ค้นหา</button>
+      <button class="print-btn" onclick="alert('มอคอัพ: จะสร้างไฟล์ PDF ของรายงานนี้')">📄 พิมพ์รูปแบบ PDF</button>
+      <button class="print-btn" onclick="alert('มอคอัพ: จะสร้างไฟล์ Excel ของรายงานนี้')">📊 พิมพ์รูปแบบ Excel</button>
+    </div>
+  </div>
+
+  <!-- ========== ขย.9 : รายการสินค้าที่ต้องรายงาน ========== -->
+  <div class="panel" id="khy9ListPanel">
+    <div class="panel-body">
+      <div class="panel-sub-title">รายการสินค้าที่มี รายงาน ขย.9 บัญชีการซื้อยา</div>
+      <div class="search-row">
+        <input type="text" id="khy9Search" placeholder="ค้นหาด้วยรหัสสินค้า หรือ ชื่อสินค้า..." oninput="renderKhy9List()">
+        <button onclick="renderKhy9List()">🔍 ค้นหา</button>
+      </div>
+      <table class="simple-table">
+        <thead><tr><th style="width:50px;">#</th><th style="width:140px;">รหัสสินค้า</th><th>ชื่อสินค้า</th></tr></thead>
+        <tbody id="khy9ListBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== ขย.11 : เลือกยาอันตราย ========== -->
+  <div class="panel" id="khy11PickPanel" style="display:none;">
+    <div class="panel-body">
+      <div class="panel-sub-title">เลือกยาอันตรายที่ต้องรายงาน ขย.11</div>
+      <div class="filter-field" style="min-width:340px;">
+        <label>ชื่อยา</label>
+        <select id="khy11Select" onchange="renderKhy11Doc()"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== เอกสารตัวอย่างสำหรับพิมพ์ ========== -->
+  <div class="panel">
+    <div class="panel-title" id="docPanelTitle">ตัวอย่างเอกสารสำหรับพิมพ์</div>
+    <div class="panel-body">
+      <div id="docPreviewArea"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// ---------- ข้อมูลตัวอย่าง: รายชื่อสินค้าที่ต้องรายงาน ขย.9 (รายการดูอ้างอิงเฉยๆ ยังไม่เชื่อมจริง) ----------
+const khy9Products = [
+  { code:"PCO00487", name:"BEHISTIN 6MG.10'S.(CPL)" },
+  { code:"PCO00501", name:"BENZAC AC 5 % GEL 15 G" },
+  { code:"PCO01249", name:"D-COATE TABLETS 10'S" },
+  { code:"PCO05069", name:"TOPICORTE 0.25% CREAM 15 G" },
+  { code:"PCU00295", name:"Topamine syrup 60 ml" },
+  { code:"PCU00431", name:"Tusspac 245 mg นับเม็ด(1x2)" },
+  { code:"PCO01003", name:"CIRCADIN 2 MG PROLONGED-RELEASE TABLETS 15'S" },
+];
+
+// ---------- ข้อมูลตัวอย่าง: บัญชีการซื้อยา (ขย.9) — ใช้เป็น fallback ถ้าดึงจริงไม่สำเร็จ ----------
+const khy9Purchases = [
+  ["2026-07-01","บริษัท สนั่นฟาร์มาซี จำกัด","Zeplex 500 mg นับเม็ด","92AAT","300 CAP","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-01","บริษัท ไทยเอฟดี ฟาร์ม จำกัด","Norpa 485 mg แผง 10 เม็ด(1x2)","T2604014","130 แผง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-02","บริษัท แคลเซี่ยม ฟาร์มาซูติคอล (ประเทศไทย) จำกัด","Zecid 20 mg แผง 10's(1x1)","ZEC1636","220 แผง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-02","บริษัท อินแพคฟาร์มา จำกัด","Norgesic Muslexac 535 mg แผง 10 เม็ด(1x1)","IM526A","50 แผง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-03","บริษัท สนั่นฟาร์มาซี จำกัด","Penicilin 500,000 u. 12's","260221","6 กล่อง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-03","บริษัท สนั่นฟาร์มาซี จำกัด","Melodia 21 tab","LF40291A","2 กล่อง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-03","บริษัท สนั่นฟาร์มาซี จำกัด","Transamin 500 mg แผง 10's","TTAXA02","10 แผง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-03","บริษัท สนั่นฟาร์มาซี จำกัด","Marvelon 28 tab","D137028","10 กล่อง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-07","บริษัท สนั่นฟาร์มาซี จำกัด","Tansy one tab","LF42506C","10 กล่อง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+  ["2026-07-07","บริษัท สนั่นฟาร์มาซี จำกัด","Gaviscon ซองฟ้า 30 บาท","AHL875","12 ซอง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+];
+
+// ---------- ข้อมูลตัวอย่าง: ยาอันตรายสำหรับ ขย.11 ----------
+const khy11Drugs = [
+  {
+    code:"PCU00431", name:"Tusspac 245 mg แบบแผง",
+    maker:"-", lotNo:"IT508B", packSize:"แผง",
+    source:"บริษัท อินแพคฟาร์มา จำกัด", receivedQty:"100 แผง",
+    receivedDate:"2026-05-19", remainQty:"0 แผง",
+    sales: [
+      ["2026-07-01 12:09:42","1 แผง","นายสุทน พงษ์ส่วง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-01 18:11:31","1 แผง","สาริกา บุญทอง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-01 18:37:29","1 แผง","นางทิพย์วรรณ ทองผัก","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-02 08:39:15","1 แผง","นางจารุวรรณ กาญจนะ","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-04 14:07:30","1 แผง","พัชรี ชูนาวา","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-06 10:09:56","1 แผง","นายบุญสม นวมเพชร","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-06 19:22:50","1 แผง","นายวิชัย โจดี","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-07 09:57:46","1 แผง","นางวิไลวัลย์ แก้วกำยาน","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+    ]
+  },
+  {
+    code:"PCU00295", name:"Topamine syrup 60 ml",
+    maker:"-", lotNo:"TP2603A", packSize:"ขวด",
+    source:"บริษัท สนั่นฟาร์มาซี จำกัด", receivedQty:"60 ขวด",
+    receivedDate:"2026-06-02", remainQty:"52 ขวด",
+    sales: [
+      ["2026-07-03 11:20:10","1 ขวด","นายสมชาย ใจตรง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-09 16:05:44","1 ขวด","นางสาวศิริพร แก้วมณี","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-15 09:41:02","2 ขวด","นายอนุชา ทองสุข","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+    ]
+  },
+  {
+    code:"PCO01003", name:"CIRCADIN 2 MG PROLONGED-RELEASE TABLETS 15'S",
+    maker:"-", lotNo:"CD2551X", packSize:"กล่อง",
+    source:"บริษัท บีร์ช ประเทศไทย จำกัด", receivedQty:"20 กล่อง",
+    receivedDate:"2026-05-28", remainQty:"14 กล่อง",
+    sales: [
+      ["2026-07-02 13:12:09","1 กล่อง","นางสมศรี พูลสวัสดิ์","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-11 17:30:55","1 กล่อง","นายประยุทธ คงมั่น","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+    ]
+  },
+  {
+    code:"PCO01249", name:"D-COATE TABLETS 10'S",
+    maker:"-", lotNo:"DC2489Y", packSize:"แผง",
+    source:"บริษัท โปลิฟาร์ม จำกัด", receivedQty:"40 แผง",
+    receivedDate:"2026-04-30", remainQty:"6 แผง",
+    sales: [
+      ["2026-07-05 10:02:33","2 แผง","นายวิศรุต ศรีสุข","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+      ["2026-07-19 15:44:21","1 แผง","นางสาวกัญญา รุ่งเรือง","เภสัชกรวีระยุทธิ์ เพชรทอง",""],
+    ]
+  },
+];
+
+function renderKhy9List() {
+  const q = (document.getElementById('khy9Search').value || '').trim().toLowerCase();
+  const list = khy9Products.filter(p => !q || p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q));
+  const body = document.getElementById('khy9ListBody');
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="3"><div class="empty-state">ไม่พบสินค้าที่ค้นหา</div></td></tr>`;
+  } else {
+    body.innerHTML = list.map((p, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td class="code-link">${p.code}</td>
+        <td>${p.name}</td>
+      </tr>
+    `).join('');
+  }
+}
+
+async function renderKhy9Doc() {
+  document.getElementById('docPanelTitle').textContent = 'ตัวอย่างเอกสารสำหรับพิมพ์ — บัญชีการซื้อยา (แบบ ขย.9)';
+  const branch = document.getElementById('branch').value;
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+
+  document.getElementById('docPreviewArea').innerHTML = '<div class="doc-preview"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></div>';
+
+  let data;
+  try {
+    data = await apiGet('getKhy9Report', { branch, dateFrom: from, dateTo: to });
+  } catch (err) {
+    document.getElementById('docPreviewArea').innerHTML = `<div class="doc-preview"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></div>`;
+    return;
+  }
+
+  const rows = data.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${r.date}</td>
+      <td class="left">${r.seller}</td>
+      <td class="left">${r.drugName}</td>
+      <td>${r.lotNo}</td>
+      <td>${r.qty}</td>
+      <td>${r.pharmacist || ''}</td>
+      <td></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('docPreviewArea').innerHTML = `
+    <div class="doc-preview">
+      <div class="doc-form-code">แบบ ขย.๙</div>
+      <div class="doc-header">
+        <div class="doc-title">บัญชีการซื้อยา</div>
+        <div class="doc-sub">ปรุงยาเภสัช</div>
+        <div class="doc-sub">${branch}</div>
+        <div class="doc-range">ระหว่างวันที่ ${from} - ${to}</div>
+      </div>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th style="width:60px;">ลำดับที่</th>
+            <th style="width:100px;">วัน เดือน ปี<br>ที่ซื้อ</th>
+            <th>ชื่อผู้ขาย</th>
+            <th>ชื่อยา</th>
+            <th style="width:120px;">เลขที่หรืออักษร<br>ของครั้งที่ผลิต</th>
+            <th style="width:90px;">จำนวน/<br>ปริมาณ</th>
+            <th style="width:150px;">ลายมือชื่อ<br>ผู้มีหน้าที่ปฏิบัติการ</th>
+            <th style="width:90px;">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>${rows.length ? rows : '<tr><td colspan="8" class="empty-state">ไม่พบรายการซื้อยาที่ต้องรายงาน ขย.9 ในช่วงวันที่นี้</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function populateKhy11Select() {
+  const sel = document.getElementById('khy11Select');
+  sel.innerHTML = khy11Drugs.map(d => `<option value="${d.code}">${d.code} : ${d.name}</option>`).join('');
+}
+
+function renderKhy11Doc() {
+  document.getElementById('docPanelTitle').textContent = 'ตัวอย่างเอกสารสำหรับพิมพ์ — บัญชีการขายยาอันตราย (แบบ ขย.11)';
+  const branch = document.getElementById('branch').value;
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+
+  const code = document.getElementById('khy11Select').value;
+  const d = khy11Drugs.find(x => x.code === code) || khy11Drugs[0];
+
+  const rows = d.sales.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${r[0]}</td>
+      <td>${r[1]}</td>
+      <td class="left">${r[2]}</td>
+      <td>${r[3]}</td>
+      <td>${r[4] || ''}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('docPreviewArea').innerHTML = `
+    <div class="doc-preview">
+      <div class="doc-form-code">แบบ ขย.๑๑</div>
+      <div class="doc-header">
+        <div class="doc-title">บัญชีการขายยาอันตราย เฉพาะรายการยาที่เลขาธิการคณะกรรมการอาหารและยากำหนด</div>
+        <div class="doc-sub">ปรุงยาเภสัช</div>
+        <div class="doc-sub">${branch}</div>
+        <div class="doc-range">ระหว่างวันที่ ${from} - ${to}</div>
+      </div>
+      <div class="doc-info-grid">
+        <div>ชื่อยา : <b>${d.name}</b></div>
+        <div>ชื่อผู้ผลิต/ผู้นำเข้า : <b>${d.maker}</b></div>
+        <div>เลขที่หรืออักษรของครั้งที่ผลิต : <b>${d.lotNo}</b></div>
+        <div>ขนาดบรรจุ : <b>${d.packSize}</b></div>
+        <div>ได้มาจาก : <b>${d.source}</b></div>
+        <div>จำนวนรับเปรียบเทียบหน่วยเล็กสุด : <b>${d.receivedQty}</b></div>
+        <div>วันที่รับ : <b>${d.receivedDate}</b></div>
+        <div>ยอดคงเหลือ ณ ปัจจุบัน : <b>${d.remainQty}</b></div>
+      </div>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th style="width:60px;">ลำดับที่</th>
+            <th style="width:130px;">วัน เดือน ปี<br>ที่ขาย</th>
+            <th style="width:130px;">จำนวน/ปริมาณที่ขาย<br>(เปรียบเทียบหน่วยเล็กสุด)</th>
+            <th>ชื่อ สกุล ผู้ซื้อ</th>
+            <th style="width:150px;">ลายมือชื่อ<br>ผู้มีหน้าที่ปฏิบัติการ</th>
+            <th style="width:90px;">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function onReportChange() {
+  const type = document.getElementById('reportType').value;
+  document.getElementById('khy9ListPanel').style.display = type === 'khy9' ? 'block' : 'none';
+  document.getElementById('khy11PickPanel').style.display = type === 'khy11' ? 'block' : 'none';
+  renderReport();
+}
+
+function renderReport() {
+  const type = document.getElementById('reportType').value;
+  if (type === 'khy9') {
+    renderKhy9List();
+    renderKhy9Doc(); // async — ทำงานเองในเบื้องหลัง ไม่ต้องรอ
+  } else {
+    renderKhy11Doc();
+  }
+}
+
+populateKhy11Select();
+renderKhy9List();
+renderReport();
+</script>
+
+</body>
+</html>

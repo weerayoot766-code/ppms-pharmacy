@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ชุดสินค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1300px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .header-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+  }
+  .header-row h1 { font-size: 19px; font-weight: 700; color: #24312a; margin: 0; }
+  .header-row .bundle-code { font-size: 15px; font-weight: 700; color: #e08a2b; }
+
+  .layout { display: flex; gap: 18px; align-items: flex-start; }
+
+  /* ---------- ซ้าย: ค้นหา + รายการ ---------- */
+  .left-panel {
+    flex: 0 0 300px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+  .left-panel .panel-head {
+    background: #2e8b4f; color: #fff; padding: 13px 16px; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .left-panel .panel-body { padding: 16px; }
+  .left-panel input[type=text] {
+    width: 100%; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 13.5px; font-family: inherit; margin-bottom: 10px;
+  }
+  .search-btn {
+    width: 100%; background: #eaa73c; color: #fff; border: none; border-radius: 8px;
+    padding: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-bottom: 14px;
+  }
+  .search-btn:hover { background: #d99524; }
+  .found-count { font-size: 12.5px; color: #6b7a70; margin-bottom: 8px; }
+  .bundle-list {
+    max-height: 360px; overflow-y: auto; border: 1px solid #eef2ef; border-radius: 8px;
+  }
+  .bundle-list-item {
+    padding: 9px 12px; font-size: 13px; color: #3f4f45; border-bottom: 1px solid #eef2ef; cursor: pointer;
+  }
+  .bundle-list-item:last-child { border-bottom: none; }
+  .bundle-list-item:hover { background: #f6faf7; }
+  .bundle-list-item.active { background: #2e8b4f; color: #fff; font-weight: 600; }
+  .kv-hint { font-size: 11px; color: #8fa198; margin-top: 8px; }
+
+  /* ---------- ขวา: ฟอร์มชุดสินค้า ---------- */
+  .right-panel {
+    flex: 1;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+  .right-panel .panel-head {
+    background: #2e8b4f; color: #fff; padding: 13px 18px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .right-panel .panel-head .title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .new-bundle-btn {
+    background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.6); color: #fff;
+    padding: 8px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .new-bundle-btn:hover { background: rgba(255,255,255,.32); }
+
+  .right-panel .panel-body { padding: 22px; }
+
+  .field-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 180px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 6px; }
+  .field .required { color: #d9534f; }
+  .field input, .field select {
+    width: 100%; padding: 10px 11px; border: 1px solid #cfe0d3; border-radius: 7px;
+    font-size: 14px; font-family: inherit;
+  }
+  .barcode-field { display: flex; gap: 8px; }
+  .barcode-field input { flex: 1; }
+  .gen-barcode-btn {
+    background: #3fa2c9; color: #fff; border: none; border-radius: 7px; padding: 0 16px;
+    font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .gen-barcode-btn:hover { background: #338aab; }
+
+  table.item-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  table.item-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 9px 8px;
+  }
+  table.item-table td { padding: 10px 8px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: top; }
+  table.item-table input[type=number], table.item-table select {
+    width: 100%; padding: 8px 9px; border: 1px solid #cfe0d3; border-radius: 6px; font-size: 13.5px; font-family: inherit;
+  }
+  .free-check { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: #6b7a70; margin-top: 5px; }
+  .free-check input { width: 14px; height: 14px; accent-color: #2e8b4f; }
+  .row-total { font-weight: 600; padding-top: 10px; display: block; }
+  .del-row-btn {
+    background: #f2544a; color: #fff; border: none; border-radius: 6px; width: 34px; height: 34px;
+    cursor: pointer; font-size: 14px;
+  }
+  .del-row-btn:hover { background: #d9433a; }
+
+  .add-item-btn {
+    background: #3fa2c9; color: #fff; border: none; border-radius: 8px;
+    padding: 10px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-top: 10px;
+  }
+  .add-item-btn:hover { background: #338aab; }
+
+  .item-search-wrap { position: relative; margin-top: 12px; max-width: 420px; }
+  .item-search-box {
+    display: flex; border: 1px solid #cfe0d3; border-radius: 8px; overflow: hidden;
+  }
+  .item-search-box input {
+    flex: 1; border: none; padding: 10px 12px; font-size: 13.5px; font-family: inherit;
+  }
+  .item-search-box button {
+    background: #3fa2c9; border: none; color: #fff; padding: 0 16px; cursor: pointer; font-size: 14px;
+  }
+  .item-suggest-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #fff; border: 1px solid #cfe0d3; border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.1); max-height: 220px; overflow-y: auto; z-index: 5; display: none;
+  }
+  .item-suggest-list.show { display: block; }
+  .item-suggest-item {
+    padding: 9px 12px; cursor: pointer; display: flex; justify-content: space-between;
+    font-size: 13px; border-bottom: 1px solid #f1f4f8;
+  }
+  .item-suggest-item:hover { background: #f0f7ff; }
+  .item-suggest-item small { color: #8fa198; margin-left: 6px; }
+
+  .total-row {
+    display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+    margin-top: 18px; padding-top: 16px; border-top: 1px solid #eef2ef;
+    font-size: 16px; font-weight: 700; color: #1e6b3c;
+  }
+
+  .bottom-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid #eef2ef; flex-wrap: wrap; gap: 10px;
+  }
+  .bottom-actions .left-btns { display: flex; gap: 10px; }
+  .bottom-actions button {
+    padding: 11px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-cancel { background: #f2544a; color: #fff; }
+  .btn-cancel:hover { background: #d9433a; }
+  .btn-save { background: #2e8b4f; color: #fff; }
+  .btn-save:hover { background: #257a43; }
+  .btn-delete { background: #f2544a; color: #fff; }
+  .btn-delete:hover { background: #d9433a; }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .left-panel { flex: 1 1 auto; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> ข้อมูลสินค้า <span class="sep">/</span> <b>ชุดสินค้า</b>
+</div>
+
+<div class="content">
+
+  <div class="header-row">
+    <h1 id="bundleTitle">-</h1>
+    <div class="bundle-code" id="bundleCode">-</div>
+  </div>
+
+  <div class="layout">
+    <!-- ========== ซ้าย: ค้นหา + รายการชุดสินค้า ========== -->
+    <div class="left-panel">
+      <div class="panel-head">🔍 ค้นหาชุดสินค้า</div>
+      <div class="panel-body">
+        <input type="text" id="searchInput" placeholder="ค้นหาโดย ชื่อชุดสินค้า">
+        <button class="search-btn" onclick="doSearch()">ค้นหา</button>
+        <div class="found-count" id="foundCount"></div>
+        <div class="bundle-list" id="bundleList"></div>
+        <div class="kv-hint">* double click ที่รายชื่อเพื่อดูข้อมูล</div>
+      </div>
+    </div>
+
+    <!-- ========== ขวา: ข้อมูลชุดสินค้า ========== -->
+    <div class="right-panel">
+      <div class="panel-head">
+        <div class="title">📦 ข้อมูลชุดสินค้า</div>
+        <button class="new-bundle-btn" onclick="newBundle()">＋ เพิ่มชุดสินค้าใหม่</button>
+      </div>
+      <div class="panel-body">
+        <div class="field-row">
+          <div class="field" style="flex:2;">
+            <label>ชื่อชุดสินค้า <span class="required">*</span></label>
+            <input type="text" id="fBundleName">
+          </div>
+          <div class="field" style="flex:2;">
+            <label>บาร์โค้ด <span class="required">*</span></label>
+            <div class="barcode-field">
+              <input type="text" id="fBarcode">
+              <button class="gen-barcode-btn" onclick="alert('มอคอัพ: จะสร้างบาร์โค้ดใหม่อัตโนมัติ')">📊 สร้างบาร์โค้ด</button>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>สาขา</label>
+            <select id="fBranch">
+              <option>สำนักงานใหญ่</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>ประเภทชุดสินค้า <span class="required">*</span></label>
+            <select id="fBundleType">
+              <option>สินค้าขายเป็นชุดเท่านั้น</option>
+              <option>ขายแยกได้ด้วย</option>
+            </select>
+          </div>
+        </div>
+
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th style="width:110px;">หมายเลขอ้างอิง</th>
+              <th>สินค้า</th>
+              <th style="width:90px;">จำนวน <span class="required">*</span></th>
+              <th style="width:110px;">หน่วย <span class="required">*</span></th>
+              <th style="width:140px;">ราคาขายต่อหน่วย <span class="required">*</span></th>
+              <th style="width:80px;">รวม</th>
+              <th style="width:50px;"></th>
+            </tr>
+          </thead>
+          <tbody id="itemBody"></tbody>
+        </table>
+        <button class="add-item-btn" onclick="toggleItemSearch()">＋ เพิ่ม</button>
+        <div class="item-search-wrap" id="itemSearchWrap" style="display:none;">
+          <div class="item-search-box">
+            <input type="text" id="itemSearchInput" placeholder="ค้นหาสินค้า (ชื่อ/รหัส) เพื่อเพิ่มในชุด..." autocomplete="off">
+            <button onclick="doItemSearch()">🔍</button>
+          </div>
+          <div class="item-suggest-list" id="itemSuggestList"></div>
+        </div>
+
+        <div class="total-row">
+          ราคาชุดสินค้ารวม <span id="grandTotal">0.00</span> บาท
+        </div>
+
+        <div class="bottom-actions">
+          <button class="btn-delete" onclick="deleteBundleFn()">🗑️ ลบชุดสินค้า</button>
+          <div class="left-btns">
+            <button class="btn-cancel" onclick="currentCode ? loadBundle(currentCode) : newBundle()">ยกเลิก</button>
+            <button class="btn-save" onclick="saveBundle()">💾 บันทึก</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+const unitOptions = ["แผง","กล่อง","TAB","แคปซูล","ขวด","หลอด","ชิ้น"];
+
+// ================= ข้อมูลชุดสินค้าจริง: โหลดจาก action 'listBundles' =================
+let bundles = [];
+let filteredBundles = [];
+let currentCode = null; // รหัสชุดสินค้าที่กำลังแก้ไข, null = กำลังเพิ่มใหม่
+
+async function loadBundleList() {
+  document.getElementById('foundCount').textContent = 'กำลังโหลดข้อมูลจริง...';
+  try {
+    bundles = await apiGet('listBundles');
+  } catch (err) {
+    document.getElementById('foundCount').textContent = `ดึงข้อมูลไม่สำเร็จ: ${err.message}`;
+    return;
+  }
+  doSearch();
+  if (bundles.length) loadBundle(bundles[0].code);
+  else newBundle();
+}
+
+function renderList() {
+  const list = document.getElementById('bundleList');
+  document.getElementById('foundCount').textContent = `ผลการค้นหา: พบ ${filteredBundles.length} รายการ`;
+  list.innerHTML = filteredBundles.map((b) => {
+    return `<div class="bundle-list-item ${b.code===currentCode?'active':''}" ondblclick="loadBundle('${b.code}')">${b.name}</div>`;
+  }).join("");
+}
+
+function doSearch() {
+  const kw = document.getElementById('searchInput').value.trim().toLowerCase();
+  filteredBundles = kw === "" ? bundles : bundles.filter(b => b.name.toLowerCase().includes(kw));
+  renderList();
+}
+
+function loadBundle(code) {
+  const b = bundles.find(x => x.code === code);
+  if (!b) return;
+  currentCode = code;
+  document.getElementById('bundleTitle').textContent = b.name;
+  document.getElementById('bundleCode').textContent = b.code;
+  document.getElementById('fBundleName').value = b.name;
+  document.getElementById('fBarcode').value = b.barcode;
+  document.getElementById('fBranch').value = b.branch;
+  document.getElementById('fBundleType').value = b.type;
+  renderItems(b.items.map(it => ({ ref: it.code, name: it.name, qty: it.qty, unit: it.unit, price: it.price, free: it.free || false })));
+  renderList();
+}
+
+let currentItems = [];
+
+function renderItems(items) {
+  currentItems = items.map(i => ({...i}));
+  const body = document.getElementById('itemBody');
+  body.innerHTML = currentItems.map((it, i) => `
+    <tr>
+      <td>${it.ref}</td>
+      <td>${it.name}</td>
+      <td><input type="number" value="${it.qty}" min="1" onchange="updateItem(${i},'qty',this.value)"></td>
+      <td>
+        <select onchange="updateItem(${i},'unit',this.value)">
+          ${unitOptions.map(u => `<option ${u===it.unit?'selected':''}>${u}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <input type="number" value="${it.price}" step="0.01" onchange="updateItem(${i},'price',this.value)">
+        <label class="free-check"><input type="checkbox" ${it.free?"checked":""} onchange="updateItem(${i},'free',this.checked)"> Is free</label>
+      </td>
+      <td><span class="row-total" id="rowTotal${i}">${rowTotal(it).toFixed(0)}</span></td>
+      <td><button class="del-row-btn" onclick="removeItem(${i})">🗑️</button></td>
+    </tr>
+  `).join("");
+  updateGrandTotal();
+}
+
+function rowTotal(it) {
+  return it.free ? 0 : it.qty * it.price;
+}
+
+function updateItem(i, field, value) {
+  if (field === 'qty') currentItems[i].qty = Math.max(1, Number(value) || 1);
+  else if (field === 'price') currentItems[i].price = Math.max(0, Number(value) || 0);
+  else if (field === 'unit') currentItems[i].unit = value;
+  else if (field === 'free') currentItems[i].free = value;
+  document.getElementById(`rowTotal${i}`).textContent = rowTotal(currentItems[i]).toFixed(0);
+  updateGrandTotal();
+}
+
+function removeItem(i) {
+  currentItems.splice(i, 1);
+  renderItems(currentItems);
+}
+
+function toggleItemSearch() {
+  const wrap = document.getElementById('itemSearchWrap');
+  const showing = wrap.style.display !== 'none';
+  wrap.style.display = showing ? 'none' : 'block';
+  if (!showing) {
+    document.getElementById('itemSearchInput').value = '';
+    document.getElementById('itemSuggestList').classList.remove('show');
+    document.getElementById('itemSearchInput').focus();
+  }
+}
+
+let lastSearchResults = []; // เก็บผลค้นหาล่าสุดไว้ใช้ตอนกดเลือก (หลีกเลี่ยงยิง API ซ้ำ)
+
+async function doItemSearch() {
+  const kw = document.getElementById('itemSearchInput').value.trim();
+  const list = document.getElementById('itemSuggestList');
+  if (kw === "") { list.classList.remove('show'); return; }
+  list.innerHTML = `<div class="item-suggest-item"><span>กำลังค้นหา...</span></div>`;
+  list.classList.add('show');
+  try {
+    lastSearchResults = await apiGet('searchProducts', { keyword: kw });
+  } catch (err) {
+    list.innerHTML = `<div class="item-suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
+    return;
+  }
+  if (lastSearchResults.length === 0) {
+    list.innerHTML = `<div class="item-suggest-item"><span>ไม่พบสินค้า</span></div>`;
+  } else {
+    // หมายเหตุ: searchProducts คืนต้นทุนล่าสุด (ไม่ใช่ราคาขาย) ใช้เป็นค่าตั้งต้นในตารางไปก่อน
+    // แก้ราคาขายจริงต่อรายการในตารางได้เลยหลังเพิ่มเข้าชุด (ราคาขายชุดจริงต้องตรวจสอบก่อนใช้งาน)
+    list.innerHTML = lastSearchResults.map(p =>
+      `<div class="item-suggest-item" onclick="selectCatalogItem('${p.code}')">
+        <span>${p.name} <small>${p.code}</small></span>
+        <b>${(Number(p.cost)||0).toFixed(2)} บ./${p.unit}</b>
+      </div>`
+    ).join("");
+  }
+  list.classList.add('show');
+}
+
+function selectCatalogItem(code) {
+  const p = lastSearchResults.find(x => x.code === code);
+  if (!p) return;
+  const existing = currentItems.find(it => it.ref === p.code);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    currentItems.push({ ref: p.code, name: p.name, qty: 1, unit: p.unit, price: Number(p.cost) || 0, free: false });
+  }
+  document.getElementById('itemSearchInput').value = '';
+  document.getElementById('itemSuggestList').classList.remove('show');
+  document.getElementById('itemSearchWrap').style.display = 'none';
+  renderItems(currentItems);
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('itemSearchWrap');
+  if (wrap && !wrap.contains(e.target) && !e.target.closest('.add-item-btn')) {
+    document.getElementById('itemSuggestList').classList.remove('show');
+  }
+});
+
+function updateGrandTotal() {
+  const total = currentItems.reduce((sum, it) => sum + rowTotal(it), 0);
+  document.getElementById('grandTotal').textContent = total.toFixed(2);
+}
+
+function newBundle() {
+  currentCode = null;
+  document.getElementById('bundleTitle').textContent = "ชุดสินค้าใหม่";
+  document.getElementById('bundleCode').textContent = "(ยังไม่มีรหัส)";
+  document.getElementById('fBundleName').value = "";
+  document.getElementById('fBarcode').value = "";
+  document.getElementById('fBranch').value = "สำนักงานใหญ่";
+  document.getElementById('fBundleType').value = "สินค้าขายเป็นชุดเท่านั้น";
+  renderItems([]);
+  renderList();
+}
+
+/** รวมค่าฟอร์ม + รายการสินค้า แล้วบันทึกจริงผ่าน createBundle/updateBundle */
+async function saveBundle() {
+  const name = document.getElementById('fBundleName').value.trim();
+  if (!name) { alert('กรุณากรอกชื่อชุดสินค้า'); return; }
+  if (currentItems.length === 0) { alert('กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการในชุด'); return; }
+
+  const payload = {
+    name: name,
+    barcode: document.getElementById('fBarcode').value.trim(),
+    branch: document.getElementById('fBranch').value,
+    type: document.getElementById('fBundleType').value,
+    items: currentItems.map(it => ({ code: it.ref, name: it.name, qty: it.qty, unit: it.unit, price: it.price, free: it.free })),
+    price: currentItems.reduce((sum, it) => sum + rowTotal(it), 0),
+  };
+
+  const btn = document.querySelector('.btn-save');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+  try {
+    if (currentCode) {
+      await apiPost('updateBundle', { code: currentCode, bundle: payload });
+      alert('บันทึกชุดสินค้าเรียบร้อย');
+    } else {
+      const result = await apiPost('createBundle', { bundle: payload });
+      alert('เพิ่มชุดสินค้าใหม่เรียบร้อย รหัส ' + result.code);
+      currentCode = result.code;
+    }
+    await loadBundleList();
+    loadBundle(currentCode);
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึก';
+}
+
+async function deleteBundleFn() {
+  if (!currentCode) { alert('ยังไม่มีชุดสินค้านี้ในระบบ (ยังไม่เคยบันทึก)'); return; }
+  if (!confirm('ยืนยันลบชุดสินค้านี้ใช่หรือไม่?')) return;
+  try {
+    await apiPost('deleteBundle', { code: currentCode });
+    await loadBundleList();
+  } catch (err) {
+    alert('ลบไม่สำเร็จ: ' + err.message);
+  }
+}
+
+document.getElementById('searchInput').addEventListener('input', doSearch);
+document.getElementById('searchInput').addEventListener('keyup', e => { if (e.key === 'Enter') doSearch(); });
+
+document.getElementById('itemSearchInput').addEventListener('input', doItemSearch);
+document.getElementById('itemSearchInput').addEventListener('keyup', e => { if (e.key === 'Enter') doItemSearch(); });
+
+loadBundleList();
+</script>
+
+</body>
+</html>

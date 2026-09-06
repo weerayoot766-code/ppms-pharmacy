@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - เข้าสู่ระบบ (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%; margin: 0;
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(160deg, #1e6b3c 0%, #2e8b4f 45%, #6fbf8a 100%);
+  }
+  body {
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+
+  .login-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(10,40,20,.35);
+    width: 100%; max-width: 380px;
+    padding: 38px 34px 30px;
+  }
+  .logo-circle {
+    width: 68px; height: 68px; border-radius: 50%;
+    background: linear-gradient(135deg, #1e6b3c, #2e8b4f);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; margin: 0 auto 14px;
+    box-shadow: 0 6px 18px rgba(30,107,60,.35);
+  }
+  .shop-name { text-align: center; font-size: 19px; font-weight: 700; color: #1e6b3c; }
+  .shop-sub { text-align: center; font-size: 12px; color: #8fa198; margin-top: 2px; margin-bottom: 26px; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 6px; }
+  .input-wrap { position: relative; }
+  .input-wrap .ic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; opacity: .55; }
+  .field input {
+    width: 100%; padding: 11px 12px 11px 36px; border: 1px solid #cfe0d3; border-radius: 9px;
+    font-size: 14px; font-family: inherit; color: #24312a;
+  }
+  .field input:focus { outline: none; border-color: #2e8b4f; box-shadow: 0 0 0 3px rgba(46,139,79,.12); }
+
+  .row-between { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; font-size: 12.5px; }
+  .remember { display: flex; align-items: center; gap: 6px; color: #4a5a4f; }
+  .forgot-link { color: #2e8b4f; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .forgot-link:hover { text-decoration: underline; }
+
+  .login-btn {
+    width: 100%; background: #2e8b4f; color: #fff; border: none; border-radius: 9px;
+    padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .login-btn:hover { background: #257a43; }
+
+  .error-box {
+    display: none; background: #fbe4e2; color: #c0392b; border: 1px solid #f0c9c4;
+    border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 16px;
+  }
+  .error-box.show { display: block; }
+
+  .demo-hint {
+    margin-top: 18px; text-align: center; font-size: 11.5px; color: #a9b5ae;
+    line-height: 1.6;
+  }
+  .demo-hint b { color: #6b7a70; }
+
+  .login-btn:disabled { opacity: .65; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="logo-circle">💊</div>
+  <div class="shop-name">ปรุงยาเภสัช</div>
+  <div class="shop-sub">Prungya Pharmacy and Medical System (PPMS)</div>
+
+  <div class="error-box" id="errorBox">ชื่อผู้ใช้งานหรือ PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</div>
+
+  <div class="field">
+    <label>ชื่อผู้ใช้งาน</label>
+    <div class="input-wrap">
+      <span class="ic">👤</span>
+      <input type="text" id="username" placeholder="ชื่อผู้ใช้งาน หรือ เบอร์โทรศัพท์" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>PIN</label>
+    <div class="input-wrap">
+      <span class="ic">🔒</span>
+      <input type="password" id="pin" inputmode="numeric" maxlength="6" placeholder="กรอก PIN 4-6 หลัก" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+  </div>
+
+  <div class="row-between">
+    <label class="remember">
+      <input type="checkbox" id="remember"> จดจำฉันไว้
+    </label>
+    <a class="forgot-link" onclick="alert('มอคอัพ: จะให้แอดมินช่วยตั้ง PIN ใหม่ให้ที่หน้าจัดการผู้ใช้งาน')">ลืม PIN?</a>
+  </div>
+
+  <button class="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function doLogin() {
+  const username = document.getElementById('username').value.trim();
+  const pin = document.getElementById('pin').value.trim();
+  const errorBox = document.getElementById('errorBox');
+  const btn = document.querySelector('.login-btn');
+
+  if (!username || !pin) {
+    errorBox.textContent = 'กรุณากรอกชื่อผู้ใช้งานและ PIN ให้ครบ';
+    errorBox.classList.add('show');
+    return;
+  }
+
+  errorBox.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'กำลังตรวจสอบ...';
+
+  try {
+    const user = await apiGet('login', { username, pin });
+    // เก็บข้อมูลผู้ใช้ที่ล็อกอินไว้ใช้ทั่วระบบ (เช่น แสดงชื่อในหน้า POS, บันทึกเป็นผู้ขายในบิล)
+    localStorage.setItem('ppms_user', JSON.stringify(user));
+    if (document.getElementById('remember').checked) {
+      localStorage.setItem('ppms_remember_username', username);
+    }
+    window.location.href = 'backoffice-mockup.html';
+  } catch (err) {
+    errorBox.textContent = err.message || 'ชื่อผู้ใช้งานหรือ PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+    errorBox.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'เข้าสู่ระบบ';
+  }
+}
+
+// จำชื่อผู้ใช้งานล่าสุดไว้ให้ ถ้าเคยติ๊ก "จดจำฉันไว้"
+const rememberedUsername = localStorage.getItem('ppms_remember_username');
+if (rememberedUsername) {
+  document.getElementById('username').value = rememberedUsername;
+  document.getElementById('remember').checked = true;
+}
+</script>
+
+</body>
+</html>

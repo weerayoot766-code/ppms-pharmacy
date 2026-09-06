@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ข้อมูลลูกค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff; padding: 14px 26px; display: flex; align-items: center; gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.5);
+    color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff; padding: 11px 22px; font-size: 13px; color: #6b7a70; border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1350px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .header-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+  }
+  .header-row h1 { font-size: 19px; font-weight: 700; color: #24312a; margin: 0; }
+  .header-row .badge-new { font-size: 15px; font-weight: 700; color: #e08a2b; }
+
+  .layout { display: flex; gap: 18px; align-items: flex-start; }
+
+  /* ---------- ซ้าย ---------- */
+  .left-panel {
+    flex: 0 0 300px; background: #fff; border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06); overflow: hidden;
+  }
+  .left-panel .panel-head {
+    background: #2e8b4f; color: #fff; padding: 13px 16px; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .left-panel .panel-body { padding: 16px; }
+  .left-panel input[type=text] {
+    width: 100%; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 13.5px; font-family: inherit; margin-bottom: 10px;
+  }
+  .search-btn {
+    width: 100%; background: #eaa73c; color: #fff; border: none; border-radius: 8px;
+    padding: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-bottom: 14px;
+  }
+  .search-btn:hover { background: #d99524; }
+  .found-count { font-size: 12.5px; color: #6b7a70; margin-bottom: 8px; }
+  .cust-list { max-height: 420px; overflow-y: auto; border: 1px solid #eef2ef; border-radius: 8px; }
+  .cust-list-item { padding: 10px 12px; font-size: 13px; color: #3f4f45; border-bottom: 1px solid #eef2ef; cursor: pointer; }
+  .cust-list-item:last-child { border-bottom: none; }
+  .cust-list-item:hover { background: #f6faf7; }
+  .cust-list-item.active { background: #2e8b4f; color: #fff; font-weight: 600; }
+  .cust-list-item small { display: block; color: inherit; opacity: .75; font-weight: 400; font-size: 11.5px; }
+  .kv-hint { font-size: 11px; color: #8fa198; margin-top: 8px; }
+
+  /* ---------- ขวา ---------- */
+  .right-panel { flex: 1; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(30, 90, 50, .06); overflow: hidden; }
+  .right-panel .panel-head {
+    background: #2e8b4f; color: #fff; padding: 13px 18px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .right-panel .panel-head .title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .new-cust-btn {
+    background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.6); color: #fff;
+    padding: 8px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .new-cust-btn:hover { background: rgba(255,255,255,.32); }
+  .right-panel .panel-body { padding: 22px; }
+
+  .field-row { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 150px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 6px; }
+  .field .required { color: #d9534f; }
+  .field input, .field select {
+    width: 100%; padding: 10px 11px; border: 1px solid #cfe0d3; border-radius: 7px;
+    font-size: 13.5px; font-family: inherit;
+  }
+  .field input:disabled { background: #eef2ef; color: #5b6b60; }
+
+  /* ---------- แท็บ ---------- */
+  .subtabs { display: flex; gap: 2px; border-bottom: 2px solid #eef2ef; margin: 22px 0 18px; flex-wrap: wrap; }
+  .subtab-item {
+    padding: 11px 16px; font-size: 13.5px; font-weight: 600; color: #6b7a70; cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  .subtab-item:hover { color: #1e6b3c; }
+  .subtab-item.active { color: #1e6b3c; border-bottom-color: #2e8b4f; }
+
+  .subtab-content h4 { font-size: 13.5px; font-weight: 700; color: #1e6b3c; margin: 0 0 14px; }
+
+  .summary-box-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .summary-box {
+    flex: 1; min-width: 220px; background: #f6faf7; border: 1px solid #e2f0e4; border-radius: 10px; padding: 16px 18px;
+  }
+  .summary-box .label { font-size: 12.5px; color: #6b7a70; margin-bottom: 6px; }
+  .summary-box .value { font-size: 22px; font-weight: 700; color: #1e6b3c; }
+  .summary-box .value small { font-size: 13px; font-weight: 500; color: #6b7a70; }
+
+  table.history-table { width: 100%; border-collapse: collapse; }
+  table.history-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 8px 8px;
+  }
+  table.history-table td { padding: 9px 8px; border-bottom: 1px solid #eef2ef; font-size: 13px; }
+
+  textarea {
+    width: 100%; min-height: 100px; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 13.5px; font-family: inherit; resize: vertical;
+  }
+
+  .checkbox-tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .checkbox-tag {
+    display: flex; align-items: center; gap: 6px; background: #f6faf7; border: 1px solid #e2f0e4;
+    border-radius: 20px; padding: 6px 12px; font-size: 12.5px; color: #3f4f45; cursor: pointer;
+  }
+  .checkbox-tag input { width: 14px; height: 14px; accent-color: #2e8b4f; }
+
+  .bottom-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    margin-top: 24px; padding-top: 18px; border-top: 1px solid #eef2ef;
+  }
+  .bottom-actions button {
+    padding: 11px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-cancel { background: #fff; color: #3f4f45; border: 1px solid #cfe0d3; }
+  .btn-cancel:hover { background: #eef2ef; }
+  .btn-save { background: #2e8b4f; color: #fff; }
+  .btn-save:hover { background: #257a43; }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .left-panel { flex: 1 1 auto; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> ระบบสมาชิก <span class="sep">/</span> <b>ข้อมูลลูกค้า</b>
+</div>
+
+<div class="content">
+
+  <div class="header-row">
+    <h1 id="custTitle">เพิ่มรายชื่อลูกค้าใหม่</h1>
+    <div class="badge-new" id="custBadge">NEW</div>
+  </div>
+
+  <div class="layout">
+    <!-- ========== ซ้าย: ค้นหา + รายชื่อ ========== -->
+    <div class="left-panel">
+      <div class="panel-head">🔍 ค้นหาลูกค้า</div>
+      <div class="panel-body">
+        <input type="text" id="searchInput" placeholder="ค้นหาโดย รหัสลูกค้า, ชื่อ, เบอร์มือถือ">
+        <button class="search-btn" onclick="doSearch()">ค้นหา</button>
+        <div class="found-count" id="foundCount"></div>
+        <div class="cust-list" id="custList"></div>
+        <div class="kv-hint">* double click ที่รายชื่อเพื่อดูข้อมูล</div>
+      </div>
+    </div>
+
+    <!-- ========== ขวา: ข้อมูลลูกค้า ========== -->
+    <div class="right-panel">
+      <div class="panel-head">
+        <div class="title">👤 ข้อมูลลูกค้า</div>
+        <button class="new-cust-btn" onclick="newCustomer()">👤＋ เพิ่มรายชื่อลูกค้าใหม่</button>
+      </div>
+      <div class="panel-body">
+
+        <div class="field-row">
+          <div class="field" style="max-width:140px;">
+            <label>คำนำหน้า</label>
+            <select id="fPrefix"><option>-- ไม่ระบุ --</option><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กชาย</option><option>เด็กหญิง</option></select>
+          </div>
+          <div class="field">
+            <label>ชื่อจริง <span class="required">*</span></label>
+            <input type="text" id="fFirstName" placeholder="ชื่อจริง">
+          </div>
+          <div class="field">
+            <label>นามสกุล <span class="required">*</span></label>
+            <input type="text" id="fLastName" placeholder="นามสกุล">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>ชื่อบริษัท</label><input type="text" id="fCompany" placeholder="ชื่อบริษัท"></div>
+          <div class="field"><label>ชื่อผู้ติดต่อสำหรับบริษัท</label><input type="text" id="fCompanyContact" placeholder="ชื่อผู้ติดต่อสำหรับบริษัท"></div>
+          <div class="field"><label>เลขประจำตัวผู้เสียภาษี</label><input type="text" id="fTaxId" placeholder="เลขประจำตัวผู้เสียภาษี"></div>
+          <div class="field"><label>อาชีพ</label><input type="text" id="fOccupation" placeholder="อาชีพ"></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field" style="max-width:220px;"><label>มือถือ / เบอร์หลัก <span class="required">*</span></label><input type="text" id="fPhone" placeholder="เบอร์มือถือ / เบอร์หลัก"></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>เลขที่บัตรประจำตัวประชาชน</label><input type="text" id="fCitizenId" placeholder="เลขที่บัตรประชาชน / Passport"></div>
+          <div class="field" style="max-width:130px;"><label>สัญชาติ</label><select id="fNationality"><option>Thai</option><option>Other</option></select></div>
+          <div class="field"><label>วันเกิด <span class="required">*</span></label><input type="text" id="fBirthdate" placeholder="วันเกิด เช่น 1983-01-01" onchange="calcAge()"></div>
+          <div class="field" style="max-width:100px;"><label>อายุ</label><input type="text" id="fAge" disabled></div>
+          <div class="field" style="max-width:140px;"><label>เพศ <span class="required">*</span></label><select id="fGender"><option>-- เลือกเพศ --</option><option>ชาย</option><option>หญิง</option><option>อื่นๆ</option></select></div>
+          <div class="field" style="max-width:140px;"><label>หมู่เลือด</label><select id="fBloodType"><option>-- เลือกหมู่เลือด --</option><option>A</option><option>B</option><option>AB</option><option>O</option></select></div>
+        </div>
+
+        <div class="subtabs" id="subtabMenu">
+          <div class="subtab-item" data-tab="address">ที่อยู่</div>
+          <div class="subtab-item" data-tab="price">ราคาขาย</div>
+          <div class="subtab-item" data-tab="drug">ข้อมูลทางยา</div>
+          <div class="subtab-item" data-tab="points">แต้มสะสม</div>
+          <div class="subtab-item active" data-tab="history">ประวัติการซื้อ</div>
+          <div class="subtab-item" data-tab="note">หมายเหตุ</div>
+        </div>
+
+        <div class="subtab-content" id="subtabContent"></div>
+
+        <div class="bottom-actions">
+          <button class="btn-cancel" onclick="currentId ? loadCustomer(currentId) : newCustomer()">ยกเลิก</button>
+          <button class="btn-save" onclick="saveCustomer()">💾 บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+function blankCustomer() {
+  return {
+    id: null, prefix: "", first: "", last: "", company: "", companyContact: "", taxId: "", occupation: "",
+    phone: "",
+    citizenId: "", nationality: "Thai", birthdate: "", gender: "", blood: "",
+    weight: "", height: "",
+    address: { no:"", moo:"", road:"", tambon:"", amphoe:"", province:"", zip:"" },
+    priceLevel: "ราคา1 (ราคาปกติ)",
+    drugInfo: { allergies:"", chronic:[], regularMeds:"" },
+    purchaseHistory: { month:0, total:0, recent:[] },
+    note: "",
+  };
+}
+
+// ================= ข้อมูลลูกค้าจริง: โหลดจาก listCustomers / getCustomer =================
+let customerList = []; // รายการเบา ๆ สำหรับแสดงในลิสต์ซ้าย {id, prefix, first, last, phone}
+let filtered = [];
+let currentId = null;       // id ของลูกค้าที่กำลังแก้ไข, null = กำลังเพิ่มใหม่
+let currentCustomer = blankCustomer(); // ข้อมูลเต็มของลูกค้าที่กำลังแสดง/แก้ไขอยู่
+let currentSubtab = "history";
+
+function renderList() {
+  const list = document.getElementById('custList');
+  document.getElementById('foundCount').textContent = `ผลการค้นหา: พบ ${filtered.length} รายการ`;
+  list.innerHTML = filtered.map((c) => {
+    return `<div class="cust-list-item ${c.id===currentId?'active':''}" ondblclick="loadCustomer('${c.id}')">
+      ${c.prefix}${c.first} ${c.last}
+      <small>${c.id} • ${c.phone || '-'}</small>
+    </div>`;
+  }).join("");
+}
+
+async function loadCustomerList() {
+  document.getElementById('foundCount').textContent = 'กำลังโหลดข้อมูลจริง...';
+  try {
+    customerList = await apiGet('listCustomers');
+  } catch (err) {
+    document.getElementById('foundCount').textContent = `ดึงข้อมูลไม่สำเร็จ: ${err.message}`;
+    return;
+  }
+  doSearch();
+  if (customerList.length) loadCustomer(customerList[0].id);
+}
+
+function doSearch() {
+  const kw = document.getElementById('searchInput').value.trim().toLowerCase();
+  filtered = kw === "" ? customerList : customerList.filter(c =>
+    c.id.toLowerCase().includes(kw) ||
+    (c.first+c.last).toLowerCase().includes(kw) ||
+    (c.phone || '').includes(kw)
+  );
+  renderList();
+}
+
+function calcAge() {
+  const val = document.getElementById('fBirthdate').value.trim();
+  const d = new Date(val);
+  if (isNaN(d.getTime())) { document.getElementById('fAge').value = ""; return; }
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  const m = today.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
+  document.getElementById('fAge').value = age + " ปี";
+}
+
+async function loadCustomer(id) {
+  document.getElementById('custTitle').textContent = 'กำลังโหลด...';
+  try {
+    currentCustomer = await apiGet('getCustomer', { id });
+  } catch (err) {
+    alert('โหลดข้อมูลลูกค้าไม่สำเร็จ: ' + err.message);
+    return;
+  }
+  currentId = id;
+  const c = currentCustomer;
+  document.getElementById('custTitle').textContent = `${c.prefix}${c.first} ${c.last}`;
+  document.getElementById('custBadge').textContent = c.id;
+  document.getElementById('fPrefix').value = c.prefix;
+  document.getElementById('fFirstName').value = c.first;
+  document.getElementById('fLastName').value = c.last;
+  document.getElementById('fCompany').value = c.company;
+  document.getElementById('fCompanyContact').value = c.companyContact;
+  document.getElementById('fTaxId').value = c.taxId;
+  document.getElementById('fOccupation').value = c.occupation;
+  document.getElementById('fPhone').value = c.phone;
+  document.getElementById('fCitizenId').value = c.citizenId;
+  document.getElementById('fNationality').value = c.nationality;
+  document.getElementById('fBirthdate').value = c.birthdate;
+  document.getElementById('fGender').value = c.gender;
+  document.getElementById('fBloodType').value = c.blood;
+  calcAge();
+  renderSubtab();
+  renderList();
+}
+
+function newCustomer() {
+  currentId = null;
+  currentCustomer = blankCustomer();
+  document.getElementById('custTitle').textContent = "เพิ่มรายชื่อลูกค้าใหม่";
+  document.getElementById('custBadge').textContent = "NEW";
+  ["fPrefix","fFirstName","fLastName","fCompany","fCompanyContact","fTaxId","fOccupation",
+   "fPhone","fCitizenId","fBirthdate","fAge"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById('fNationality').value = "Thai";
+  document.getElementById('fGender').value = "-- เลือกเพศ --";
+  document.getElementById('fBloodType').value = "-- เลือกหมู่เลือด --";
+  renderSubtab(true);
+  renderList();
+}
+
+// ================= แท็บย่อย =================
+function switchSubtab(key) {
+  syncSubtabToState();
+  currentSubtab = key;
+  document.querySelectorAll('.subtab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === key));
+  renderSubtab();
+}
+document.getElementById('subtabMenu').addEventListener('click', e => {
+  const item = e.target.closest('.subtab-item');
+  if (item) switchSubtab(item.dataset.tab);
+});
+
+function renderSubtab(blank) {
+  const c = blank ? null : currentCustomer;
+  const area = document.getElementById('subtabContent');
+
+  if (currentSubtab === "address") {
+    const a = c ? c.address : { no:"", moo:"", road:"", tambon:"", amphoe:"", province:"", zip:"" };
+    area.innerHTML = `
+      <h4>ที่อยู่</h4>
+      <div class="field-row">
+        <div class="field" style="max-width:120px;"><label>บ้านเลขที่</label><input type="text" id="fAddrNo" value="${a.no}"></div>
+        <div class="field" style="max-width:100px;"><label>หมู่</label><input type="text" id="fAddrMoo" value="${a.moo}"></div>
+        <div class="field"><label>ถนน</label><input type="text" id="fAddrRoad" value="${a.road}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>ตำบล</label><input type="text" id="fAddrTambon" value="${a.tambon}"></div>
+        <div class="field"><label>อำเภอ</label><input type="text" id="fAddrAmphoe" value="${a.amphoe}"></div>
+        <div class="field"><label>จังหวัด</label><input type="text" id="fAddrProvince" value="${a.province}"></div>
+        <div class="field" style="max-width:120px;"><label>รหัสไปรษณีย์</label><input type="text" id="fAddrZip" value="${a.zip}"></div>
+      </div>
+    `;
+  } else if (currentSubtab === "price") {
+    const lvl = c ? c.priceLevel : "ราคา1 (ราคาปกติ)";
+    area.innerHTML = `
+      <h4>ราคาขาย</h4>
+      <div class="field-row">
+        <div class="field" style="max-width:280px;">
+          <label>ระดับราคาที่ใช้กับลูกค้ารายนี้</label>
+          <select id="fPriceLevel">
+            <option ${lvl.startsWith('ราคา1')?'selected':''}>ราคา1 (ราคาปกติ)</option>
+            <option ${lvl.startsWith('ราคา2')?'selected':''}>ราคา2 (ลูกค้าประจำ)</option>
+            <option ${lvl.startsWith('ราคา3')?'selected':''}>ราคา3 (ลูกค้าส่ง)</option>
+            <option ${lvl.startsWith('ราคา4')?'selected':''}>ราคา4</option>
+            <option ${lvl.startsWith('ราคา5')?'selected':''}>ราคา5</option>
+          </select>
+        </div>
+      </div>
+      <div class="kv-hint">ระดับราคานี้จะถูกใช้อัตโนมัติเวลาลูกค้ารายนี้ซื้อสินค้าที่หน้าขาย (ตรงกับตาราง "ราคาขาย" ที่ตั้งไว้ในหน้าแก้ไขสินค้า)</div>
+    `;
+  } else if (currentSubtab === "drug") {
+    const d = c ? c.drugInfo : { allergies:"", chronic:[], regularMeds:"" };
+    const w = c ? c.weight : "";
+    const h2 = c ? c.height : "";
+    const chronicOptions = ["ความดันโลหิตสูง","เบาหวาน","ไขมันในเลือดสูง","โรคหัวใจ","โรคไต","หอบหืด"];
+    const assessLink = currentId ? `drug-allergy-assessment-mockup.html?customerId=${currentId}` : null;
+    area.innerHTML = `
+      <h4>ข้อมูลทางยา</h4>
+      <div class="field-row">
+        <div class="field" style="max-width:140px;"><label>น้ำหนัก (กก.)</label><input type="text" id="fWeight" inputmode="decimal" placeholder="เช่น 60" value="${w}"></div>
+        <div class="field" style="max-width:140px;"><label>ส่วนสูง (ซม.)</label><input type="text" id="fHeight" inputmode="decimal" placeholder="เช่น 165" value="${h2}"></div>
+      </div>
+      <div class="field-row" style="align-items:flex-end;">
+        <div class="field"><label>ประวัติแพ้ยา/แพ้อาหาร</label><textarea id="fAllergyText" placeholder="พิมพ์ประวัติแพ้ยา/แพ้อาหารที่ทราบ...">${d.allergies || ''}</textarea></div>
+      </div>
+      <div class="field-row" style="margin-top:-6px;">
+        ${assessLink
+          ? `<button type="button" onclick="window.open('${assessLink}', '_blank')" style="background:#2e8b4f;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;">🩺 ประเมินการแพ้ยา</button>`
+          : `<span class="kv-hint">บันทึกข้อมูลลูกค้าให้เสร็จก่อน ถึงจะเปิดหน้าประเมินการแพ้ยาได้</span>`}
+      </div>
+      <div class="field" style="margin-bottom:6px;margin-top:14px;"><label>โรคประจำตัว</label></div>
+      <div class="checkbox-tag-row">
+        ${chronicOptions.map(a => `<label class="checkbox-tag"><input type="checkbox" class="chronic-check" data-value="${a}" ${d.chronic.includes(a)?'checked':''}> ${a}</label>`).join("")}
+      </div>
+      <div class="field-row">
+        <div class="field"><label>ยาที่ใช้ประจำ</label><textarea id="fRegularMeds" style="min-height:70px;">${d.regularMeds}</textarea></div>
+      </div>
+    `;
+  } else if (currentSubtab === "points") {
+    const pts = c ? (c.points || 0) : 0;
+    const hist = c ? (c.pointsHistory || []) : [];
+    area.innerHTML = `
+      <h4>แต้มสะสม</h4>
+      ${!currentId ? `<div class="kv-hint">บันทึกข้อมูลลูกค้าให้เสร็จก่อน ถึงจะเห็นแต้มสะสมและประวัติได้</div>` : `
+      <div class="summary-box-row">
+        <div class="summary-box">
+          <div class="label">แต้มสะสมคงเหลือ:</div>
+          <div class="value">${pts.toLocaleString()} <small>แต้ม</small></div>
+        </div>
+        <div class="summary-box">
+          <div class="label">แลกส่วนลดได้ตอนนี้:</div>
+          <div class="value">${pts.toLocaleString()} <small>บาท</small></div>
+        </div>
+      </div>
+      <div class="kv-hint" style="margin-bottom:16px;">
+        กติกา: ซื้อสุทธิทุก 500 บาท = 1 แต้ม (คำนวณให้อัตโนมัติทุกครั้งที่ซื้อผ่านหน้าขาย) แลกแต้มเป็นส่วนลดได้ 1 แต้ม = 1 บาท ในการซื้อครั้งถัดไป
+      </div>
+      <table class="history-table">
+        <thead><tr><th>วันที่</th><th>รายการ</th><th style="text-align:right;">แต้ม</th><th style="text-align:right;">คงเหลือ</th><th>อ้างอิงบิล</th></tr></thead>
+        <tbody>
+          ${hist.length === 0
+            ? `<tr><td colspan="5" style="text-align:center;color:#8fa198;">ยังไม่มีประวัติแต้มสะสม</td></tr>`
+            : hist.map(h => `<tr>
+                <td>${h.date}</td>
+                <td>${h.type}</td>
+                <td style="text-align:right;color:${h.points >= 0 ? '#1e6b3c' : '#c0392b'};font-weight:600;">${h.points >= 0 ? '+' : ''}${h.points}</td>
+                <td style="text-align:right;">${h.balance.toLocaleString()}</td>
+                <td>${h.billNo || '-'}</td>
+              </tr>`).join('')}
+        </tbody>
+      </table>
+      `}
+    `;
+  } else if (currentSubtab === "history") {
+    const h = c ? c.purchaseHistory : { month:0, total:0, recent:[] };
+    area.innerHTML = `
+      <h4>ประวัติการซื้อ</h4>
+      <div class="kv-hint" style="margin-bottom:10px;">คำนวณจากบิลขายที่ชื่อลูกค้าตรงกับชื่อ-นามสกุลนี้เป๊ะ (ระบบยังไม่ได้ผูกรหัสลูกค้ากับบิลขายโดยตรง อาจไม่ครบ 100% ถ้าพนักงานกรอกชื่อคลาดเคลื่อน)</div>
+      <div class="summary-box-row">
+        <div class="summary-box">
+          <div class="label">ยอดซื้อเดือนปัจจุบัน:</div>
+          <div class="value">${h.month.toLocaleString()} <small>บาท</small></div>
+        </div>
+        <div class="summary-box">
+          <div class="label">ยอดซื้อทั้งหมด:</div>
+          <div class="value">${h.total.toLocaleString()} <small>บาท</small></div>
+        </div>
+      </div>
+      <table class="history-table">
+        <thead><tr><th>วันที่</th><th>เลขที่บิล</th><th style="text-align:right;">ยอดซื้อ</th></tr></thead>
+        <tbody>
+          ${h.recent.length === 0
+            ? `<tr><td colspan="3" style="text-align:center;color:#8fa198;">ยังไม่มีประวัติการซื้อ</td></tr>`
+            : h.recent.map(r => `<tr><td>${r.date}</td><td>${r.ref}</td><td style="text-align:right;">${r.amount.toLocaleString()} บาท</td></tr>`).join("")}
+        </tbody>
+      </table>
+    `;
+  } else if (currentSubtab === "note") {
+    const note = c ? c.note : "";
+    area.innerHTML = `
+      <h4>หมายเหตุ</h4>
+      <div class="field-row">
+        <div class="field"><textarea id="fNote" placeholder="บันทึกหมายเหตุเกี่ยวกับลูกค้ารายนี้...">${note}</textarea></div>
+      </div>
+    `;
+  }
+}
+
+/** อ่านค่าจาก input ของแท็บย่อยที่กำลังแสดงอยู่ กลับเข้า currentCustomer ก่อนสลับแท็บหรือก่อนบันทึก
+    (ชีตย่อยแต่ละแท็บ re-render DOM ทับกัน ถ้าไม่ sync ค่าที่แก้ในแท็บอื่นจะหายไปตอนสลับแท็บ) */
+function syncSubtabToState() {
+  if (currentSubtab === 'address') {
+    currentCustomer.address = {
+      no: document.getElementById('fAddrNo').value,
+      moo: document.getElementById('fAddrMoo').value,
+      road: document.getElementById('fAddrRoad').value,
+      tambon: document.getElementById('fAddrTambon').value,
+      amphoe: document.getElementById('fAddrAmphoe').value,
+      province: document.getElementById('fAddrProvince').value,
+      zip: document.getElementById('fAddrZip').value,
+    };
+  } else if (currentSubtab === 'price') {
+    currentCustomer.priceLevel = document.getElementById('fPriceLevel').value;
+  } else if (currentSubtab === 'drug') {
+    currentCustomer.weight = document.getElementById('fWeight').value;
+    currentCustomer.height = document.getElementById('fHeight').value;
+    const chronic = Array.from(document.querySelectorAll('.chronic-check:checked')).map(el => el.dataset.value);
+    currentCustomer.drugInfo = {
+      allergies: document.getElementById('fAllergyText').value,
+      chronic,
+      regularMeds: document.getElementById('fRegularMeds').value,
+    };
+  } else if (currentSubtab === 'note') {
+    currentCustomer.note = document.getElementById('fNote').value;
+  }
+  // 'history' เป็นแท็บอ่านอย่างเดียว (คำนวณสด) ไม่ต้อง sync
+}
+
+/** รวมค่าจากแท็บหลัก (ข้อมูลทั่วไป) + แท็บย่อยปัจจุบัน แล้วบันทึกจริงผ่าน createCustomer/updateCustomer */
+async function saveCustomer() {
+  syncSubtabToState();
+
+  const first = document.getElementById('fFirstName').value.trim();
+  if (!first) { alert('กรุณากรอกชื่อลูกค้าอย่างน้อยชื่อจริง'); return; }
+
+  const payload = Object.assign({}, currentCustomer, {
+    prefix: document.getElementById('fPrefix').value,
+    first: first,
+    last: document.getElementById('fLastName').value.trim(),
+    company: document.getElementById('fCompany').value.trim(),
+    companyContact: document.getElementById('fCompanyContact').value.trim(),
+    taxId: document.getElementById('fTaxId').value.trim(),
+    occupation: document.getElementById('fOccupation').value.trim(),
+    phone: document.getElementById('fPhone').value.trim(),
+    citizenId: document.getElementById('fCitizenId').value.trim(),
+    nationality: document.getElementById('fNationality').value.trim(),
+    birthdate: document.getElementById('fBirthdate').value,
+    gender: document.getElementById('fGender').value,
+    blood: document.getElementById('fBloodType').value,
+  });
+
+  const btn = document.querySelector('.btn-save');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+  try {
+    if (currentId) {
+      await apiPost('updateCustomer', { id: currentId, customer: payload });
+      alert('บันทึกข้อมูลลูกค้าเรียบร้อย');
+    } else {
+      const result = await apiPost('createCustomer', { customer: payload });
+      alert('เพิ่มลูกค้าใหม่เรียบร้อย รหัส ' + result.id);
+      currentId = result.id;
+    }
+    await loadCustomerList();
+    await loadCustomer(currentId);
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึก';
+}
+
+
+loadCustomerList();
+
+document.getElementById('searchInput').addEventListener('input', doSearch);
+document.getElementById('searchInput').addEventListener('keyup', e => { if (e.key === 'Enter') doSearch(); });
+</script>
+
+</body>
+</html>

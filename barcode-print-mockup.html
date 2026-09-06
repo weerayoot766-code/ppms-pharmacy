@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - พิมพ์บาร์โค้ดสินค้า (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1300px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .layout { display: flex; gap: 18px; align-items: flex-start; }
+  .col-left { flex: 1.6; }
+  .col-right { flex: 1; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+  .panel-head {
+    background: #2e8b4f; color: #fff; padding: 13px 18px; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-body { padding: 20px; }
+
+  .top-add-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; position: relative; }
+  .top-add-row .search-box { flex: 2; min-width: 220px; position: relative; }
+  .top-add-row .search-box input {
+    width: 100%; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  .top-add-row select {
+    flex: 1; min-width: 160px; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  .suggest-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #fff; border: 1px solid #cfe0d3; border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.1); max-height: 220px; overflow-y: auto; z-index: 5; display: none;
+  }
+  .suggest-list.show { display: block; }
+  .suggest-item { padding: 9px 12px; cursor: pointer; font-size: 13.5px; border-bottom: 1px solid #f1f4f8; }
+  .suggest-item:hover { background: #f0f7ff; }
+  .suggest-item small { color: #8fa198; margin-left: 6px; }
+
+  table.item-table { width: 100%; border-collapse: collapse; }
+  table.item-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 9px 8px;
+  }
+  table.item-table td { padding: 10px 8px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: middle; }
+  table.item-table input[type=number], table.item-table select {
+    width: 100%; padding: 8px 9px; border: 1px solid #cfe0d3; border-radius: 6px; font-size: 13.5px; font-family: inherit;
+  }
+  .del-row-btn {
+    background: #f2544a; color: #fff; border: none; border-radius: 6px; width: 32px; height: 32px;
+    cursor: pointer; font-size: 13px;
+  }
+  .del-row-btn:hover { background: #d9433a; }
+  .empty-note { text-align: center; color: #8fa198; font-size: 13px; padding: 24px; }
+
+  .print-action-row { display: flex; justify-content: flex-end; margin-top: 18px; }
+  .print-btn {
+    background: #2e8b4f; color: #fff; border: none; border-radius: 8px;
+    padding: 12px 24px; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .print-btn:hover { background: #257a43; }
+
+  /* ---------- รูปแบบการพิมพ์ ---------- */
+  .template-row { display: flex; gap: 10px; margin-bottom: 20px; }
+  .template-row select {
+    flex: 1; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 13.5px; font-family: inherit;
+  }
+  .custom-btn {
+    background: #3fa2c9; color: #fff; border: none; border-radius: 8px;
+    padding: 0 16px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .custom-btn:hover { background: #338aab; }
+
+  .detail-head {
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid #eef2ef; padding-top: 16px; margin-bottom: 14px;
+  }
+  .detail-head h4 { font-size: 14px; font-weight: 700; color: #1e6b3c; margin: 0; }
+  .detail-btns { display: flex; gap: 8px; }
+  .edit-btn {
+    background: #eaa73c; color: #fff; border: none; border-radius: 7px;
+    padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .edit-btn:hover { background: #d99524; }
+  .delete-btn {
+    background: #f2544a; color: #fff; border: none; border-radius: 7px;
+    padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .delete-btn:hover { background: #d9433a; }
+
+  .detail-kv { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13.5px; border-bottom: 1px dashed #eef2ef; }
+  .detail-kv span:first-child { color: #6b7a70; }
+  .detail-kv span:last-child { font-weight: 600; color: #24312a; }
+
+  .label-preview {
+    margin-top: 16px; border: 1px dashed #cfe0d3; border-radius: 8px; padding: 14px;
+    background: #f6faf7; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  }
+  .label-chip {
+    background: #fff; border: 1px solid #cfe0d3; border-radius: 6px; padding: 8px 10px;
+    font-size: 10.5px; text-align: center; width: 92px;
+  }
+  .label-chip .lname { font-weight: 600; color: #24312a; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .label-chip svg { width: 100%; height: 24px; }
+  .label-chip .lcode { color: #6b7a70; margin-top: 2px; }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> ข้อมูลสินค้า <span class="sep">/</span> <b>พิมพ์บาร์โค้ดสินค้า</b>
+</div>
+
+<div class="content">
+  <div class="layout">
+
+    <!-- ========== ซ้าย: รายการสินค้า ========== -->
+    <div class="col-left panel">
+      <div class="panel-head">🏷️ รายการสินค้า</div>
+      <div class="panel-body">
+        <div class="top-add-row">
+          <div class="search-box">
+            <input type="text" id="productSearch" placeholder="ค้นหาสินค้า (ชื่อ/รหัส) เพื่อเพิ่มในรายการพิมพ์..." autocomplete="off">
+            <div class="suggest-list" id="productSuggestList"></div>
+          </div>
+          <select id="branchSelect">
+            <option>สำนักงานใหญ่</option>
+          </select>
+        </div>
+
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th style="width:110px;">หมายเลขอ้างอิง</th>
+              <th>สินค้า</th>
+              <th style="width:90px;">จำนวน/แถว</th>
+              <th style="width:110px;">หน่วย</th>
+              <th style="width:170px;">บาร์โค้ด</th>
+              <th style="width:50px;"></th>
+            </tr>
+          </thead>
+          <tbody id="itemBody"></tbody>
+        </table>
+
+        <div class="print-action-row">
+          <button class="print-btn" onclick="doPrint()">🖨️ พิมพ์บาร์โค้ด</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== ขวา: รูปแบบการพิมพ์ ========== -->
+    <div class="col-right panel">
+      <div class="panel-head">🖨️ รูปแบบการพิมพ์</div>
+      <div class="panel-body">
+        <div class="template-row">
+          <select id="templateSelect" onchange="renderTemplateDetail()">
+            <option value="">-- เลือกรายการตั้งค่า --</option>
+          </select>
+          <button class="custom-btn" onclick="openCustomTemplate()">⚙️ กำหนดเอง</button>
+        </div>
+
+        <div id="templateDetailArea"></div>
+
+        <div class="label-preview" id="labelPreview"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ================= API helpers (เหมือนหน้าอื่นๆ ในระบบ) =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+let rows = [];
+
+function renderRows() {
+  const body = document.getElementById('itemBody');
+  if (rows.length === 0) {
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-note">ยังไม่มีสินค้าในรายการ — ค้นหาแล้วเลือกสินค้าด้านบนเพื่อเพิ่ม</div></td></tr>`;
+  } else {
+    body.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td>${r.code}</td>
+        <td>${r.name}</td>
+        <td><input type="number" value="${r.qty}" min="1" onchange="updateRow(${i},'qty',this.value)"></td>
+        <td>
+          <select onchange="updateRow(${i},'unit',this.value)">
+            ${r.unitOptions.map(u => `<option ${u.unit===r.unit?'selected':''}>${u.unit}</option>`).join("")}
+          </select>
+        </td>
+        <td>
+          <select onchange="updateRow(${i},'barcode',this.value)">
+            ${r.unitOptions.filter(u=>u.unit===r.unit).map(u => `<option value="${u.barcode}" ${u.barcode===r.barcode?'selected':''}>${u.barcode}</option>`).join("")}
+          </select>
+        </td>
+        <td><button class="del-row-btn" onclick="removeRow(${i})">🗑️</button></td>
+      </tr>
+    `).join("");
+  }
+  renderLabelPreview();
+}
+
+function updateRow(i, field, value) {
+  if (field === 'qty') rows[i].qty = Math.max(1, Number(value) || 1);
+  else if (field === 'unit') {
+    rows[i].unit = value;
+    const u = rows[i].unitOptions.find(u => u.unit === value);
+    rows[i].barcode = u ? u.barcode : "";
+    renderRows();
+    return;
+  } else if (field === 'barcode') rows[i].barcode = value;
+  renderLabelPreview();
+}
+
+function removeRow(i) {
+  rows.splice(i, 1);
+  renderRows();
+}
+
+// ---------- ค้นหาสินค้าเพื่อเพิ่ม (ค้นจริงจากระบบ ทั้งชื่อและบาร์โค้ด) ----------
+const productSearch = document.getElementById('productSearch');
+const productSuggestList = document.getElementById('productSuggestList');
+
+async function doProductSearch() {
+  const kw = productSearch.value.trim();
+  if (kw === "") { productSuggestList.classList.remove('show'); return; }
+  let results;
+  try {
+    results = await apiGet('searchProducts', { keyword: kw });
+  } catch (err) {
+    productSuggestList.innerHTML = `<div class="suggest-item">ค้นหาไม่สำเร็จ: ${err.message}</div>`;
+    productSuggestList.classList.add('show');
+    return;
+  }
+  // ชุดสินค้า (bundle) ไม่มีบาร์โค้ดของตัวเอง (มีแต่ของสินค้าย่อยแต่ละตัว) เลยตัดออกจากหน้านี้ ไม่ต้องแสดง
+  results = results.filter(p => p.type !== 'bundle');
+  productSuggestList.innerHTML = results.length === 0
+    ? `<div class="suggest-item">ไม่พบสินค้า</div>`
+    : results.map(p => `<div class="suggest-item" onclick="addProduct('${p.code}')">${p.name} <small>${p.code}</small></div>`).join("");
+  productSuggestList.classList.add('show');
+}
+
+async function addProduct(code) {
+  productSearch.value = "กำลังโหลด...";
+  productSuggestList.classList.remove('show');
+  let detail;
+  try {
+    detail = await apiGet('getProduct', { code });
+  } catch (err) {
+    alert('โหลดข้อมูลสินค้าไม่สำเร็จ: ' + err.message);
+    productSearch.value = "";
+    return;
+  }
+  productSearch.value = "";
+
+  const unitOptions = (detail.barcodes || []).map(b => ({ unit: b['หน่วย'], barcode: b['บาร์โค้ด'] }));
+  if (unitOptions.length === 0) {
+    alert('สินค้า "' + detail.product['ชื่อสินค้า'] + '" ยังไม่มีบาร์โค้ดในระบบเลย — ไปสร้างบาร์โค้ดที่หน้า "แก้ไขสินค้า" ก่อน (แท็บ บาร์โค้ด)');
+    return;
+  }
+  rows.push({
+    code: detail.product['รหัสสินค้า'],
+    name: detail.product['ชื่อสินค้า'],
+    qty: 1,
+    unit: unitOptions[0].unit,
+    barcode: unitOptions[0].barcode,
+    unitOptions: unitOptions,
+  });
+  renderRows();
+}
+
+productSearch.addEventListener('input', doProductSearch);
+productSearch.addEventListener('keyup', e => { if (e.key === 'Enter') doProductSearch(); });
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-box')) productSuggestList.classList.remove('show');
+});
+
+// ---------- รูปแบบการพิมพ์ ----------
+const templates = [
+  { id: "t1", name: "ฉลากขนาด 30x20mm (3 คอลัมน์ต่อแถว)", size: "30 x 20 mm", cols: 3, rows: 10, margin: "3 mm" },
+  { id: "t2", name: "ฉลากขนาด 40x30mm (2 คอลัมน์ต่อแถว)", size: "40 x 30 mm", cols: 2, rows: 8, margin: "4 mm" },
+  { id: "t3", name: "สติกเกอร์ A4 เต็มแผ่น (24 ดวง/แผ่น)", size: "A4", cols: 4, rows: 6, margin: "2 mm" },
+];
+let selectedTemplateId = "t1";
+
+function populateTemplateSelect() {
+  const sel = document.getElementById('templateSelect');
+  sel.innerHTML = `<option value="">-- เลือกรายการตั้งค่า --</option>` +
+    templates.map(t => `<option value="${t.id}" ${t.id===selectedTemplateId?'selected':''}>${t.name}</option>`).join("");
+}
+
+let editingTemplate = false;
+
+function renderTemplateDetail() {
+  selectedTemplateId = document.getElementById('templateSelect').value;
+  editingTemplate = false;
+  renderTemplateDetailInner();
+}
+
+function renderTemplateDetailInner() {
+  const area = document.getElementById('templateDetailArea');
+  const t = templates.find(x => x.id === selectedTemplateId);
+  if (!t) { area.innerHTML = ""; renderLabelPreview(); return; }
+
+  if (editingTemplate) {
+    area.innerHTML = `
+      <div class="detail-head">
+        <h4>แก้ไขรายละเอียดการพิมพ์</h4>
+        <div class="detail-btns">
+          <button class="edit-btn" onclick="saveTemplateEdit('${t.id}')">💾 บันทึก</button>
+          <button class="delete-btn" onclick="cancelTemplateEdit()">✕ ยกเลิก</button>
+        </div>
+      </div>
+      <div class="detail-kv"><span>ชื่อรูปแบบ</span><input type="text" id="editName" value="${t.name}" style="width:60%;padding:5px 8px;border:1px solid #cfe0d3;border-radius:6px;"></div>
+      <div class="detail-kv"><span>ขนาดฉลาก</span><input type="text" id="editSize" value="${t.size}" style="width:60%;padding:5px 8px;border:1px solid #cfe0d3;border-radius:6px;"></div>
+      <div class="detail-kv"><span>จำนวนคอลัมน์ต่อแถว</span><input type="number" id="editCols" value="${t.cols}" min="1" style="width:80px;padding:5px 8px;border:1px solid #cfe0d3;border-radius:6px;"></div>
+      <div class="detail-kv"><span>จำนวนแถวต่อหน้า</span><input type="number" id="editRows" value="${t.rows}" min="1" style="width:80px;padding:5px 8px;border:1px solid #cfe0d3;border-radius:6px;"></div>
+      <div class="detail-kv"><span>ระยะขอบ</span><input type="text" id="editMargin" value="${t.margin}" style="width:80px;padding:5px 8px;border:1px solid #cfe0d3;border-radius:6px;"></div>
+    `;
+  } else {
+    area.innerHTML = `
+      <div class="detail-head">
+        <h4>รายละเอียดการพิมพ์</h4>
+        <div class="detail-btns">
+          <button class="edit-btn" onclick="editingTemplate=true; renderTemplateDetailInner();">✏️ แก้ไข</button>
+          <button class="delete-btn" onclick="deleteTemplate('${t.id}')">🗑️ ลบ</button>
+        </div>
+      </div>
+      <div class="detail-kv"><span>ขนาดฉลาก</span><span>${t.size}</span></div>
+      <div class="detail-kv"><span>จำนวนคอลัมน์ต่อแถว</span><span>${t.cols}</span></div>
+      <div class="detail-kv"><span>จำนวนแถวต่อหน้า</span><span>${t.rows}</span></div>
+      <div class="detail-kv"><span>ระยะขอบ</span><span>${t.margin}</span></div>
+    `;
+  }
+  renderLabelPreview();
+}
+
+function saveTemplateEdit(id) {
+  const t = templates.find(x => x.id === id);
+  if (!t) return;
+  t.name = document.getElementById('editName').value.trim() || t.name;
+  t.size = document.getElementById('editSize').value.trim() || t.size;
+  t.cols = Math.max(1, Number(document.getElementById('editCols').value) || t.cols);
+  t.rows = Math.max(1, Number(document.getElementById('editRows').value) || t.rows);
+  t.margin = document.getElementById('editMargin').value.trim() || t.margin;
+  editingTemplate = false;
+  populateTemplateSelect();
+  renderTemplateDetailInner();
+}
+
+function cancelTemplateEdit() {
+  editingTemplate = false;
+  renderTemplateDetailInner();
+}
+
+function deleteTemplate(id) {
+  if (!confirm('ลบรูปแบบการพิมพ์นี้ใช่หรือไม่?')) return;
+  templates.splice(templates.findIndex(t => t.id === id), 1);
+  selectedTemplateId = templates.length ? templates[0].id : "";
+  populateTemplateSelect();
+  renderTemplateDetail();
+}
+
+function openCustomTemplate() {
+  const name = prompt('ตั้งชื่อรูปแบบการพิมพ์ใหม่:', 'รูปแบบของฉัน');
+  if (!name) return;
+  const id = "custom" + Date.now();
+  templates.push({ id, name, size: "กำหนดเอง", cols: 2, rows: 8, margin: "3 mm" });
+  selectedTemplateId = id;
+  populateTemplateSelect();
+  renderTemplateDetail();
+}
+
+// ---------- ตัวอย่างฉลากบาร์โค้ด (SVG ง่ายๆ) ----------
+// ---------- ตารางเข้ารหัส EAN-13 มาตรฐานสากล (ต้องใช้ตารางนี้เป๊ะๆ ถึงจะยิงสแกนได้จริง) ----------
+const EAN13_L = ['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+const EAN13_G = ['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'];
+const EAN13_R = ['1110010','1100110','1101100','1000010','1011100','1001110','1010000','1000100','1001000','1110100'];
+const EAN13_PARITY = ['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+
+/** วาดบาร์โค้ดจริงตามมาตรฐาน EAN-13 — ยิงสแกนได้จริงถ้าโค้ดเป็นเลข 13 หลักที่ถูกต้อง (ไม่ใช่แค่ลายเส้นสวยๆ เหมือนก่อนหน้า) */
+function renderBarcodeSVG(code) {
+  const str = String(code || '').replace(/\D/g, ''); // ตัดอักขระที่ไม่ใช่ตัวเลขออกก่อน
+
+  if (str.length !== 13) {
+    // บาร์โค้ดที่ไม่ใช่ 13 หลักพอดี ไม่ใช่มาตรฐาน EAN-13 เข้ารหัสแบบมาตรฐานไม่ได้ — โชว์เป็นลายเส้นเตือน + ข้อความชัดเจนว่ายิงไม่ได้
+    return `<svg viewBox="0 0 100 30" width="100%" height="100%" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+      <text x="50" y="18" font-size="6" text-anchor="middle" fill="#c0392b">บาร์โค้ดนี้ไม่ใช่ 13 หลัก ยิงสแกนไม่ได้</text>
+    </svg>`;
+  }
+
+  const parity = EAN13_PARITY[parseInt(str[0], 10)];
+  let bits = '101'; // guard ซ้าย
+  for (let i = 0; i < 6; i++) {
+    const d = parseInt(str[i + 1], 10);
+    bits += parity[i] === 'L' ? EAN13_L[d] : EAN13_G[d];
+  }
+  bits += '01010'; // guard กลาง
+  for (let i = 0; i < 6; i++) {
+    bits += EAN13_R[parseInt(str[i + 7], 10)];
+  }
+  bits += '101'; // guard ขวา
+
+  const quietZone = 10; // ต้องเว้นขอบขาวซ้าย-ขวาไว้ ไม่งั้นสแกนเนอร์จับจุดเริ่ม/จบไม่ได้
+  let bars = '', x = quietZone;
+  for (let i = 0; i < bits.length; i++) {
+    if (bits[i] === '1') bars += `<rect x="${x}" y="0" width="1" height="30" fill="#000"/>`;
+    x += 1;
+  }
+  const totalWidth = x + quietZone;
+  return `<svg viewBox="0 0 ${totalWidth} 30" width="100%" height="100%" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">${bars}</svg>`;
+}
+
+function renderLabelPreview() {
+  const wrap = document.getElementById('labelPreview');
+  const validRows = rows.filter(r => r.barcode);
+  if (validRows.length === 0) {
+    wrap.innerHTML = `<div class="empty-note">เลือกบาร์โค้ดสินค้าในตารางซ้ายมือ เพื่อดูตัวอย่างฉลาก</div>`;
+    return;
+  }
+  let chips = [];
+  validRows.forEach(r => {
+    for (let i = 0; i < r.qty; i++) {
+      chips.push(`
+        <div class="label-chip">
+          <div class="lname">${r.name}</div>
+          ${renderBarcodeSVG(r.barcode)}
+          <div class="lcode">${r.barcode}</div>
+        </div>
+      `);
+    }
+  });
+  wrap.innerHTML = chips.join("");
+}
+
+function doPrint() {
+  const validRows = rows.filter(r => r.barcode);
+  if (validRows.length === 0) { alert('ยังไม่มีบาร์โค้ดในรายการให้พิมพ์ กรุณาเพิ่มสินค้าและเลือกบาร์โค้ดก่อน'); return; }
+  const t = templates.find(x => x.id === selectedTemplateId);
+  if (!t) { alert('กรุณาเลือกรูปแบบการพิมพ์ก่อน'); return; }
+
+  const chips = [];
+  validRows.forEach(r => {
+    for (let i = 0; i < r.qty; i++) chips.push({ name: r.name, barcode: r.barcode });
+  });
+
+  // เปิด popup ให้ใหญ่และอยู่กึ่งกลางจอเสมอ (กันปัญหาเผลอเปิดไปซ่อนหลังหน้าต่างหลักจนดูเหมือนเว็บค้าง)
+  const popW = Math.min(1000, window.screen.availWidth - 100);
+  const popH = Math.min(800, window.screen.availHeight - 100);
+  const popLeft = Math.max(0, (window.screen.availWidth - popW) / 2);
+  const popTop = Math.max(0, (window.screen.availHeight - popH) / 2);
+  const printWindow = window.open('', '_blank', `width=${popW},height=${popH},left=${popLeft},top=${popTop}`);
+  if (!printWindow) {
+    alert('เบราว์เซอร์บล็อกการเปิดหน้าต่างพิมพ์ กรุณาอนุญาต pop-up สำหรับเว็บนี้แล้วลองใหม่');
+    return;
+  }
+  printWindow.focus(); // ดึงโฟกัสมาที่หน้าต่างพิมพ์ทันที กันหลุดไปซ่อนหลังหน้าหลัก
+
+  const cellsHtml = chips.map(c => `
+    <div class="cell">
+      <div class="cname">${c.name}</div>
+      ${renderBarcodeSVG(c.barcode)}
+      <div class="ccode">${c.barcode}</div>
+    </div>
+  `).join('');
+
+  printWindow.document.open();
+  printWindow.document.write(`<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>พิมพ์บาร์โค้ดสินค้า</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  @page { size: A4; margin: ${t.margin}; }
+  body { font-family: 'Sarabun','Segoe UI',Arial,sans-serif; color: #111; }
+  .grid { display: grid; grid-template-columns: repeat(${t.cols}, 1fr); gap: 2mm; }
+  .cell { border: 1px dashed #999; padding: 2mm; text-align: center; page-break-inside: avoid; }
+  .cname { font-size: 2.6mm; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1mm; }
+  .cell svg { width: 100%; height: 8mm; }
+  .ccode { font-size: 2.3mm; color: #444; margin-top: 1mm; }
+</style>
+</head>
+<body>
+  <div class="grid">${cellsHtml}</div>
+</body>
+</html>`);
+  printWindow.document.close();
+
+  printWindow.onload = function () {
+    printWindow.focus();
+    printWindow.print();
+  };
+}
+
+populateTemplateSelect();
+renderTemplateDetail();
+renderRows();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ข้อมูลบริษัทยา (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 1200px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #eef2ef;
+    flex-wrap: wrap;
+  }
+  .panel-header h2 {
+    font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    border: 1px solid #cfe0d3;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .search-box input {
+    flex: 1; border: none; padding: 10px 12px; font-size: 14px; font-family: inherit;
+  }
+  .search-box button {
+    background: #eef6ee; border: none; padding: 0 16px; cursor: pointer; color: #2e8b4f; font-size: 15px;
+  }
+  .add-btn {
+    background: #2e8b4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-btn:hover { background: #257a43; }
+
+  .result-count { padding: 12px 22px 0; font-size: 12.5px; color: #6b7a70; }
+
+  table.sup-table { width: 100%; border-collapse: collapse; }
+  table.sup-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 10px 14px; white-space: nowrap;
+  }
+  table.sup-table td {
+    padding: 11px 14px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: middle;
+  }
+  table.sup-table tr:hover td { background: #f6faf7; }
+  .sup-name { font-weight: 600; color: #24312a; }
+  .phone-pill {
+    display: inline-block; background: #eef6ee; color: #1e6b3c; font-weight: 600;
+    font-size: 12px; padding: 3px 9px; border-radius: 20px;
+  }
+  .phone-missing { color: #b0b8b3; font-size: 12.5px; }
+
+  .action-btns { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid #cfe0d3; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: #4a5a4f;
+  }
+  .icon-btn:hover { background: #eef6ee; border-color: #2e8b4f; color: #1e6b3c; }
+
+  .empty-state { padding: 40px; text-align: center; color: #8fa198; font-size: 13.5px; }
+
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 16px; flex-wrap: wrap; }
+  .pagination button {
+    border: 1px solid #cfe0d3; background: #fff; border-radius: 6px; padding: 7px 12px;
+    font-size: 13px; cursor: pointer; color: #4a5a4f;
+  }
+  .pagination button.active { background: #2e8b4f; border-color: #2e8b4f; color: #fff; font-weight: 600; }
+  .pagination button:hover:not(.active) { background: #eef6ee; }
+  .pagination .dots { padding: 7px 4px; color: #8fa198; }
+
+  /* ---------- Popup เพิ่ม/แก้ไขบริษัทยา ---------- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(20,40,28,.45);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    background: #fff; border-radius: 14px; width: 100%; max-width: 420px;
+    box-shadow: 0 12px 34px rgba(20,60,35,.25);
+  }
+  .modal-header {
+    background: #eaf7ec; border-bottom: 1px solid #d3ecd8; border-radius: 14px 14px 0 0;
+    padding: 16px 18px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: #1e6b3c; }
+  .modal-close { background: none; border: none; font-size: 16px; color: #6b7a70; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; }
+  .modal-close:hover { background: #dcefe0; color: #2c3a32; }
+  .modal-body { padding: 18px; }
+  .modal-body label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 7px; margin-top: 14px; }
+  .modal-body label:first-child { margin-top: 0; }
+  .modal-body input {
+    width: 100%; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  .modal-confirm-btn {
+    width: 100%; margin-top: 20px; background: #2e8b4f; color: #fff; border: none;
+    border-radius: 10px; padding: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+  }
+  .modal-confirm-btn:hover { background: #257a43; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> ระบบสมาชิก <span class="sep">/</span> <b>ข้อมูลบริษัทยา</b>
+</div>
+
+<div class="content">
+  <div class="panel">
+    <div class="panel-header">
+      <h2>🏢 ข้อมูลบริษัทยา</h2>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ค้นหาด้วยรหัส หรือ ชื่อบริษัท...">
+        <button onclick="doSearch()">🔍</button>
+      </div>
+      <button class="add-btn" onclick="openAddModal()">＋ เพิ่มบริษัทยา</button>
+    </div>
+
+    <div class="result-count" id="resultCount"></div>
+
+    <div style="overflow-x:auto;">
+      <table class="sup-table">
+        <thead>
+          <tr>
+            <th style="width:60px;">#</th>
+            <th style="width:110px;">รหัส</th>
+            <th>ชื่อบริษัท / เจ้าหนี้</th>
+            <th>ผู้ติดต่อ</th>
+            <th style="width:130px;">เบอร์โทร</th>
+            <th style="width:90px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="supBody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<!-- ========== Popup เพิ่มบริษัทยา ========== -->
+<div class="modal-overlay" id="addModalOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">เพิ่มบริษัทยาใหม่</div>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>ชื่อบริษัท / เจ้าหนี้</label>
+      <input type="text" id="newSupName" placeholder="เช่น บริษัท ตัวอย่างฟาร์มา จำกัด">
+      <label>ผู้ติดต่อ</label>
+      <input type="text" id="newSupContact" placeholder="ชื่อผู้ติดต่อ (ถ้ามี)">
+      <label>เบอร์โทร</label>
+      <input type="text" id="newSupPhone" placeholder="0812345678">
+      <button class="modal-confirm-btn" onclick="confirmAddSupplier()">＋ เพิ่มบริษัทยา</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= ข้อมูลผู้จำหน่าย/บริษัทยาจริงทั้งหมด (350 รายชื่อ) =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// ---------- ข้อมูลบริษัทยา: โหลดจริงจากชีต 'ผู้จำหน่าย-บริษัทยา (Suppliers)' ----------
+// ชีตจริงใช้หัวคอลัมน์ภาษาไทย ('รหัสเจ้าหนี้', 'ชื่อเจ้าหนี้', 'ผู้ติดต่อ', 'เบอร์มือถือ', 'เบอร์ติดต่อ')
+// แปลงเป็น {code, name, contact, phone} ให้ตรงกับที่หน้านี้ใช้อยู่เดิม
+let suppliers = [];
+
+async function loadSuppliers() {
+  document.getElementById('supBody').innerHTML =
+    `<tr><td colspan="6"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+  try {
+    const rows = await apiGet('listSuppliers');
+    suppliers = rows.map(r => ({
+      code: r['รหัสเจ้าหนี้'],
+      name: r['ชื่อเจ้าหนี้'],
+      contact: r['ผู้ติดต่อ'] || r['ชื่อเจ้าหนี้'],
+      phone: r['เบอร์มือถือ'] || r['เบอร์ติดต่อ'] || null,
+    }));
+  } catch (err) {
+    document.getElementById('supBody').innerHTML =
+      `<tr><td colspan="6"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
+    return;
+  }
+  doSearch();
+}
+
+let filtered = suppliers;
+let currentPage = 1;
+const perPage = 15;
+
+function renderTable() {
+  const body = document.getElementById('supBody');
+  const start = (currentPage - 1) * perPage;
+  const pageItems = filtered.slice(start, start + perPage);
+
+  if (pageItems.length === 0) {
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-state">ไม่พบบริษัทยาที่ค้นหา</div></td></tr>`;
+  } else {
+    body.innerHTML = pageItems.map((s, i) => `
+      <tr>
+        <td>${start + i + 1}</td>
+        <td>${s.code}</td>
+        <td class="sup-name">${s.name}</td>
+        <td>${s.contact}</td>
+        <td>${s.phone ? `<span class="phone-pill">${s.phone}</span>` : `<span class="phone-missing">ไม่มีข้อมูล</span>`}</td>
+        <td>
+          <div class="action-btns">
+            <button class="icon-btn" title="แก้ไข" onclick="editSupplier('${s.code}')">✏️</button>
+            <button class="icon-btn" title="ลบ" onclick="deleteSupplier('${s.code}')">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  document.getElementById('resultCount').textContent = `พบ ${filtered.length.toLocaleString()} รายการ จากทั้งหมด ${suppliers.length.toLocaleString()} บริษัท`;
+  renderPagination();
+}
+
+function renderPagination() {
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const pag = document.getElementById('pagination');
+  let html = '';
+  const windowSize = 2;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - windowSize && i <= currentPage + windowSize)) {
+      html += `<button class="${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (i === currentPage - windowSize - 1 || i === currentPage + windowSize + 1) {
+      html += `<span class="dots">…</span>`;
+    }
+  }
+  pag.innerHTML = html;
+}
+
+function goPage(n) {
+  currentPage = n;
+  renderTable();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function doSearch() {
+  const kw = document.getElementById('searchInput').value.trim().toLowerCase();
+  filtered = kw === "" ? suppliers : suppliers.filter(s =>
+    s.code.toLowerCase().includes(kw) ||
+    s.name.toLowerCase().includes(kw) ||
+    s.contact.toLowerCase().includes(kw)
+  );
+  currentPage = 1;
+  renderTable();
+}
+
+document.getElementById('searchInput').addEventListener('input', doSearch);
+document.getElementById('searchInput').addEventListener('keyup', e => { if (e.key === 'Enter') doSearch(); });
+
+function editSupplier(code) {
+  const s = suppliers.find(x => x.code === code);
+  alert('มอคอัพ: จะแก้ไขข้อมูล ' + (s ? s.name : code));
+}
+function deleteSupplier(code) {
+  const s = suppliers.find(x => x.code === code);
+  alert('มอคอัพ: จะลบบริษัทยา ' + (s ? s.name : code));
+}
+
+function openAddModal() {
+  document.getElementById('newSupName').value = "";
+  document.getElementById('newSupContact').value = "";
+  document.getElementById('newSupPhone').value = "";
+  document.getElementById('addModalOverlay').classList.add('show');
+}
+function closeAddModal() {
+  document.getElementById('addModalOverlay').classList.remove('show');
+}
+// หมายเหตุ: เพิ่ม/แก้ไข/ลบ บริษัทยา ยังเป็นแค่ mock อยู่ในเครื่อง (ไม่ได้เขียนกลับไปที่ชีตจริง)
+// เพราะ backend ยังไม่มี action สำหรับสร้าง/แก้ไข/ลบผู้จำหน่าย — ต่อได้ทีหลังถ้าต้องใช้จริง
+function confirmAddSupplier() {
+  const name = document.getElementById('newSupName').value.trim();
+  if (!name) { alert('กรุณาพิมพ์ชื่อบริษัท'); return; }
+  const contact = document.getElementById('newSupContact').value.trim() || name;
+  const phone = document.getElementById('newSupPhone').value.trim() || null;
+  const nextNum = suppliers.length + 1;
+  suppliers.push({ code: "SUP" + String(nextNum).padStart(5, "0"), name, contact, phone });
+  closeAddModal();
+  doSearch();
+}
+
+loadSuppliers();
+</script>
+
+</body>
+</html>

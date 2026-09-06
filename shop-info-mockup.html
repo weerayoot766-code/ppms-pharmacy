@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ข้อมูลร้าน (มอคอัพ)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .quick-tabs { display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap; }
+  .quick-tabs a {
+    display: block; text-decoration: none; padding: 10px 18px; font-size: 13.5px; font-weight: 600;
+    color: #cfe6d2; background: #226a44; border-radius: 8px 8px 0 0; cursor: pointer;
+  }
+  .quick-tabs a.active { background: #fff; color: #1e6b3c; }
+  .quick-tabs a:hover:not(.active) { background: #2a7a4f; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; border-bottom: 1px solid #eef2ef;
+  }
+  .panel-head h2 { font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0; }
+  .save-btn {
+    background: #2e8b4f; color: #fff; border: none; border-radius: 8px;
+    padding: 11px 22px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .save-btn:hover { background: #257a43; }
+
+  .tab-panel { display: none; padding: 24px 22px; }
+  .tab-panel.active { display: block; }
+
+  .logo-row { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+  .logo-preview {
+    width: 68px; height: 68px; border-radius: 14px; background: #eef6ee; color: #1e6b3c;
+    display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0;
+  }
+  .logo-hint { font-size: 12.5px; color: #8fa198; }
+  .upload-btn {
+    background: #eef6ee; border: 1px solid #2e8b4f; color: #1e6b3c;
+    border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; margin-top: 6px;
+  }
+  .upload-btn:hover { background: #dcefe0; }
+
+  .section-title {
+    font-size: 14px; font-weight: 700; color: #1e6b3c; margin: 22px 0 12px;
+    padding-top: 18px; border-top: 1px solid #eef2ef;
+  }
+  .section-title:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 12.5px; font-weight: 600; color: #3f4f45; }
+  .field label .req { color: #e0665a; }
+  .field input, .field select, .field textarea {
+    padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: #24312a; background: #fff;
+  }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #2e8b4f; }
+  .field .hint { font-size: 11.5px; color: #8fa198; }
+
+  /* toggle switch */
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0; border-bottom: 1px solid #eef2ef; }
+  .switch-row:last-child { border-bottom: none; }
+  .switch-row .label-block .t { font-size: 13.5px; font-weight: 600; color: #3f4f45; }
+  .switch-row .label-block .d { font-size: 12px; color: #8fa198; margin-top: 2px; }
+  .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; inset: 0; background: #cfd8d2; border-radius: 24px; transition: .2s; }
+  .slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .switch input:checked + .slider { background: #2e8b4f; }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+
+  /* branch table */
+  .branch-toolbar { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+  .add-branch-btn {
+    background: #2e8b4f; color: #fff; border: none; border-radius: 8px;
+    padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .add-branch-btn:hover { background: #257a43; }
+  table.branch-table { width: 100%; border-collapse: collapse; }
+  table.branch-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 9px 12px; white-space: nowrap;
+  }
+  table.branch-table td { padding: 10px 12px; border-bottom: 1px solid #eef2ef; font-size: 13px; vertical-align: top; }
+  table.branch-table tr:hover td { background: #f6faf7; }
+  .branch-main-tag { display: inline-block; margin-top: 4px; font-size: 11px; color: #1e6b3c; background: #e3f5e6; padding: 2px 8px; border-radius: 10px; }
+  .action-btns { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid #cfe0d3; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: #4a5a4f;
+  }
+  .icon-btn:hover { background: #eef6ee; border-color: #2e8b4f; color: #1e6b3c; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> ตั้งค่าระบบ <span class="sep">/</span> <b>ข้อมูลร้าน</b>
+</div>
+
+<div class="content">
+
+  <div class="quick-tabs">
+    <a class="tab-link active" data-tab="general" onclick="switchTab('general')">ข้อมูลทั่วไป</a>
+    <a class="tab-link" data-tab="branch" onclick="switchTab('branch')">สาขา</a>
+    <a class="tab-link" data-tab="receipt" onclick="switchTab('receipt')">ใบเสร็จ/ฉลากยา</a>
+    <a class="tab-link" data-tab="payment" onclick="switchTab('payment')">การชำระเงิน</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2 id="panelTitle">ข้อมูลทั่วไปของร้าน</h2>
+      <button class="save-btn" id="saveBtn" onclick="saveShopInfo()">💾 บันทึก</button>
+    </div>
+
+    <!-- ========== แท็บ 1: ข้อมูลทั่วไป ========== -->
+    <div class="tab-panel active" id="tab-general">
+      <div class="logo-row">
+        <div class="logo-preview">💊</div>
+        <div>
+          <div class="logo-hint">โลโก้ร้าน — ใช้แสดงในใบเสร็จ ฉลากยา และหน้า POS</div>
+          <button class="upload-btn" onclick="alert('มอคอัพ: จะเปิดหน้าต่างเลือกไฟล์รูปภาพ')">📷 อัปโหลดโลโก้</button>
+        </div>
+      </div>
+
+      <div class="section-title">ข้อมูลบริษัท/ร้าน</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>ชื่อร้าน (ภาษาไทย) <span class="req">*</span></label>
+          <input type="text" id="shopNameTH" value="ปรุงยาเภสัช">
+        </div>
+        <div class="field">
+          <label>ชื่อร้าน (ภาษาอังกฤษ)</label>
+          <input type="text" id="shopNameEN" value="Prungya Pharmacy">
+        </div>
+        <div class="field full">
+          <label>ที่อยู่ร้าน <span class="req">*</span></label>
+          <textarea id="address">3/5 หมู่ 1 ต.อิปัน อ.พระแสง จ.สุราษฎร์ธานี 84210</textarea>
+        </div>
+        <div class="field">
+          <label>เบอร์โทรศัพท์หลัก <span class="req">*</span></label>
+          <input type="text" id="phone" value="086-289-2295">
+        </div>
+        <div class="field">
+          <label>อีเมลร้าน</label>
+          <input type="text" id="email" placeholder="shop@example.com">
+        </div>
+        <div class="field">
+          <label>Line Official Account</label>
+          <input type="text" id="lineOA" placeholder="@prungyapharmacy">
+        </div>
+        <div class="field">
+          <label>เว็บไซต์</label>
+          <input type="text" id="website" placeholder="www.prungyapharmacy.com">
+        </div>
+      </div>
+
+      <div class="section-title">ข้อมูลใบอนุญาต/ภาษี</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>เลขประจำตัวผู้เสียภาษี (13 หลัก)</label>
+          <input type="text" id="taxId" placeholder="0-0000-00000-00-0">
+        </div>
+        <div class="field">
+          <label>เลขที่ใบอนุญาตขายยาแผนปัจจุบัน (ขย.1)</label>
+          <input type="text" id="licenseNo" placeholder="เช่น สฎ.xxxxx">
+        </div>
+        <div class="field">
+          <label>ชื่อเภสัชกรผู้มีหน้าที่ปฏิบัติการหลัก</label>
+          <input type="text" id="pharmacistName" value="เภสัชกรวีระยุทธิ์ เพชรทอง">
+        </div>
+        <div class="field">
+          <label>เลขที่ใบประกอบวิชาชีพเภสัชกรรม</label>
+          <input type="text" id="pharmacistLicenseNo" placeholder="ภ.xxxxx">
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== แท็บ 2: สาขา ========== -->
+    <div class="tab-panel" id="tab-branch">
+      <div class="branch-toolbar">
+        <button class="add-branch-btn" onclick="alert('มอคอัพ: จะเปิดฟอร์มเพิ่มสาขาใหม่')">＋ เพิ่มสาขา</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="branch-table">
+          <thead>
+            <tr>
+              <th>ชื่อสาขา</th>
+              <th>ที่อยู่</th>
+              <th>เบอร์โทร</th>
+              <th>เภสัชกรประจำสาขา</th>
+              <th style="width:90px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                สำนักงานใหญ่
+                <div class="branch-main-tag">สาขาหลัก</div>
+              </td>
+              <td>3/5 หมู่ 1 ต.อิปัน อ.พระแสง จ.สุราษฎร์ธานี 84210</td>
+              <td>086-289-2295</td>
+              <td>เภสัชกรวีระยุทธิ์ เพชรทอง</td>
+              <td>
+                <div class="action-btns">
+                  <button class="icon-btn" onclick="alert('มอคอัพ: แก้ไขข้อมูลสาขา')">✏️</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>สาขา 2</td>
+              <td>45 ถ.ราษฎร์บำรุง ต.มะขามเตี้ย อ.เมือง จ.สุราษฎร์ธานี 84000</td>
+              <td>077-123-456</td>
+              <td>เภสัชกรหญิงนภัสสร แสงทอง</td>
+              <td>
+                <div class="action-btns">
+                  <button class="icon-btn" onclick="alert('มอคอัพ: แก้ไขข้อมูลสาขา')">✏️</button>
+                  <button class="icon-btn" onclick="alert('มอคอัพ: ลบสาขานี้')">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== แท็บ 3: ใบเสร็จ/ฉลากยา ========== -->
+    <div class="tab-panel" id="tab-receipt">
+      <div class="section-title">รูปแบบใบเสร็จ</div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>ข้อความหัวใบเสร็จเพิ่มเติม</label>
+          <input type="text" placeholder="เช่น สาขานี้เปิดบริการ 08:00 - 20:00 น.">
+        </div>
+        <div class="field full">
+          <label>ข้อความท้ายใบเสร็จ</label>
+          <textarea>ขอบคุณที่ใช้บริการ ปรุงยาเภสัช</textarea>
+        </div>
+        <div class="field">
+          <label>คำนำหน้าเลขที่บิล (Prefix)</label>
+          <input type="text" value="SR">
+          <div class="hint">ตัวอย่าง: SR260826-172759760</div>
+        </div>
+        <div class="field">
+          <label>คำนำหน้าเลขที่ใบรับสินค้า (Prefix)</label>
+          <input type="text" value="GR">
+        </div>
+      </div>
+
+      <div class="switch-row">
+        <div class="label-block">
+          <div class="t">แสดงเลขประจำตัวผู้เสียภาษีในใบเสร็จ</div>
+          <div class="d">สำหรับออกใบกำกับภาษีอย่างย่อ</div>
+        </div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+      <div class="switch-row">
+        <div class="label-block">
+          <div class="t">แสดงโลโก้ร้านในใบเสร็จ</div>
+        </div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+
+      <div class="section-title">ฉลากยา</div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>หมายเหตุมาตรฐานท้ายฉลากยา (ค่าเริ่มต้น)</label>
+          <input type="text" placeholder="เช่น หากมีอาการผิดปกติ ควรพบแพทย์">
+        </div>
+      </div>
+      <div class="switch-row">
+        <div class="label-block">
+          <div class="t">แสดงชื่อเภสัชกรผู้จ่ายยาในฉลากทุกครั้ง</div>
+        </div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <!-- ========== แท็บ 4: การชำระเงิน ========== -->
+    <div class="tab-panel" id="tab-payment">
+      <div class="section-title">บัญชีธนาคารสำหรับรับโอน</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>ธนาคาร</label>
+          <select>
+            <option>ธนาคารกรุงไทย</option>
+            <option>ธนาคารกสิกรไทย</option>
+            <option>ธนาคารไทยพาณิชย์</option>
+            <option>ธนาคารกรุงเทพ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>เลขที่บัญชี</label>
+          <input type="text" placeholder="xxx-x-xxxxx-x">
+        </div>
+        <div class="field full">
+          <label>ชื่อบัญชี</label>
+          <input type="text" value="ร้านปรุงยาเภสัช">
+        </div>
+      </div>
+
+      <div class="section-title">พร้อมเพย์ (PromptPay)</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>ผูกด้วย</label>
+          <select>
+            <option>เบอร์โทรศัพท์</option>
+            <option>เลขประจำตัวประชาชน</option>
+            <option>เลขประจำตัวผู้เสียภาษี (นิติบุคคล)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>หมายเลขพร้อมเพย์</label>
+          <input type="text" placeholder="0862892295">
+        </div>
+      </div>
+
+      <div class="switch-row">
+        <div class="label-block">
+          <div class="t">เปิดรับชำระด้วย QR PromptPay ในหน้า POS</div>
+          <div class="d">ระบบจะสร้าง QR Code ตามยอดเงินอัตโนมัติที่หน้าชำระเงิน</div>
+        </div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+      <div class="switch-row">
+        <div class="label-block">
+          <div class="t">เปิดรับชำระด้วยบัตรเครดิต/เดบิต</div>
+        </div>
+        <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${query}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+// ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
+(function () {
+  if (!localStorage.getItem('ppms_user')) {
+    window.location.href = 'login-mockup.html';
+  }
+})();
+
+// ---------- โหลด/บันทึกข้อมูลร้านจริง (เฉพาะแท็บ "ข้อมูลทั่วไป" — แท็บอื่นยังเป็น mock) ----------
+async function loadShopInfo() {
+  try {
+    const s = await apiGet('getShopSettings');
+    document.getElementById('shopNameTH').value = s['ShopNameTH'] || '';
+    document.getElementById('shopNameEN').value = s['ShopNameEN'] || '';
+    document.getElementById('address').value = s['Address'] || '';
+    document.getElementById('phone').value = s['Phone'] || '';
+    document.getElementById('email').value = s['Email'] || '';
+    document.getElementById('lineOA').value = s['LineOA'] || '';
+    document.getElementById('website').value = s['Website'] || '';
+    document.getElementById('taxId').value = s['TaxID'] || '';
+    document.getElementById('licenseNo').value = s['LicenseNo'] || '';
+    document.getElementById('pharmacistName').value = s['PharmacistName'] || '';
+    document.getElementById('pharmacistLicenseNo').value = s['PharmacistLicenseNo'] || '';
+  } catch (err) {
+    alert('โหลดข้อมูลร้านไม่สำเร็จ: ' + err.message);
+  }
+}
+
+async function saveShopInfo() {
+  const currentTab = document.querySelector('.tab-link.active').dataset.tab;
+  if (currentTab !== 'general') {
+    // แท็บสาขา/ใบเสร็จ/การชำระเงิน ยังไม่มีชีตรองรับจริง — คงพฤติกรรมเดิม (มอคอัพ)
+    alert('มอคอัพ: บันทึกข้อมูลร้านเรียบร้อย');
+    return;
+  }
+  const shopNameTH = document.getElementById('shopNameTH').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  if (!shopNameTH || !address || !phone) {
+    alert('กรุณากรอกชื่อร้าน (ภาษาไทย), ที่อยู่ร้าน และเบอร์โทรศัพท์หลักให้ครบ');
+    return;
+  }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+  try {
+    await apiPost('saveShopSettings', {
+      settings: {
+        ShopNameTH: shopNameTH,
+        ShopNameEN: document.getElementById('shopNameEN').value.trim(),
+        Address: address,
+        Phone: phone,
+        Email: document.getElementById('email').value.trim(),
+        LineOA: document.getElementById('lineOA').value.trim(),
+        Website: document.getElementById('website').value.trim(),
+        TaxID: document.getElementById('taxId').value.trim(),
+        LicenseNo: document.getElementById('licenseNo').value.trim(),
+        PharmacistName: document.getElementById('pharmacistName').value.trim(),
+        PharmacistLicenseNo: document.getElementById('pharmacistLicenseNo').value.trim(),
+      }
+    });
+    alert('บันทึกข้อมูลร้านเรียบร้อย');
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '💾 บันทึก';
+}
+
+loadShopInfo();
+
+const panelTitles = {
+  general: "ข้อมูลทั่วไปของร้าน",
+  branch: "จัดการสาขา",
+  receipt: "รูปแบบใบเสร็จ / ฉลากยา",
+  payment: "ช่องทางการชำระเงิน",
+};
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-link').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.toggle('active', el.id === 'tab-' + tab));
+  document.getElementById('panelTitle').textContent = panelTitles[tab];
+}
+</script>
+
+</body>
+</html>
