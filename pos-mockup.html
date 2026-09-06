@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ปรุงยาเภสัช - หน้าขาย + พิมพ์ฉลากยา (มอคอัพ)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -88,6 +89,21 @@
     white-space: nowrap;
   }
   .delivery-btn:hover { background: #e14b8e; }
+
+  .temp-humid-btn {
+    background: #f0f9f4;
+    border: 1px solid #fff;
+    color: #1e6b3c;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .temp-humid-btn:hover { background: #ffffff; }
+  .temp-humid-btn.overdue { background: #fff3d6; border-color: #f0d9a8; color: #a9701a; animation: pulseWarn 1.6s infinite; }
+  @keyframes pulseWarn { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 
   .pharmacist-chip {
     display: flex;
@@ -943,6 +959,51 @@
   .modal-confirm-btn:hover { background: #257a43; }
 
   /* ---------- โมดัลพิมพ์ฉลากยา 100x75มม. ---------- */
+  /* ---------- โมดัลบันทึกอุณหภูมิ/ความชื้น ---------- */
+  .th-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(20,30,24,.55);
+    align-items: center; justify-content: center; z-index: 998;
+  }
+  .th-modal-overlay.show { display: flex; }
+  .th-modal { background: #fff; border-radius: 14px; max-width: 440px; width: 100%; max-height: 88vh; overflow-y: auto; }
+  .th-modal-head {
+    display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
+    border-bottom: 1px solid #eef2ef; position: sticky; top: 0; background: #fff; border-radius: 14px 14px 0 0;
+  }
+  .th-modal-head b { color: #1e6b3c; font-size: 15px; }
+  .th-modal-head button { background: none; border: none; font-size: 17px; color: #6b7a70; cursor: pointer; }
+  .th-modal-body { padding: 18px 20px; }
+  .th-field-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .th-field { flex: 1; }
+  .th-field label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 5px; }
+  .th-field input, .th-export-row select {
+    width: 100%; padding: 8px 10px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 13.5px; font-family: inherit;
+  }
+  .th-range-hint { font-size: 11.5px; color: #6b7a70; background: #f5f9f6; border-radius: 6px; padding: 8px 10px; margin-bottom: 14px; line-height: 1.6; }
+  .th-save-btn {
+    width: 100%; background: #2e8b4f; color: #fff; border: none; border-radius: 9px;
+    padding: 11px; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .th-save-btn:hover { background: #257a43; }
+  .th-divider { border-top: 1px solid #eef2ef; margin: 16px 0; }
+  .th-settings-details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #3f4f45; }
+  .th-save-settings-btn {
+    margin-top: 10px; background: #fff; color: #1e6b3c; border: 1px solid #2e8b4f; border-radius: 8px;
+    padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .th-export-row { display: flex; gap: 8px; align-items: center; }
+  .th-export-row select { flex: 1; }
+  .th-export-btn {
+    background: #4a90d9; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .th-export-btn:hover { background: #3a7cc0; }
+  .th-reminder-banner {
+    display: none; background: #fff3d6; border-bottom: 1px solid #f0d9a8; color: #a9701a;
+    padding: 9px 22px; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer;
+  }
+  .th-reminder-banner.show { display: block; }
+
   .label-print-overlay {
     position: fixed; inset: 0; background: rgba(20,30,24,.6);
     display: none; align-items: center; justify-content: center; z-index: 999;
@@ -994,6 +1055,10 @@
 </head>
 <body>
 
+<div class="th-reminder-banner" id="thReminderBanner" onclick="openTempHumidityModal()">
+  ⏰ วันนี้ยังไม่ได้บันทึกอุณหภูมิ/ความชื้น (ตามรอบ 12:00 น.) — คลิกตรงนี้เพื่อบันทึกเลย
+</div>
+
 <div class="topbar">
   <div class="logo-badge">💊</div>
   <div class="titles">
@@ -1003,6 +1068,7 @@
   <button class="backoffice-btn" onclick="window.open('backoffice-mockup.html', '_blank')">🗂️ ระบบหลังบ้านและคลังสินค้า</button>
   <button class="telepharmacy-btn" onclick="alert('มอคอัพ: ยังไม่เชื่อมต่อระบบ Telepharmacy จริง')">💊📱 เชื่อมต่อระบบ Telepharmacy</button>
   <button class="delivery-btn" onclick="alert('มอคอัพ: ยังไม่เชื่อมต่อพระแสงเดลิเวอรี่จริง')">🏍️ เชื่อมต่อพระแสงเดลิเวอรี่</button>
+  <button class="temp-humid-btn" onclick="openTempHumidityModal()">🌡️ บันทึกอุณหภูมิ/ความชื้น</button>
   <div class="pharmacist-chip">
     <span class="ph-label">เภสัชกรที่กำลังใช้งาน</span>
     <span class="ph-name" id="phNameDisplay">ภก.วีระยุทธิ์ เพชรทอง</span>
@@ -1308,6 +1374,51 @@
   </div>
 </div>
 
+<!-- ========== โมดัลบันทึกอุณหภูมิ/ความชื้น ========== -->
+<div class="th-modal-overlay" id="tempHumidModal">
+  <div class="th-modal">
+    <div class="th-modal-head">
+      <b>🌡️ บันทึกอุณหภูมิ/ความชื้นประจำวัน</b>
+      <button onclick="closeTempHumidityModal()">✕</button>
+    </div>
+    <div class="th-modal-body">
+      <div class="th-field-row">
+        <div class="th-field"><label>วันที่</label><input type="date" id="thDate"></div>
+        <div class="th-field"><label>เวลา</label><input type="time" id="thTime"></div>
+      </div>
+      <div class="th-field-row">
+        <div class="th-field"><label>อุณหภูมิ (°C)</label><input type="number" id="thTemp" step="0.1" placeholder="เช่น 28.5"></div>
+        <div class="th-field"><label>ความชื้น (%RH)</label><input type="number" id="thHumid" step="0.1" placeholder="เช่น 60"></div>
+      </div>
+      <div class="th-range-hint" id="thRangeHint">กำลังโหลดขอบเขตที่ตั้งไว้...</div>
+      <button class="th-save-btn" onclick="submitTempHumidityLog()">💾 บันทึก</button>
+
+      <div class="th-divider"></div>
+
+      <details class="th-settings-details">
+        <summary>⚙️ ตั้งค่าขอบเขตสูง-ต่ำ</summary>
+        <div class="th-field-row" style="margin-top:12px;">
+          <div class="th-field"><label>อุณหภูมิต่ำสุด</label><input type="number" id="thSetTempMin" step="0.1"></div>
+          <div class="th-field"><label>อุณหภูมิสูงสุด</label><input type="number" id="thSetTempMax" step="0.1"></div>
+        </div>
+        <div class="th-field-row">
+          <div class="th-field"><label>ความชื้นต่ำสุด</label><input type="number" id="thSetHumidMin" step="0.1"></div>
+          <div class="th-field"><label>ความชื้นสูงสุด</label><input type="number" id="thSetHumidMax" step="0.1"></div>
+        </div>
+        <button class="th-save-settings-btn" onclick="saveTempHumidityBounds()">บันทึกขอบเขต</button>
+      </details>
+
+      <div class="th-divider"></div>
+
+      <div class="th-export-row">
+        <select id="thExportMonth"></select>
+        <select id="thExportYear"></select>
+        <button class="th-export-btn" onclick="exportTempHumidityExcel()">📊 ส่งออกเป็น Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ========== โมดัลพิมพ์ฉลากยา (ขนาดจริง 100x75มม. แนวนอน) ========== -->
 <div class="label-print-overlay" id="labelPrintOverlay">
   <div class="label-print-wrap">
@@ -1450,6 +1561,172 @@ let currentUser = null;
     window.location.href = 'login-mockup.html';
   }
 })();
+
+// ================= บันทึกอุณหภูมิ/ความชื้น (GPP compliance) =================
+let thSettings = { tempMin: 15, tempMax: 30, humidMin: 35, humidMax: 75 };
+
+function openTempHumidityModal() {
+  const now = new Date();
+  document.getElementById('thDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('thTime').value = now.toTimeString().slice(0, 5);
+  document.getElementById('thTemp').value = '';
+  document.getElementById('thHumid').value = '';
+  populateExportSelectors();
+  refreshTempHumiditySettingsUI();
+  document.getElementById('tempHumidModal').classList.add('show');
+}
+
+function closeTempHumidityModal() {
+  document.getElementById('tempHumidModal').classList.remove('show');
+}
+
+async function refreshTempHumiditySettingsUI() {
+  try {
+    thSettings = await apiGet('getTempHumiditySettings');
+  } catch (err) {
+    console.error('โหลดขอบเขตอุณหภูมิ/ความชื้นไม่สำเร็จ:', err.message);
+  }
+  document.getElementById('thRangeHint').textContent =
+    `ขอบเขตที่ยอมรับได้: อุณหภูมิ ${thSettings.tempMin}-${thSettings.tempMax}°C, ความชื้น ${thSettings.humidMin}-${thSettings.humidMax}%RH — ถ้าเกินขอบเขตระบบจะเตือนทันทีตอนบันทึก`;
+  document.getElementById('thSetTempMin').value = thSettings.tempMin;
+  document.getElementById('thSetTempMax').value = thSettings.tempMax;
+  document.getElementById('thSetHumidMin').value = thSettings.humidMin;
+  document.getElementById('thSetHumidMax').value = thSettings.humidMax;
+}
+
+async function submitTempHumidityLog() {
+  const date = document.getElementById('thDate').value;
+  const time = document.getElementById('thTime').value;
+  const temp = document.getElementById('thTemp').value;
+  const humid = document.getElementById('thHumid').value;
+  if (!date || temp === '' || humid === '') { alert('กรุณากรอกอุณหภูมิและความชื้นให้ครบก่อน'); return; }
+
+  try {
+    const result = await apiPost('saveTempHumidityLog', {
+      entry: { date, time, temp, humid, recordedBy: currentUser ? (currentUser['ชื่อ-นามสกุล'] || currentUser['Username']) : '' }
+    });
+    if (result.outOfRange) {
+      alert('⚠️ บันทึกสำเร็จ แต่ค่าที่วัดได้ "เกินขอบเขตที่ตั้งไว้"!\n\nขอบเขต: อุณหภูมิ ' + result.settings.tempMin + '-' + result.settings.tempMax + '°C, ความชื้น ' + result.settings.humidMin + '-' + result.settings.humidMax + '%RH\n\nกรุณาแจ้งเภสัชกรผู้มีหน้าที่ปฏิบัติการเพื่อตรวจสอบสภาพการเก็บยา');
+    } else {
+      alert('✅ บันทึกอุณหภูมิ/ความชื้นเรียบร้อยแล้ว (อยู่ในเกณฑ์ปกติ)');
+    }
+    hideTempHumidityReminder();
+    closeTempHumidityModal();
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+  }
+}
+
+async function saveTempHumidityBounds() {
+  const settings = {
+    tempMin: Number(document.getElementById('thSetTempMin').value),
+    tempMax: Number(document.getElementById('thSetTempMax').value),
+    humidMin: Number(document.getElementById('thSetHumidMin').value),
+    humidMax: Number(document.getElementById('thSetHumidMax').value),
+  };
+  try {
+    await apiPost('saveTempHumiditySettings', { settings });
+    alert('บันทึกขอบเขตใหม่เรียบร้อยแล้ว');
+    refreshTempHumiditySettingsUI();
+  } catch (err) {
+    alert('บันทึกขอบเขตไม่สำเร็จ: ' + err.message);
+  }
+}
+
+function populateExportSelectors() {
+  const monthSel = document.getElementById('thExportMonth');
+  const yearSel = document.getElementById('thExportYear');
+  if (monthSel.options.length === 0) {
+    const monthNames = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    monthSel.innerHTML = monthNames.map((m, i) => `<option value="${i+1}">${m}</option>`).join('');
+    monthSel.value = new Date().getMonth() + 1;
+  }
+  if (yearSel.options.length === 0) {
+    const thisYear = new Date().getFullYear();
+    let opts = '';
+    for (let y = thisYear; y >= thisYear - 2; y--) opts += `<option value="${y}">${y + 543}</option>`;
+    yearSel.innerHTML = opts;
+  }
+}
+
+/** ส่งออกบันทึกอุณหภูมิ/ความชื้นของเดือนที่เลือกเป็นไฟล์ Excel ตามรูปแบบตารางกริดของแบบฟอร์มกระดาษเดิม (วัน x ค่าที่วัดได้) */
+async function exportTempHumidityExcel() {
+  const month = Number(document.getElementById('thExportMonth').value);
+  const year = Number(document.getElementById('thExportYear').value);
+  let logs;
+  try {
+    logs = await apiGet('getTempHumidityLogs', { month, year });
+  } catch (err) {
+    alert('ดึงข้อมูลไม่สำเร็จ: ' + err.message);
+    return;
+  }
+  if (logs.length === 0) {
+    alert('ยังไม่มีข้อมูลบันทึกของเดือนนี้เลย');
+    return;
+  }
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const byDay = {};
+  logs.forEach(l => { byDay[new Date(l.date).getDate()] = l; });
+
+  // ช่วงคอลัมน์ของกริด: เผื่อขอบเขต ±2 องศา / ±5% ทั้งสองข้าง เหมือนแบบฟอร์มกระดาษเดิม
+  const tempCols = [];
+  for (let t = thSettings.tempMin - 2; t <= thSettings.tempMax + 2; t++) tempCols.push(t);
+  const humidCols = [];
+  for (let h = thSettings.humidMin - 5; h <= thSettings.humidMax + 5; h += 2) humidCols.push(h);
+
+  const header = ['วัน', ...tempCols.map(t => 'T' + t), '', ...humidCols.map(h => 'H' + h), 'เวลา', 'สถานะ'];
+  const aoa = [
+    ['แบบฟอร์มบันทึกอุณหภูมิและความชื้น เดือน ' + document.getElementById('thExportMonth').selectedOptions[0].text + ' พ.ศ. ' + (year + 543)],
+    ['ขอบเขตที่ยอมรับได้: อุณหภูมิ ' + thSettings.tempMin + '-' + thSettings.tempMax + '°C  /  ความชื้น ' + thSettings.humidMin + '-' + thSettings.humidMax + '%RH'],
+    [],
+    header,
+  ];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const row = new Array(header.length).fill('');
+    row[0] = d;
+    const entry = byDay[d];
+    if (entry) {
+      const tIdx = tempCols.indexOf(Math.round(entry.temp));
+      if (tIdx !== -1) row[1 + tIdx] = '●';
+      const hIdx = humidCols.indexOf(Math.round(entry.humid / 2) * 2);
+      if (hIdx !== -1) row[1 + tempCols.length + 1 + hIdx] = '●';
+      row[header.length - 2] = entry.time;
+      row[header.length - 1] = entry.status;
+    }
+    aoa.push(row);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = header.map(() => ({ wch: 5 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'บันทึกอุณหภูมิความชื้น');
+  XLSX.writeFile(wb, `บันทึกอุณหภูมิความชื้น_${document.getElementById('thExportMonth').selectedOptions[0].text}_${year + 543}.xlsx`);
+}
+
+/** เช็คตอนเปิดหน้าว่าวันนี้บันทึกไปหรือยัง ถ้ายังและตอนนี้เลย 12:00 น. แล้ว ให้ขึ้นแถบเตือนด้านบนสุด + ปุ่มกะพริบ */
+async function checkTempHumidityReminder() {
+  const now = new Date();
+  if (now.getHours() < 12) return; // ยังไม่ถึงรอบเวลาบันทึก (เที่ยง) ยังไม่ต้องเตือน
+  try {
+    const result = await apiGet('checkTodayTempHumidityLogged');
+    if (!result.logged) showTempHumidityReminder();
+  } catch (err) {
+    console.error('เช็คสถานะบันทึกอุณหภูมิไม่สำเร็จ:', err.message);
+  }
+}
+
+function showTempHumidityReminder() {
+  document.getElementById('thReminderBanner').classList.add('show');
+  document.querySelector('.temp-humid-btn').classList.add('overdue');
+}
+
+function hideTempHumidityReminder() {
+  document.getElementById('thReminderBanner').classList.remove('show');
+  document.querySelector('.temp-humid-btn').classList.remove('overdue');
+}
+
 
 function doLogout() {
   localStorage.removeItem('ppms_user');
@@ -2337,6 +2614,7 @@ function resetLabel(){
 
 renderCart();
 renderLabel();
+checkTempHumidityReminder();
 
 // ---------- พิมพ์ฉลากยา ขนาดจริง 100x75มม. แนวนอน ----------
 async function openLabelPrint(){
