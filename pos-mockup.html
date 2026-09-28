@@ -3154,7 +3154,10 @@ function updateChange(){
 }
 
 // ---------- ขั้นที่ 1: ยืนยันการชำระเงิน (ค้างยอดทอนไว้ให้ดู ยังไม่ปิดโมดัล) ----------
+let saleSubmitting = false; // กันกดยืนยัน/กด Enter ซ้ำระหว่างที่บิลกำลังบันทึกอยู่ (เคยทำให้ส่งบิลเดียวกัน 2 รอบ)
+
 async function confirmPayment(){
+  if (saleSubmitting || paymentResultShown) return;
   const total = getGrandTotal();
   const isCash = document.getElementById('tabCash').classList.contains('active');
   let detailHtml = '';
@@ -3197,6 +3200,7 @@ async function confirmPayment(){
   const confirmBtn = document.querySelector('#payActionsForm .btn-primary');
   if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '⏳ กำลังบันทึก...'; }
   let saleResult;
+  saleSubmitting = true;
   try {
     saleResult = await apiPost('createSale', {
       sale: {
@@ -3212,9 +3216,23 @@ async function confirmPayment(){
       }
     });
   } catch (err) {
-    alert('บันทึกบิลขายไม่สำเร็จ: ' + err.message + '\nกรุณาลองกดยืนยันอีกครั้ง (ยังไม่ตัดสต๊อก ยังไม่ปิดบิล)');
-    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ ยืนยันการชำระเงิน'; }
-    return;
+    // Google ตอบกลับผิดรูปแบบ แต่บิลอาจเข้าชีตไปแล้ว — เช็คจากชีตจริงก่อน ไม่บอกว่าล้มเหลวทันที (กันเภสัชกรกดซ้ำ)
+    if (err.nonJson) {
+      try {
+        const saved = await apiGet('getSale', { saleId });
+        if (saved && Math.abs(Number(saved.total) - Number(total)) < 0.01) saleResult = { saleId, earnedPoints: 0, verified: true };
+      } catch (e) { /* ยังไม่พบบิล = ยังไม่ได้บันทึกจริง */ }
+    }
+    if (!saleResult) {
+      saleSubmitting = false;
+      alert('บันทึกบิลขายไม่สำเร็จ: ' + err.message + '\nกรุณาลองกดยืนยันอีกครั้ง (ยังไม่ตัดสต๊อก ยังไม่ปิดบิล)');
+      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ ยืนยันการชำระเงิน'; }
+      return;
+    }
+  }
+  saleSubmitting = false;
+  if (saleResult.alreadySaved) {
+    detailHtml += `<div class="pay-received-line" style="color:#a9701a;">ℹ️ บิลนี้ถูกบันทึกไว้แล้วก่อนหน้า (ระบบไม่บันทึกซ้ำ ไม่ตัดสต๊อกซ้ำ)</div>`;
   }
   if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ ยืนยันการชำระเงิน'; }
 
