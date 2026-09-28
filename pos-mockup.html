@@ -1736,10 +1736,15 @@ async function exportTempHumidityExcel() {
     row[0] = d;
     const entry = byDay[d];
     if (entry) {
-      const tIdx = tempCols.indexOf(Math.round(entry.temp));
-      if (tIdx !== -1) row[1 + tIdx] = '●';
-      const hIdx = humidCols.indexOf(Math.round(entry.humid / 2) * 2);
-      if (hIdx !== -1) row[1 + tempCols.length + 1 + hIdx] = '●';
+      // หาคอลัมน์ที่ใกล้ค่าที่วัดได้ที่สุด (คอลัมน์ความชื้นเว้นทีละ 2 เช่น H35, H37 ... จะหาด้วยการเทียบตรงๆ ไม่ได้)
+      // ถ้าค่าอยู่นอกช่วงตาราง ให้ลงคอลัมน์ริมสุด (ช่องสถานะจะขึ้น "เกินขอบเขต" กำกับไว้อยู่แล้ว)
+      const nearestIdx = (cols, v) => {
+        let best = 0;
+        cols.forEach((c, i) => { if (Math.abs(c - v) < Math.abs(cols[best] - v)) best = i; });
+        return best;
+      };
+      if (!isNaN(Number(entry.temp)) && tempCols.length) row[1 + nearestIdx(tempCols, Number(entry.temp))] = '●';
+      if (!isNaN(Number(entry.humid)) && humidCols.length) row[1 + tempCols.length + 1 + nearestIdx(humidCols, Number(entry.humid))] = '●';
       // กันกรณีหลังบ้านเวอร์ชันเก่าส่งเวลาเป็นแบบ "1899-12-30T..." มา (แสดงไม่ได้ ใส่ว่างไว้ดีกว่าโชว์ค่าผิด)
       row[header.length - 2] = /^\d{1,2}:\d{2}/.test(String(entry.time)) ? String(entry.time).slice(0, 5) : '';
       row[header.length - 1] = entry.status;
