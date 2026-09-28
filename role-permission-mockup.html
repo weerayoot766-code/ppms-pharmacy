@@ -187,14 +187,54 @@ async function apiGet(action, params = {}) {
   return json.data;
 }
 
-async function apiPost(action, payload = {}) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action, ...payload }),
-  });
-  const json = await res.json();
+/**
+ * อ่านผลตอบกลับจาก Apps Script อย่างปลอดภัย
+ * บางครั้ง Google ตอบกลับเป็นหน้า HTML (<!DOCTYPE ...) แทน JSON ทั้งที่สคริปต์ทำงานเสร็จไปแล้ว
+ * ถ้าเจอแบบนั้นจะโยน error ที่มี flag nonJson = true ให้ผู้เรียกตัดสินใจเองว่าจะลองใหม่/ตรวจสอบซ้ำอย่างไร
+ */
+async function readApiJson(res) {
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    const err = new Error('เซิร์ฟเวอร์ Google ตอบกลับผิดรูปแบบชั่วคราว (ไม่ใช่ข้อมูล JSON)');
+    err.nonJson = true;
+    throw err;
+  }
   if (!json.ok) throw new Error(json.error);
   return json.data;
+}
+
+/**
+ * บันทึกข้อมูล (POST) — แนบรหัสคำขอ (requestId) ไปด้วยทุกครั้ง
+ * ถ้า Google ตอบกลับเป็นหน้า HTML (ทั้งที่หลังบ้านบันทึกสำเร็จแล้ว) จะไปถามผลจริงด้วยรหัสนั้นผ่าน GET แทน
+ * หลังบ้านจำผลของรหัสนี้ไว้ ถ้าคำขอเดิมถูกส่งซ้ำจะไม่ทำงานซ้ำ (กันบันทึกซ้ำ/ตัดสต๊อกซ้ำ)
+ */
+async function apiPost(action, payload = {}) {
+  const requestId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, requestId, ...payload }), // ห้ามตั้ง Content-Type เอง ไม่งั้นชน CORS preflight
+    });
+    return await readApiJson(res);
+  } catch (err) {
+    if (!err.nonJson && !(err instanceof TypeError)) throw err; // error จริงจากหลังบ้าน → แจ้งตามปกติ
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await new Promise(r => setTimeout(r, 700 * attempt));
+      let r;
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        r = await readApiJson(await fetch(`${API_URL}?${q}`));
+      } catch (e) { continue; }
+      if (r && r.found) {
+        if (!r.response.ok) throw new Error(r.response.error);
+        return r.response.data;
+      }
+    }
+    throw err;
+  }
 }
 
 // ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
