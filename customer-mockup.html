@@ -462,8 +462,17 @@ function renderSubtab(blank) {
       </div>
       <div class="field" style="margin-bottom:6px;margin-top:14px;"><label>โรคประจำตัว</label></div>
       <div class="checkbox-tag-row">
-        ${chronicOptions.map(a => `<label class="checkbox-tag"><input type="checkbox" class="chronic-check" data-value="${a}" ${d.chronic.includes(a)?'checked':''}> ${a}</label>`).join("")}
+        ${chronicOptions.concat((d.chronic || []).filter(x => !chronicOptions.includes(x)))
+          .map(a => `<label class="checkbox-tag"><input type="checkbox" class="chronic-check" data-value="${escapeAttr(a)}" ${(d.chronic || []).includes(a)?'checked':''}> ${escapeHtml(a)}</label>`).join("")}
       </div>
+      <div class="field-row" style="align-items:flex-end;margin-top:-4px;">
+        <div class="field" style="max-width:360px;">
+          <label>โรคประจำตัวอื่นๆ (พิมพ์เพิ่มเอง)</label>
+          <input type="text" id="fCustomChronic" placeholder="เช่น ไทรอยด์, เกาต์, ลมชัก" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomChronic();}">
+        </div>
+        <button type="button" onclick="addCustomChronic()" style="background:#2e8b4f;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;height:40px;">＋ เพิ่ม</button>
+      </div>
+      <div class="kv-hint" style="margin-top:-8px;margin-bottom:14px;">พิมพ์ได้หลายโรคในครั้งเดียว คั่นด้วยจุลภาค ( , ) — เอาออกได้โดยติ๊กออก แล้วกดบันทึก</div>
       <div class="field-row">
         <div class="field"><label>ยาที่ใช้ประจำ</label><textarea id="fRegularMeds" style="min-height:70px;">${d.regularMeds}</textarea></div>
       </div>
@@ -504,10 +513,14 @@ function renderSubtab(blank) {
       `}
     `;
   } else if (currentSubtab === "history") {
-    const h = c ? c.purchaseHistory : { month:0, total:0, recent:[] };
+    const h = (c && c.purchaseHistory) ? c.purchaseHistory : { month:0, total:0, recent:[] };
     area.innerHTML = `
       <h4>ประวัติการซื้อ</h4>
-      <div class="kv-hint" style="margin-bottom:10px;">คำนวณจากบิลขายที่ชื่อลูกค้าตรงกับชื่อ-นามสกุลนี้เป๊ะ (ระบบยังไม่ได้ผูกรหัสลูกค้ากับบิลขายโดยตรง อาจไม่ครบ 100% ถ้าพนักงานกรอกชื่อคลาดเคลื่อน)</div>
+      ${!currentId ? `<div class="kv-hint" style="margin-bottom:10px;">บันทึกข้อมูลลูกค้าให้เสร็จก่อน ถึงจะเห็นประวัติการซื้อ</div>` : `
+      <div class="kv-hint" style="margin-bottom:10px;">
+        ผูกกับรหัสลูกค้า <b>${currentId}</b> — นับทุกบิลที่เลือกลูกค้ารายนี้ที่หน้าขาย (POS)
+        ${h.legacyCount ? `<br>⚠️ มี ${h.legacyCount} บิลเก่า (ก่อนระบบผูกรหัส) ที่จับคู่จากชื่อ ติดป้าย "จากชื่อ" ไว้ในตาราง` : ''}
+      </div>`}
       <div class="summary-box-row">
         <div class="summary-box">
           <div class="label">ยอดซื้อเดือนปัจจุบัน:</div>
@@ -523,7 +536,7 @@ function renderSubtab(blank) {
         <tbody>
           ${h.recent.length === 0
             ? `<tr><td colspan="3" style="text-align:center;color:#8fa198;">ยังไม่มีประวัติการซื้อ</td></tr>`
-            : h.recent.map(r => `<tr><td>${r.date}</td><td>${r.ref}</td><td style="text-align:right;">${r.amount.toLocaleString()} บาท</td></tr>`).join("")}
+            : h.recent.map(r => `<tr><td>${r.date}</td><td>${r.ref}${r.byName ? ' <span style="font-size:11px;color:#a9701a;background:#fdf0da;padding:1px 7px;border-radius:10px;">จากชื่อ</span>' : ''}</td><td style="text-align:right;">${r.amount.toLocaleString()} บาท</td></tr>`).join("")}
         </tbody>
       </table>
     `;
@@ -536,6 +549,24 @@ function renderSubtab(blank) {
       </div>
     `;
   }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+/** เพิ่มโรคประจำตัวที่พิมพ์เอง (ติ๊กให้อัตโนมัติ) — เก็บรวมใน drugInfo.chronic เหมือนโรคในรายการปกติ */
+function addCustomChronic() {
+  const input = document.getElementById('fCustomChronic');
+  const names = input.value.split(',').map(s => s.trim()).filter(Boolean);
+  if (names.length === 0) { input.focus(); return; }
+  syncSubtabToState(); // เก็บค่าที่ติ๊ก/พิมพ์ไว้ในแท็บนี้ก่อน ไม่ให้หายตอนวาดใหม่
+  const chronic = currentCustomer.drugInfo.chronic || [];
+  names.forEach(n => { if (!chronic.includes(n)) chronic.push(n); });
+  currentCustomer.drugInfo.chronic = chronic;
+  renderSubtab();
+  document.getElementById('fCustomChronic').focus();
 }
 
 /** อ่านค่าจาก input ของแท็บย่อยที่กำลังแสดงอยู่ กลับเข้า currentCustomer ก่อนสลับแท็บหรือก่อนบันทึก
@@ -557,6 +588,12 @@ function syncSubtabToState() {
     currentCustomer.weight = document.getElementById('fWeight').value;
     currentCustomer.height = document.getElementById('fHeight').value;
     const chronic = Array.from(document.querySelectorAll('.chronic-check:checked')).map(el => el.dataset.value);
+    // กันลืมกด "＋ เพิ่ม": ถ้าพิมพ์โรคค้างไว้ในช่องแล้วสลับแท็บ/กดบันทึกเลย ให้นับรวมด้วย
+    const pending = document.getElementById('fCustomChronic');
+    if (pending) {
+      pending.value.split(',').map(s => s.trim()).filter(Boolean).forEach(n => { if (!chronic.includes(n)) chronic.push(n); });
+      pending.value = '';
+    }
     currentCustomer.drugInfo = {
       allergies: document.getElementById('fAllergyText').value,
       chronic,
