@@ -1526,22 +1526,46 @@
 // ============================================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
 
-async function apiGet(action, params = {}) {
-  const query = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(`${API_URL}?${query}`);
-  const json = await res.json();
+/**
+ * อ่านผลตอบกลับจาก Apps Script อย่างปลอดภัย
+ * บางครั้ง Google ตอบกลับเป็นหน้า HTML (<!DOCTYPE ...) แทน JSON ชั่วคราว ทั้งที่สคริปต์ทำงานเสร็จไปแล้ว
+ * ถ้าเจอแบบนั้นจะโยน error ที่มี flag nonJson = true ให้ผู้เรียกตัดสินใจเองว่าจะลองใหม่/ตรวจสอบซ้ำอย่างไร
+ */
+async function readApiJson(res) {
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    const err = new Error('เซิร์ฟเวอร์ Google ตอบกลับผิดรูปแบบชั่วคราว (ไม่ใช่ข้อมูล JSON)');
+    err.nonJson = true;
+    throw err;
+  }
   if (!json.ok) throw new Error(json.error);
   return json.data;
 }
 
+// GET เป็นการอ่านข้อมูลอย่างเดียว ลองใหม่อัตโนมัติได้ปลอดภัย (สูงสุด 2 ครั้ง) ถ้า Google ตอบกลับผิดรูปแบบ
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(`${API_URL}?${query}`);
+      return await readApiJson(res);
+    } catch (err) {
+      if (!err.nonJson || attempt >= 3) throw err;
+      await new Promise(r => setTimeout(r, 800 * attempt));
+    }
+  }
+}
+
+// POST เป็นการเขียนข้อมูล — ไม่ลองใหม่อัตโนมัติ เพราะอาจบันทึกซ้ำ (ข้อมูลอาจเข้าชีตไปแล้วแม้จะได้ error)
 async function apiPost(action, payload = {}) {
   const res = await fetch(API_URL, {
     method: 'POST',
     body: JSON.stringify({ action, ...payload }), // ห้ามตั้ง Content-Type เอง ไม่งั้นชน CORS preflight
   });
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error);
-  return json.data;
+  return readApiJson(res);
 }
 
 // ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
@@ -1601,10 +1625,31 @@ async function submitTempHumidityLog() {
   const humid = document.getElementById('thHumid').value;
   if (!date || temp === '' || humid === '') { alert('กรุณากรอกอุณหภูมิและความชื้นให้ครบก่อน'); return; }
 
+  // ล็อกปุ่มระหว่างบันทึก กันกดซ้ำจนเกิดแถวซ้ำในชีต
+  const saveBtn = document.querySelector('.th-save-btn');
+  if (saveBtn.disabled) return;
+  saveBtn.disabled = true;
+  saveBtn.textContent = '⏳ กำลังบันทึก...';
+
   try {
-    const result = await apiPost('saveTempHumidityLog', {
-      entry: { date, time, temp, humid, recordedBy: currentUser ? (currentUser['ชื่อ-นามสกุล'] || currentUser['Username']) : '' }
-    });
+    let result;
+    try {
+      result = await apiPost('saveTempHumidityLog', {
+        entry: { date, time, temp, humid, recordedBy: currentUser ? (currentUser['ชื่อ-นามสกุล'] || currentUser['Username']) : '' }
+      });
+    } catch (err) {
+      if (!err.nonJson) throw err;
+      // Google ตอบผิดรูปแบบ แต่ข้อมูลอาจเข้าชีตไปแล้ว — ตรวจจากประวัติจริงก่อน ไม่สรุปว่าล้มเหลวทันที
+      const [y, m] = date.split('-').map(Number);
+      const logs = await apiGet('getTempHumidityLogs', { month: m, year: y });
+      const found = logs.some(l => l.date === date && Number(l.temp) === Number(temp) && Number(l.humid) === Number(humid));
+      if (!found) throw new Error('ยังไม่พบข้อมูลในชีต กรุณากดบันทึกอีกครั้ง');
+      result = {
+        outOfRange: Number(temp) < thSettings.tempMin || Number(temp) > thSettings.tempMax ||
+                    Number(humid) < thSettings.humidMin || Number(humid) > thSettings.humidMax,
+        settings: thSettings,
+      };
+    }
     if (result.outOfRange) {
       alert('⚠️ บันทึกสำเร็จ แต่ค่าที่วัดได้ "เกินขอบเขตที่ตั้งไว้"!\n\nขอบเขต: อุณหภูมิ ' + result.settings.tempMin + '-' + result.settings.tempMax + '°C, ความชื้น ' + result.settings.humidMin + '-' + result.settings.humidMax + '%RH\n\nกรุณาแจ้งเภสัชกรผู้มีหน้าที่ปฏิบัติการเพื่อตรวจสอบสภาพการเก็บยา');
     } else {
@@ -1614,6 +1659,9 @@ async function submitTempHumidityLog() {
     closeTempHumidityModal();
   } catch (err) {
     alert('บันทึกไม่สำเร็จ: ' + err.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 บันทึก';
   }
 }
 
@@ -1692,7 +1740,8 @@ async function exportTempHumidityExcel() {
       if (tIdx !== -1) row[1 + tIdx] = '●';
       const hIdx = humidCols.indexOf(Math.round(entry.humid / 2) * 2);
       if (hIdx !== -1) row[1 + tempCols.length + 1 + hIdx] = '●';
-      row[header.length - 2] = entry.time;
+      // กันกรณีหลังบ้านเวอร์ชันเก่าส่งเวลาเป็นแบบ "1899-12-30T..." มา (แสดงไม่ได้ ใส่ว่างไว้ดีกว่าโชว์ค่าผิด)
+      row[header.length - 2] = /^\d{1,2}:\d{2}/.test(String(entry.time)) ? String(entry.time).slice(0, 5) : '';
       row[header.length - 1] = entry.status;
     }
     aoa.push(row);
@@ -1720,6 +1769,10 @@ async function checkTempHumidityReminder() {
 function showTempHumidityReminder() {
   document.getElementById('thReminderBanner').classList.add('show');
   document.querySelector('.temp-humid-btn').classList.add('overdue');
+  // เด้งหน้าบันทึกจริงขึ้นมาทันที (หน้าต่างเดียวกับตอนกดปุ่ม 🌡️ ขนาด/ตำแหน่งเดิม) ถ้ายังไม่ได้เปิดค้างอยู่
+  if (!document.getElementById('tempHumidModal').classList.contains('show')) {
+    openTempHumidityModal();
+  }
 }
 
 function hideTempHumidityReminder() {
