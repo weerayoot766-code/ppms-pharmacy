@@ -564,7 +564,8 @@ function renderSubtab(blank) {
         </div>
       </div>
       <div class="kv-hint" style="margin-bottom:16px;">
-        กติกา: ซื้อสุทธิทุก 500 บาท = 1 แต้ม (คำนวณให้อัตโนมัติทุกครั้งที่ซื้อผ่านหน้าขาย) แลกแต้มเป็นส่วนลดได้ 1 แต้ม = 1 บาท ในการซื้อครั้งถัดไป
+        กติกา: ยอดซื้อสะสม (รวมทุกบิล) ทุก 500 บาท = 1 แต้ม — เศษที่ยังไม่ถึง 500 ยกไปรวมกับบิลถัดไป (คำนวณให้อัตโนมัติทุกครั้งที่ซื้อผ่านหน้าขาย) แลกแต้มเป็นส่วนลดได้ 1 แต้ม = 1 บาท ในการซื้อครั้งถัดไป
+        ${c && c.purchaseHistory ? `<br>ยอดซื้อสะสม <b>${(c.purchaseHistory.idTotal || 0).toLocaleString()}</b> บาท — ซื้ออีก <b>${(500 - ((c.purchaseHistory.idTotal || 0) % 500)).toLocaleString()}</b> บาท จะได้แต้มถัดไป` : ''}
       </div>
       <table class="history-table">
         <thead><tr><th>วันที่</th><th>รายการ</th><th style="text-align:right;">แต้ม</th><th style="text-align:right;">คงเหลือ</th><th>อ้างอิงบิล</th></tr></thead>
