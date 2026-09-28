@@ -830,6 +830,15 @@
   .tb-bill-detail th { text-align: left; font-size: 11.5px; color: #8fa198; font-weight: 600; padding: 5px 6px; }
   .tb-bill-detail td { font-size: 12.5px; padding: 5px 6px; border-top: 1px solid #eef2ef; }
   .tb-bill-detail td.num, .tb-bill-detail th.num { text-align: right; }
+  /* ---------- Remed / ประวัติการซื้อของสมาชิก ---------- */
+  .remed-btn {
+    background: #fff3d6; border: 1px solid #e6ac2e; color: #8a5a0b; padding: 9px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; font-family: inherit;
+  }
+  .remed-btn:hover { background: #ffe9b3; }
+  .tb-remed-btn { background: #e6ac2e; color: #fff; }
+  .tb-remed-btn:hover { background: #cf9519; }
+  .tb-byname-tag { font-size: 11px; color: #a9701a; background: #fdf0da; padding: 1px 7px; border-radius: 10px; margin-left: 6px; font-weight: 600; }
   .modal-label { display: block; font-size: 12.5px; color: #6b7a70; margin: 14px 0 8px; }
   .modal-label:first-child { margin-top: 0; }
 
@@ -1090,6 +1099,7 @@
         <div class="suggest-list" id="memberSuggestList"></div>
       </div>
       <div class="member-chip" id="memberChip">👤 ลูกค้าทั่วไป</div>
+      <button class="remed-btn" id="remedBtn" style="display:none;" onclick="openMemberHistory()" title="ดูประวัติการซื้อ แล้วดึงรายการยาเดิมเข้าหน้าขาย">🔁 Remed / ประวัติการซื้อ</button>
       <button class="register-member-btn" onclick="window.open('customer-mockup.html', '_blank')">➕ สมัครสมาชิก</button>
     </div>
 
@@ -1520,6 +1530,19 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="memberHistoryModalOverlay">
+  <div class="modal-card" style="max-width: 720px;">
+    <div class="modal-header">
+      <div class="modal-title" id="mhTitle">🔁 ประวัติการซื้อ / Remed</div>
+      <button class="modal-close" onclick="closeMemberHistory()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh; overflow-y:auto;">
+      <div class="tb-summary" id="mhSummary"></div>
+      <div id="mhBody"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 // เชื่อมต่อ Apps Script (Google Sheet) — ระบบจริง ไม่ใช่ข้อมูลตัวอย่างแล้ว
@@ -1844,7 +1867,10 @@ function todayStr(){
 function genSaleId(){
   const d = new Date();
   const pad = n => String(n).padStart(2,'0');
-  const id = "PPMS"+String(d.getFullYear()).slice(2)+pad(d.getMonth()+1)+pad(d.getDate())+String(saleCounter).padStart(5,'0');
+  // เลขบิล = PPMS + ปีเดือนวัน + ชั่วโมงนาทีวินาที + ลำดับ 2 หลัก
+  // (เดิมนับ 00001 ใหม่ทุกครั้งที่รีเฟรชหน้า ทำให้เลขบิลชนกันข้ามรอบ → ประวัติการซื้อ/Remed ปนกันได้)
+  const id = "PPMS"+String(d.getFullYear()).slice(2)+pad(d.getMonth()+1)+pad(d.getDate())
+    +pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+String(saleCounter % 100).padStart(2,'0');
   saleCounter++;
   return id;
 }
@@ -2110,6 +2136,183 @@ function renderMemberChip(){
   } else {
     chip.classList.remove('is-member');
     chip.innerHTML = `👤 ลูกค้าทั่วไป`;
+  }
+  const remedBtn = document.getElementById('remedBtn');
+  if (remedBtn) remedBtn.style.display = currentMember ? '' : 'none';
+}
+
+// ================= Remed: ดูประวัติการซื้อของสมาชิก แล้วดึงรายการยาเดิมเข้าตะกร้า =================
+let memberHistoryBills = [];
+
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+}
+
+async function openMemberHistory() {
+  if (!currentMember) { alert('กรุณาเลือกสมาชิกก่อน'); return; }
+  const fullName = `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim();
+  document.getElementById('mhTitle').textContent = `🔁 ประวัติการซื้อ — ${fullName} (${currentMember.id})`;
+  document.getElementById('mhSummary').innerHTML = '';
+  document.getElementById('mhBody').innerHTML = '<div class="held-bills-empty">กำลังโหลดประวัติการซื้อ...</div>';
+  document.getElementById('memberHistoryModalOverlay').classList.add('show');
+  try {
+    memberHistoryBills = await apiGet('getCustomerSales', { customerId: currentMember.id });
+  } catch (err) {
+    document.getElementById('mhBody').innerHTML = `<div class="held-bills-empty">โหลดประวัติไม่สำเร็จ: ${escHtml(err.message)}</div>`;
+    return;
+  }
+  renderMemberHistory();
+}
+
+function closeMemberHistory() {
+  document.getElementById('memberHistoryModalOverlay').classList.remove('show');
+}
+
+/** วาดรายการบิลแบบเดียวกับ "รายการบิลวันนี้" — ใช้ร่วมกับหน้าข้อมูลลูกค้าได้ (ส่ง container + ตัวเลือกปุ่มเข้ามา) */
+function renderMemberHistory() {
+  const bills = memberHistoryBills || [];
+  const summaryEl = document.getElementById('mhSummary');
+  const body = document.getElementById('mhBody');
+  if (bills.length === 0) {
+    summaryEl.innerHTML = '';
+    body.innerHTML = '<div class="held-bills-empty">ยังไม่มีประวัติการซื้อ</div>';
+    return;
+  }
+  const total = bills.reduce((s, b) => s + b.total, 0);
+  summaryEl.innerHTML = `<span>ทั้งหมด <b>${bills.length}</b> บิล (ล่าสุด 50 บิล)</span><span>ยอดซื้อรวม <b>${total.toFixed(2)}</b> บาท</span><span>กด <b>🔁 Remed</b> เพื่อดึงรายการยาเดิมเข้าตะกร้า (ใช้ราคา/สต๊อกปัจจุบัน)</span>`;
+  body.innerHTML = bills.map((b, i) => {
+    const qty = b.items.reduce((s, it) => s + it.qty, 0);
+    const payTag = b.method === 'cash'
+      ? `<span class="tb-pay-tag tb-pay-cash">เงินสด</span>`
+      : `<span class="tb-pay-tag tb-pay-qr">QR Code</span>`;
+    return `
+      <div class="tb-bill-item">
+        <div class="tb-bill-head" onclick="toggleMhDetail(${i})">
+          <div class="tb-bill-info">
+            <div class="tb-id">${escHtml(b.saleId)}${b.byName ? '<span class="tb-byname-tag">จากชื่อ</span>' : ''}</div>
+            <div class="tb-meta">${payTag}${escHtml(b.date)} ${escHtml(b.time)} · ${b.items.length} รายการ (${qty} ชิ้น) · ยอดรวม ${b.total.toFixed(2)} บาท</div>
+          </div>
+          <div class="tb-bill-actions" onclick="event.stopPropagation()">
+            <button class="tb-view-btn" onclick="toggleMhDetail(${i})">📄 ดูรายการ</button>
+            <button class="tb-remed-btn" onclick="remedBill(${i})">🔁 Remed</button>
+          </div>
+        </div>
+        <div class="tb-bill-detail ${i === 0 ? 'show' : ''}" id="mhDetail${i}">
+          <table>
+            <thead><tr><th>รายการยา</th><th class="num">ราคา</th><th class="num">จำนวน</th><th class="num">รวม</th></tr></thead>
+            <tbody>
+              ${b.items.map(it => `
+                <tr>
+                  <td>${escHtml(it.name)} <span style="color:#8fa198;">${escHtml(it.code)}</span>${it.label ? `<div style="font-size:11.5px;color:#1e6b3c;margin-top:2px;">💊 ${escHtml(labelSummaryText(it.label))}</div>` : `<div style="font-size:11.5px;color:#b0b8b3;margin-top:2px;">ไม่มีข้อมูลวิธีใช้ (บิลก่อนเริ่มเก็บฉลาก)</div>`}</td>
+                  <td class="num">${it.price.toFixed(2)}</td>
+                  <td class="num">${it.qty} ${escHtml(it.unit)}</td>
+                  <td class="num">${(it.price * it.qty).toFixed(2)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+          <div style="text-align:right; font-size:12.5px; color:#4a5a4f; margin-top:8px; line-height:1.7;">
+            ราคารวม ${b.subtotal.toFixed(2)} &nbsp;·&nbsp; ภาษี ${b.tax.toFixed(2)} &nbsp;·&nbsp; ส่วนลด ${b.discount.toFixed(2)}
+            ${b.seller ? `<br>ผู้ขาย: ${escHtml(b.seller)}` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleMhDetail(i) {
+  const el = document.getElementById('mhDetail' + i);
+  if (el) el.classList.toggle('show');
+}
+
+/** สรุปวิธีใช้ยาเป็นข้อความสั้น เช่น "รับประทาน ครั้งละ 1 เม็ด วันละ 3 ครั้ง หลังอาหาร (เช้า-กลางวัน-เย็น)" */
+function labelSummaryText(l) {
+  if (!l) return '';
+  const periods = [];
+  if (l.morning) periods.push('เช้า');
+  if (l.noon) periods.push('กลางวัน');
+  if (l.evening) periods.push('เย็น');
+  if (l.bedtime) periods.push('ก่อนนอน');
+  if (l.every) periods.push('ทุก ' + (l.everyHr || '-') + ' ชม.');
+  if (l.prn) periods.push('เมื่อมีอาการ' + (l.prnNote ? ' ' + l.prnNote : ''));
+  let t = [l.route, l.dose ? 'ครั้งละ ' + l.dose + ' ' + (l.doseUnit || '') : '', l.perDay ? 'วันละ ' + l.perDay + ' ครั้ง' : '', l.mealTime]
+    .filter(Boolean).join(' ');
+  if (periods.length) t += ' (' + periods.join('-') + ')';
+  if (l.indication) t = l.indication + ' — ' + t;
+  return t.trim();
+}
+
+async function remedBill(i) {
+  const bill = memberHistoryBills[i];
+  if (!bill) return;
+  closeMemberHistory();
+  await loadBillIntoCart(bill);
+}
+
+/**
+ * ดึงรายการยาจากบิลเดิมเข้าตะกร้า — ใช้ "ราคาขายและสต๊อกปัจจุบัน" เสมอ (ไม่ใช้ราคาเก่าในบิล)
+ * ถ้าสต๊อกไม่พอจะลงเท่าที่มี / ถ้าหมดหรือหน่วยเดิมไม่มีแล้วจะข้าม และสรุปให้เภสัชกรทราบทุกรายการที่ปรับ
+ */
+async function loadBillIntoCart(bill) {
+  if (!bill || !bill.items || bill.items.length === 0) { alert('บิลนี้ไม่มีรายการยา'); return; }
+  if (cart.length > 0 && !confirm(`ตะกร้ามีรายการอยู่แล้ว ${cart.length} รายการ\nเพิ่มรายการจากบิล ${bill.saleId} ต่อท้ายใช่หรือไม่?`)) return;
+
+  const notes = [];
+  let firstAddedIndex = null;
+  for (const it of bill.items) {
+    let p;
+    try {
+      p = await fetchProductDetail(it.code);
+    } catch (err) {
+      notes.push(`❌ ${it.name}: โหลดข้อมูลสินค้าไม่สำเร็จ (${err.message})`);
+      continue;
+    }
+    const u = p.units.find(x => x.label === it.unit);
+    if (!u) { notes.push(`❌ ${it.name}: ไม่มีหน่วย "${it.unit}" แล้ว — กรุณาเพิ่มเองจากช่องค้นหา`); continue; }
+
+    const cartKey = p.id + "-" + u.label;
+    const alreadyInCart = cart.filter(c => c.cartKey === cartKey).reduce((s, c) => s + c.qty, 0);
+    const canAdd = Math.max(0, (u.stock || 0) - alreadyInCart);
+    if (canAdd <= 0) { notes.push(`❌ ${it.name}: สต๊อกหมด (${u.label}) — ข้ามรายการนี้`); continue; }
+    const qty = Math.min(it.qty, canAdd);
+    if (qty < it.qty) notes.push(`⚠️ ${it.name}: บิลเดิม ${it.qty} ${u.label} แต่คงเหลือ ${canAdd} — ใส่ให้ ${qty} ${u.label}`);
+    if (Math.abs(u.price - it.price) > 0.001) notes.push(`💲 ${it.name}: ราคาเปลี่ยนจาก ${it.price.toFixed(2)} เป็น ${u.price.toFixed(2)} บาท/${u.label}`);
+
+    const existing = cart.find(c => c.cartKey === cartKey);
+    if (existing) {
+      existing.qty += qty;
+      if (firstAddedIndex === null) firstAddedIndex = cart.indexOf(existing);
+    } else {
+      cart.push({
+        cartKey, id: p.id, name: p.name, strength: p.strength, unit: u.label, price: u.price, qty,
+        indication: p.indication, expiry: p.expiry, labelDefaults: p.labelDefaults || null,
+        label: it.label || null, // วิธีใช้ยาเดิมจากบิลนั้น (ถ้ามี) — ฉลากจะขึ้นแบบเดิมให้เลย
+      });
+      if (firstAddedIndex === null) firstAddedIndex = cart.length - 1;
+    }
+  }
+
+  if (firstAddedIndex !== null) activeCartIndex = firstAddedIndex;
+  renderCart();
+  renderLabel();
+  if (notes.length) {
+    alert(`🔁 Remed จากบิล ${bill.saleId}\n\nรายการที่ถูกปรับ:\n${notes.join('\n')}`);
+  }
+}
+
+/** เปิดมาจากหน้าข้อมูลลูกค้า (ปุ่ม Remed) — pos-mockup.html?remed=เลขบิล&customerId=รหัสลูกค้า */
+async function remedFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const saleId = params.get('remed');
+  const customerId = params.get('customerId');
+  if (!saleId && !customerId) return;
+  history.replaceState(null, '', window.location.pathname); // ล้างพารามิเตอร์ กันรีเฟรชแล้วดึงซ้ำ
+  if (customerId) await selectMember(customerId);
+  if (!saleId) return;
+  try {
+    const bill = await apiGet('getSale', { saleId });
+    await loadBillIntoCart(bill);
+  } catch (err) {
+    alert('ดึงบิลเดิมไม่สำเร็จ: ' + err.message);
   }
 }
 
@@ -2654,12 +2857,37 @@ function renderLabel(){
   if(isNewRow){
     // เพิ่งเปลี่ยนมาเป็นสินค้า/แถวใหม่จริงๆ ค่อยตั้งค่าเริ่มต้นให้ (ดึงค่าที่เคยบันทึกไว้สำหรับยาตัวนี้ถ้ามี)
     // ถ้ายังเป็นแถวเดิมอยู่ ไม่แตะข้อมูลที่พิมพ์เองไว้เลย
-    document.getElementById('lblIndication').value = item.indication;
-    applyLabelDefaults(item.labelDefaults);
+    // ลำดับความสำคัญ: วิธีใช้ที่ตั้งไว้กับแถวนี้แล้ว (แก้เอง หรือมาจาก Remed บิลเดิม) > ค่าเริ่มต้นที่บันทึกไว้ของยาตัวนี้ > ค่ามาตรฐาน
+    const saved = item.label || null;
+    document.getElementById('lblIndication').value = saved && saved.indication != null ? saved.indication : item.indication;
+    applyLabelDefaults(saved || item.labelDefaults);
     document.getElementById('chkSaveLabelData').checked = false; // ติ๊กเฉพาะครั้งนี้ ไม่จำค่าไว้ให้ครั้งหน้า
     labelLoadedForKey = rowKey;
+    item.label = readLabelForm(); // จำวิธีใช้ที่แสดงอยู่ไว้กับแถวนี้ทันที (ถูกส่งไปเก็บพร้อมบิลตอนชำระเงิน)
   }
 }
+
+/** อ่านวิธีใช้ยาจากฟอร์มฉลาก (เฉพาะส่วนที่ต้องจำไว้ใช้ครั้งหน้า ไม่รวมชื่อผู้ป่วย/วันที่/จำนวน/วันหมดอายุ) */
+function readLabelForm(){
+  const v = id => document.getElementById(id).value;
+  const c = id => document.getElementById(id).checked;
+  return {
+    indication: v('lblIndication'), route: v('lblRoute'), dose: v('lblDose'), doseUnit: v('lblDoseUnit'),
+    perDay: v('lblPerDay'), mealTime: v('lblMealTime'),
+    morning: c('chkMorning'), noon: c('chkNoon'), evening: c('chkEvening'), bedtime: c('chkBedtime'),
+    every: c('chkEvery'), everyHr: v('lblEveryHr'), prn: c('chkPRN'), prnNote: v('lblPRNNote'),
+    noteChecked: c('chkNote'), note: v('lblNote'),
+  };
+}
+
+/** ทุกครั้งที่แก้ฟอร์มฉลาก ให้จำวิธีใช้ไว้กับแถวยาที่เลือกอยู่ (สลับแถวไปมาแล้วค่าไม่หาย + บันทึกไปกับบิลได้) */
+function syncLabelToActiveItem(){
+  if(activeCartIndex === null || !cart[activeCartIndex]) return;
+  if(labelLoadedForKey !== cart[activeCartIndex].cartKey + '#' + activeCartIndex) return;
+  cart[activeCartIndex].label = readLabelForm();
+}
+document.getElementById('labelCard').addEventListener('input', syncLabelToActiveItem);
+document.getElementById('labelCard').addEventListener('change', syncLabelToActiveItem);
 
 function resetLabel(){
   if(activeCartIndex === null) return;
@@ -2668,11 +2896,13 @@ function resetLabel(){
   applyLabelDefaults(null);
   document.getElementById('lblPharmacist').value = currentUser ? (currentUser['ชื่อ-นามสกุล'] || currentUser['Username']) : "ไม่ระบุ";
   document.getElementById('chkSaveLabelData').checked = false;
+  syncLabelToActiveItem();
 }
 
 renderCart();
 renderLabel();
 checkTempHumidityReminder();
+remedFromUrl();
 
 // ---------- พิมพ์ฉลากยา ขนาดจริง 100x75มม. แนวนอน ----------
 async function openLabelPrint(){
@@ -2978,7 +3208,7 @@ async function confirmPayment(){
         method: isCash ? 'cash' : 'qr',
         received: isCash ? received : null,
         change: isCash ? change : null,
-        items: cart.map(it => ({ code: it.id, name: it.name, unit: it.unit, price: it.price, qty: it.qty })),
+        items: cart.map(it => ({ code: it.id, name: it.name, unit: it.unit, price: it.price, qty: it.qty, label: it.label || null })), // label = วิธีใช้ยาบนฉลาก เก็บไว้ใช้ตอน Remed
       }
     });
   } catch (err) {
@@ -2995,7 +3225,7 @@ async function confirmPayment(){
 
   // บันทึกบิลนี้ลงรายการบิลวันนี้ (แสดงในเครื่องนี้ทันที ไม่ต้องรอโหลดจาก Sheet ใหม่)
   todaySales.unshift({
-    saleId,
+    saleId: (saleResult && saleResult.saleId) || saleId, // หลังบ้านอาจปรับเลขบิลให้ถ้าชนกับบิลเก่า
     time: new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
     items: JSON.parse(JSON.stringify(cart)),
     subtotal, tax, discount, total,
