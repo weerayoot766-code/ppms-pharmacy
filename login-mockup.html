@@ -2,6 +2,16 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<!-- ไอคอนแอปบนหน้าจอโฮม (เพิ่มลงหน้าจอโฮม / ติดตั้งแอป) -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#1e6b3c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ปรุงยาเภสัช">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ปรุงยาเภสัช - เข้าสู่ระบบ (มอคอัพ)</title>
 <style>
@@ -71,8 +81,7 @@
 <body>
 
 <div class="login-card">
-  <div class="logo-circle">💊</div>
-  <div class="shop-name">ปรุงยาเภสัช</div>
+  <img src="icons/logo-full.png" alt="PPMS ปรุงยาเภสัช" style="display:block;width:170px;height:170px;margin:-10px auto 4px;">
   <div class="shop-sub">Prungya Pharmacy and Medical System (PPMS)</div>
 
   <div class="error-box" id="errorBox">ชื่อผู้ใช้งานหรือ PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</div>
