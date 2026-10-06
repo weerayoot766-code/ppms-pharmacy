@@ -1353,7 +1353,7 @@
 
     <div class="modal-tabs">
       <div class="modal-tab active">ขาย</div>
-      <div class="modal-tab" onclick="window.open('product-edit-mockup.html?code=' + encodeURIComponent(modalProduct.id), '_blank')">ตั้งค่าสินค้า</div>
+      <div class="modal-tab" onclick="if(modalProduct) window.open('product-edit-mockup.html?code=' + encodeURIComponent(modalProduct.id), '_blank')">ตั้งค่าสินค้า</div>
     </div>
 
     <div class="modal-body">
@@ -2165,16 +2165,32 @@ document.addEventListener('click', e => {
 async function selectMember(id){
   memberSearchInput.value = "";
   memberSuggestList.classList.remove('show');
+
+  // แสดงสมาชิกทันทีจากรายชื่อที่โหลดไว้ในเครื่อง (ชื่อ/เบอร์/แต้ม) ไม่ต้องรอหลังบ้าน
+  const quick = memberIndex ? memberIndex.find(m => m.id === id) : null;
+  if (quick) {
+    currentMember = Object.assign({}, quick);
+    redeemPointsAmount = 0;
+    renderMemberChip();
+    renderPointsRedeemUI();
+    document.getElementById('lblPatient').value = `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim();
+  }
+
+  // แล้วค่อยโหลดข้อมูลเต็ม + แต้มล่าสุดตามหลังเงียบๆ
+  let full;
   try {
-    currentMember = await apiGet('getCustomer', { id, light: 1 }); // light = ไม่คำนวณประวัติการซื้อ (ช้า) หน้าขายไม่ได้ใช้
+    full = await apiGet('getCustomer', { id, light: 1 }); // light = ไม่คำนวณประวัติการซื้อ (ช้า) หน้าขายไม่ได้ใช้
   } catch (err) {
-    alert('โหลดข้อมูลสมาชิกไม่สำเร็จ: ' + err.message);
+    if (!quick) alert('โหลดข้อมูลสมาชิกไม่สำเร็จ: ' + err.message);
     return;
   }
-  redeemPointsAmount = 0;
+  if (quick && (!currentMember || currentMember.id !== id)) return; // ระหว่างรอ เปลี่ยนไปเลือกคนอื่น/ลูกค้าทั่วไปแล้ว
+  const keepRedeem = quick ? redeemPointsAmount : 0;
+  currentMember = full;
+  redeemPointsAmount = keepRedeem;
   renderMemberChip();
   renderPointsRedeemUI();
-  document.getElementById('lblPatient').value = currentMember ? `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim() : "";
+  if (!quick) document.getElementById('lblPatient').value = `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim();
 }
 
 function useGeneralCustomer(){
@@ -2679,17 +2695,41 @@ async function fetchProductDetailRaw(code){
   return result;
 }
 
+let modalLoadToken = 0;
+
 async function openProductModal(code){
   searchInput.value = "";
   suggestList.classList.remove('show');
+  const myToken = ++modalLoadToken;
+
+  // ยังไม่มีรายละเอียดในเครื่อง → เปิดหน้าต่างทันทีพร้อมชื่อยา แล้วค่อยเติมหน่วย/ราคา/สต๊อกเมื่อโหลดเสร็จ
+  if (!productDetailCache[code]) {
+    const hit = searchIndex ? searchIndex.products.find(x => x.code === code) : null;
+    modalProduct = null;
+    document.getElementById('modalProductName').textContent = hit ? hit.name : code;
+    document.getElementById('modalUnitOptions').innerHTML = '<span style="color:#8fa198;font-size:13px;">⏳ กำลังโหลดหน่วย ราคา และสต๊อกล่าสุด...</span>';
+    document.getElementById('modalStock').textContent = '-';
+    document.getElementById('modalExpiry').textContent = '-';
+    document.getElementById('modalPriceInput').value = '';
+    document.getElementById('modalCostPrice').textContent = '-';
+    document.getElementById('priceEstimateWarning').style.display = 'none';
+    document.querySelector('#productModalOverlay .modal-confirm-btn').disabled = true;
+    document.getElementById('productModalOverlay').classList.add('show');
+  }
 
   let p;
   try {
     p = await fetchProductDetail(code);
   } catch (err) {
+    if (myToken !== modalLoadToken) return;
+    document.getElementById('productModalOverlay').classList.remove('show');
     alert('ดึงข้อมูลสินค้าไม่สำเร็จ: ' + err.message);
     return;
   }
+  // ระหว่างรอ ผู้ใช้ปิดหน้าต่าง หรือเลือกยาตัวอื่นไปแล้ว → ไม่ต้องแสดง
+  if (myToken !== modalLoadToken) return;
+  if (!productDetailCache[code] && !document.getElementById('productModalOverlay').classList.contains('show')) return;
+  document.querySelector('#productModalOverlay .modal-confirm-btn').disabled = false;
 
   modalProduct = p;
   modalUnitIndex = 0;
@@ -2776,6 +2816,7 @@ function setModalPrice(val){
 }
 
 function closeProductModal(){
+  modalLoadToken++; // ยกเลิกการเติมข้อมูลที่ยังโหลดค้างอยู่
   document.getElementById('productModalOverlay').classList.remove('show');
   modalProduct = null;
   editingCartIndex = null;
@@ -2783,6 +2824,7 @@ function closeProductModal(){
 }
 
 function confirmAddToCart(){
+  if (!modalProduct) return; // ยังโหลดหน่วย/ราคาไม่เสร็จ
   const u = modalProduct.units[modalUnitIndex];
   const cartKey = modalProduct.id + "-" + u.label;
 
