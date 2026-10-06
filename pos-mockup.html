@@ -2654,7 +2654,7 @@ async function fetchProductDetail(code){
 async function fetchProductDetailRaw(code){
   if (productDetailCache[code]) return productDetailCache[code];
 
-  const detail = await apiGet('getProduct', { code });
+  const detail = await apiGet('getProduct', { code, mode: 'pos' }); // โหมดหน้าขาย: ดึงเฉพาะที่ใช้ + หลังบ้านจำส่วนที่ไม่ค่อยเปลี่ยนไว้ (สต๊อกอ่านสดทุกครั้ง)
   const product = detail.product || {};
   const costPerSmallUnit = Number(product['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0;
   const smallUnitLabel = product['หน่วยเล็กสุด(อัตโนมัติ)'] || 'หน่วย';
