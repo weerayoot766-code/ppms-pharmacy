@@ -2103,8 +2103,12 @@ const memberSuggestList = document.getElementById('memberSuggestList');
 
 // รายชื่อสมาชิกทั้งหมดแบบย่อ — โหลดครั้งเดียวตอนเปิดหน้า แล้วค้นในเครื่องทันที (ไม่ต้องรอหลังบ้านทุกตัวอักษร)
 let memberIndex = null;
-async function loadMemberIndex(){
-  try { memberIndex = await apiGet('listCustomers', { keyword: '' }); } catch (e) { /* โหลดไม่ได้ก็ค้นผ่านหลังบ้านแบบเดิม */ }
+let memberIndexPromise = null;
+function loadMemberIndex(){
+  memberIndexPromise = (async () => {
+    try { memberIndex = await apiGet('listCustomers', { keyword: '' }); } catch (e) { /* โหลดไม่ได้ก็ค้นผ่านหลังบ้านแบบเดิม */ }
+  })();
+  return memberIndexPromise;
 }
 function searchMembersLocal(kw){
   const k = kw.toLowerCase();
@@ -2121,6 +2125,13 @@ async function doMemberSearch(){
   const kw = memberSearchInput.value.trim();
   if(kw === ""){ memberSuggestList.classList.remove('show'); return; }
   const myToken = ++memberSearchToken;
+  if (!memberIndex && memberIndexPromise) {
+    // รายชื่อสมาชิกกำลังโหลดอยู่ → รอให้เสร็จก่อน (ไม่ยิงค้นซ้ำไปหลังบ้านพร้อมกัน ซึ่งทำให้ช้าลงทั้งคู่)
+    memberSuggestList.innerHTML = '<div class="suggest-item"><span>⏳ กำลังโหลดรายชื่อสมาชิก...</span></div>';
+    memberSuggestList.classList.add('show');
+    await memberIndexPromise;
+    if (myToken !== memberSearchToken) return;
+  }
   let results = memberIndex ? searchMembersLocal(kw) : null;
   if (!results || results.length === 0) {
     // ยังโหลดรายชื่อไม่เสร็จ หรือไม่พบในเครื่อง (อาจเป็นสมาชิกที่เพิ่งสมัคร) → ถามหลังบ้าน
@@ -2166,6 +2177,7 @@ async function selectMember(id){
   memberSearchInput.value = "";
   memberSuggestList.classList.remove('show');
 
+  if (!memberIndex && memberIndexPromise) await memberIndexPromise;
   // แสดงสมาชิกทันทีจากรายชื่อที่โหลดไว้ในเครื่อง (ชื่อ/เบอร์/แต้ม) ไม่ต้องรอหลังบ้าน
   const quick = memberIndex ? memberIndex.find(m => m.id === id) : null;
   if (quick) {
@@ -2472,7 +2484,12 @@ function prepareSearchIndex(raw){
     })),
   };
 }
-async function loadSearchIndex(){
+let searchIndexPromise = null;
+function loadSearchIndex(){
+  searchIndexPromise = loadSearchIndexInner();
+  return searchIndexPromise;
+}
+async function loadSearchIndexInner(){
   try {
     const cached = localStorage.getItem(SEARCH_INDEX_KEY);
     if (cached) searchIndex = prepareSearchIndex(JSON.parse(cached));
@@ -2497,6 +2514,13 @@ async function doSearch(){
   if(kw === ""){ suggestList.classList.remove('show'); return; }
 
   const myToken = ++searchToken;
+  if (!searchIndex && searchIndexPromise) {
+    // เปิดหน้าครั้งแรก รายชื่อยายังโหลดไม่เสร็จ → รอให้เสร็จก่อน (ไม่ยิงค้นซ้ำไปหลังบ้านพร้อมกัน)
+    suggestList.innerHTML = '<div class="suggest-item"><span>⏳ กำลังโหลดรายชื่อยา (ครั้งแรกเท่านั้น)...</span></div>';
+    suggestList.classList.add('show');
+    await searchIndexPromise;
+    if (myToken !== searchToken) return;
+  }
   let results = searchIndex ? searchProductsLocal(kw) : null;
 
   if (!results || results.length === 0) {
