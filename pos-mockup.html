@@ -2101,17 +2101,41 @@ const LOYALTY_MAX_REDEEM_PERCENT = 20; // เพดานส่วนลดจ�
 const memberSearchInput = document.getElementById('memberSearchInput');
 const memberSuggestList = document.getElementById('memberSuggestList');
 
+// รายชื่อสมาชิกทั้งหมดแบบย่อ — โหลดครั้งเดียวตอนเปิดหน้า แล้วค้นในเครื่องทันที (ไม่ต้องรอหลังบ้านทุกตัวอักษร)
+let memberIndex = null;
+async function loadMemberIndex(){
+  try { memberIndex = await apiGet('listCustomers', { keyword: '' }); } catch (e) { /* โหลดไม่ได้ก็ค้นผ่านหลังบ้านแบบเดิม */ }
+}
+function searchMembersLocal(kw){
+  const k = kw.toLowerCase();
+  return memberIndex.filter(c =>
+    String(c.id || '').toLowerCase().includes(k) ||
+    (String(c.first || '') + String(c.last || '')).toLowerCase().includes(k) ||
+    (String(c.first || '') + ' ' + String(c.last || '')).toLowerCase().includes(k) ||
+    String(c.phone || '').includes(k)
+  ).slice(0, 30);
+}
+let memberSearchToken = 0;
+
 async function doMemberSearch(){
   const kw = memberSearchInput.value.trim();
   if(kw === ""){ memberSuggestList.classList.remove('show'); return; }
-  let results;
-  try {
-    results = await apiGet('listCustomers', { keyword: kw });
-  } catch (err) {
-    memberSuggestList.innerHTML = `<div class="suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
+  const myToken = ++memberSearchToken;
+  let results = memberIndex ? searchMembersLocal(kw) : null;
+  if (!results || results.length === 0) {
+    // ยังโหลดรายชื่อไม่เสร็จ หรือไม่พบในเครื่อง (อาจเป็นสมาชิกที่เพิ่งสมัคร) → ถามหลังบ้าน
+    memberSuggestList.innerHTML = '<div class="suggest-item"><span>กำลังค้นหา...</span></div>';
     memberSuggestList.classList.add('show');
-    return;
+    try {
+      results = await apiGet('listCustomers', { keyword: kw });
+    } catch (err) {
+      if (myToken !== memberSearchToken) return;
+      memberSuggestList.innerHTML = `<div class="suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
+      memberSuggestList.classList.add('show');
+      return;
+    }
   }
+  if (myToken !== memberSearchToken) return; // พิมพ์คำใหม่ไปแล้ว ทิ้งผลเก่า
   if(results.length === 0){
     memberSuggestList.innerHTML = `
       <div class="suggest-item">
@@ -2128,7 +2152,11 @@ async function doMemberSearch(){
   }
   memberSuggestList.classList.add('show');
 }
-memberSearchInput.addEventListener('input', doMemberSearch);
+let memberDebounceTimer = null;
+memberSearchInput.addEventListener('input', () => {
+  clearTimeout(memberDebounceTimer);
+  memberDebounceTimer = setTimeout(doMemberSearch, memberIndex ? 80 : 350);
+});
 memberSearchInput.addEventListener('keyup', e => { if(e.key === 'Enter') doMemberSearch(); });
 document.addEventListener('click', e => {
   if(!document.getElementById('memberSearchWrap').contains(e.target)) memberSuggestList.classList.remove('show');
@@ -2138,7 +2166,7 @@ async function selectMember(id){
   memberSearchInput.value = "";
   memberSuggestList.classList.remove('show');
   try {
-    currentMember = await apiGet('getCustomer', { id });
+    currentMember = await apiGet('getCustomer', { id, light: 1 }); // light = ไม่คำนวณประวัติการซื้อ (ช้า) หน้าขายไม่ได้ใช้
   } catch (err) {
     alert('โหลดข้อมูลสมาชิกไม่สำเร็จ: ' + err.message);
     return;
@@ -2409,21 +2437,63 @@ function focusSearchInput(){
 let searchToken = 0;
 let searchDebounceTimer = null;
 
+// ================= ดัชนีค้นหาสินค้าในเครื่อง =================
+// โหลดรายชื่อสินค้า/บาร์โค้ด/ชุดสินค้าทั้งหมดแบบย่อครั้งเดียว เก็บไว้ในเครื่อง (เปิดหน้าครั้งต่อไปใช้ได้ทันที)
+// แล้วค้นในเครื่องทุกตัวอักษร ไม่ต้องรอหลังบ้าน — โหลดใหม่เบื้องหลังทุกครั้งที่เปิดหน้า เผื่อมีสินค้าใหม่
+const SEARCH_INDEX_KEY = 'ppms_search_index_v1';
+let searchIndex = null;
+function prepareSearchIndex(raw){
+  const barcodeMap = {};
+  (raw.barcodes || []).forEach(([bc, code]) => { (barcodeMap[code] = barcodeMap[code] || []).push(String(bc).toLowerCase()); });
+  return {
+    products: (raw.products || []).map(([code, name, short, unit, stock]) => ({
+      code, name, unit, stock,
+      hay: (name + ' ' + code + ' ' + short).toLowerCase(),
+      barcodes: barcodeMap[code] || [],
+    })),
+    bundles: (raw.bundles || []).map(([code, name, barcode, price, itemCount]) => ({
+      code, name, price, itemCount, hay: (name + ' ' + barcode).toLowerCase(),
+    })),
+  };
+}
+async function loadSearchIndex(){
+  try {
+    const cached = localStorage.getItem(SEARCH_INDEX_KEY);
+    if (cached) searchIndex = prepareSearchIndex(JSON.parse(cached));
+  } catch (e) { /* ไม่มีของเก่าในเครื่อง */ }
+  try {
+    const fresh = await apiGet('getSearchIndex');
+    searchIndex = prepareSearchIndex(fresh);
+    try { localStorage.setItem(SEARCH_INDEX_KEY, JSON.stringify(fresh)); } catch (e) { /* เครื่องเก็บไม่พอ ใช้ในหน่วยความจำไปก่อน */ }
+  } catch (e) { /* โหลดไม่ได้ → ใช้ของเดิมในเครื่อง หรือค้นผ่านหลังบ้านแบบเดิม */ }
+}
+function searchProductsLocal(kw){
+  const k = kw.toLowerCase();
+  const bundles = searchIndex.bundles.filter(b => b.hay.includes(k)).slice(0, 10)
+    .map(b => ({ type: 'bundle', code: b.code, name: b.name, price: b.price, itemCount: b.itemCount }));
+  const products = searchIndex.products.filter(p => p.hay.includes(k) || p.barcodes.some(bc => bc.includes(k))).slice(0, 30)
+    .map(p => ({ type: 'product', code: p.code, name: p.name, unit: p.unit, stock: p.stock }));
+  return [...bundles, ...products].slice(0, 30);
+}
+
 async function doSearch(){
   const kw = searchInput.value.trim();
   if(kw === ""){ suggestList.classList.remove('show'); return; }
 
   const myToken = ++searchToken;
-  suggestList.innerHTML = '<div class="suggest-item"><span>กำลังค้นหา...</span></div>';
-  suggestList.classList.add('show');
+  let results = searchIndex ? searchProductsLocal(kw) : null;
 
-  let results;
-  try {
-    results = await apiGet('searchProducts', { keyword: kw });
-  } catch (err) {
-    if (myToken !== searchToken) return; // มีการค้นหาคำใหม่แล้ว ทิ้งผลลัพธ์เก่า
-    suggestList.innerHTML = `<div class="suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
-    return;
+  if (!results || results.length === 0) {
+    // ยังไม่มีดัชนี หรือไม่พบในเครื่อง (อาจเป็นสินค้าที่เพิ่งเพิ่ม) → ถามหลังบ้าน
+    suggestList.innerHTML = '<div class="suggest-item"><span>กำลังค้นหา...</span></div>';
+    suggestList.classList.add('show');
+    try {
+      results = await apiGet('searchProducts', { keyword: kw });
+    } catch (err) {
+      if (myToken !== searchToken) return; // มีการค้นหาคำใหม่แล้ว ทิ้งผลลัพธ์เก่า
+      suggestList.innerHTML = `<div class="suggest-item"><span>ค้นหาไม่สำเร็จ: ${err.message}</span></div>`;
+      return;
+    }
   }
   if (myToken !== searchToken) return;
 
@@ -2436,11 +2506,13 @@ async function doSearch(){
             <span>📦 ${p.name} <b style="color:#a9701a;font-weight:700;">[ชุด]</b></span>
             <b>฿${(Number(p.price)||0).toFixed(2)}</b>
           </div>`
-        : `<div class="suggest-item" onclick="openProductModal('${p.code}')">
+        : `<div class="suggest-item" onmouseenter="prefetchProductDetail('${p.code}')" onclick="openProductModal('${p.code}')">
             <span>${p.name}</span>
             <b>คงเหลือ ${p.stock || 0} ${p.unit || ''}</b>
           </div>`
     ).join('');
+    const firstProduct = results.find(r => r.type !== 'bundle');
+    if (firstProduct && results.length <= 3) prefetchProductDetail(firstProduct.code); // ผลน้อย (เช่น ยิงบาร์โค้ด) → โหลดตัวแรกรอไว้เลย
   }
   suggestList.classList.add('show');
 }
@@ -2495,7 +2567,7 @@ function addBundleToCart(bundle){
 
 searchInput.addEventListener('input', () => {
   clearTimeout(searchDebounceTimer);
-  searchDebounceTimer = setTimeout(doSearch, 300); // ดีเลย์กันยิง API ถี่เกินไปทุกตัวอักษรที่พิมพ์
+  searchDebounceTimer = setTimeout(doSearch, searchIndex ? 60 : 300); // มีดัชนีในเครื่อง = ค้นเกือบทันที / ไม่มี = รอพิมพ์เสร็จก่อนค่อยถามหลังบ้าน
 });
 searchInput.addEventListener('keyup', e => {
   if(e.key !== 'Enter') return;
@@ -2520,7 +2592,19 @@ let modalQty = 1;
 let editingCartIndex = null;
 const productDetailCache = {}; // เก็บผลลัพธ์ getProduct ไว้ กันเรียก API ซ้ำโดยไม่จำเป็น
 
+// โหลดรายละเอียดล่วงหน้า (ตอนเอาเมาส์ชี้/รายการแรกของผลค้นหา) — กดเลือกแล้ว popup ขึ้นเร็วขึ้น
+const productDetailInflight = {};
+function prefetchProductDetail(code){
+  if (productDetailCache[code] || productDetailInflight[code]) return;
+  productDetailInflight[code] = fetchProductDetailRaw(code).catch(() => null).finally(() => { delete productDetailInflight[code]; });
+}
 async function fetchProductDetail(code){
+  if (productDetailCache[code]) return productDetailCache[code];
+  if (productDetailInflight[code]) { const r = await productDetailInflight[code]; if (r) return r; }
+  return fetchProductDetailRaw(code);
+}
+
+async function fetchProductDetailRaw(code){
   if (productDetailCache[code]) return productDetailCache[code];
 
   const detail = await apiGet('getProduct', { code });
@@ -2935,6 +3019,8 @@ renderCart();
 renderLabel();
 checkTempHumidityReminder();
 remedFromUrl();
+loadSearchIndex();
+loadMemberIndex();
 
 // ---------- พิมพ์ฉลากยา ขนาดจริง 100x75มม. แนวนอน ----------
 async function openLabelPrint(){
@@ -3303,6 +3389,7 @@ function printReceiptAndFinish(){
 
 function finishSale(){
   closePaymentModal();
+  loadMemberIndex(); // แต้มสมาชิกเปลี่ยนหลังขาย → โหลดรายชื่อใหม่เบื้องหลัง
 
   // เริ่มบิลใหม่
   cart = [];
