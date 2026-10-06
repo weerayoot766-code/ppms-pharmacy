@@ -2101,6 +2101,11 @@ const LOYALTY_MAX_REDEEM_PERCENT = 20; // เพดานส่วนลดจ�
 const memberSearchInput = document.getElementById('memberSearchInput');
 const memberSuggestList = document.getElementById('memberSuggestList');
 
+// รอ promise ได้ไม่เกิน ms มิลลิวินาที (ไม่ให้หน้าขายค้างถ้าหลังบ้านตอบช้า)
+function waitAtMost(promise, ms){
+  return Promise.race([promise, new Promise(r => setTimeout(r, ms))]);
+}
+
 // รายชื่อสมาชิกทั้งหมดแบบย่อ — โหลดครั้งเดียวตอนเปิดหน้า แล้วค้นในเครื่องทันที (ไม่ต้องรอหลังบ้านทุกตัวอักษร)
 let memberIndex = null;
 let memberIndexPromise = null;
@@ -2129,7 +2134,7 @@ async function doMemberSearch(){
     // รายชื่อสมาชิกกำลังโหลดอยู่ → รอให้เสร็จก่อน (ไม่ยิงค้นซ้ำไปหลังบ้านพร้อมกัน ซึ่งทำให้ช้าลงทั้งคู่)
     memberSuggestList.innerHTML = '<div class="suggest-item"><span>⏳ กำลังโหลดรายชื่อสมาชิก...</span></div>';
     memberSuggestList.classList.add('show');
-    await memberIndexPromise;
+    await waitAtMost(memberIndexPromise, 3000); // รอไม่เกิน 3 วินาที แล้วค้นแบบเดิมไปก่อน
     if (myToken !== memberSearchToken) return;
   }
   let results = memberIndex ? searchMembersLocal(kw) : null;
@@ -2177,7 +2182,7 @@ async function selectMember(id){
   memberSearchInput.value = "";
   memberSuggestList.classList.remove('show');
 
-  if (!memberIndex && memberIndexPromise) await memberIndexPromise;
+  if (!memberIndex && memberIndexPromise) await waitAtMost(memberIndexPromise, 3000);
   // แสดงสมาชิกทันทีจากรายชื่อที่โหลดไว้ในเครื่อง (ชื่อ/เบอร์/แต้ม) ไม่ต้องรอหลังบ้าน
   const quick = memberIndex ? memberIndex.find(m => m.id === id) : null;
   if (quick) {
@@ -2495,7 +2500,9 @@ async function loadSearchIndexInner(){
     if (cached) searchIndex = prepareSearchIndex(JSON.parse(cached));
   } catch (e) { /* ไม่มีของเก่าในเครื่อง */ }
   try {
+    const t0 = Date.now();
     const fresh = await apiGet('getSearchIndex');
+    console.log('[PPMS] โหลดรายชื่อยา', (fresh.products || []).length, 'รายการ ใช้เวลา', ((Date.now() - t0) / 1000).toFixed(1), 'วินาที');
     searchIndex = prepareSearchIndex(fresh);
     try { localStorage.setItem(SEARCH_INDEX_KEY, JSON.stringify(fresh)); } catch (e) { /* เครื่องเก็บไม่พอ ใช้ในหน่วยความจำไปก่อน */ }
   } catch (e) { /* โหลดไม่ได้ → ใช้ของเดิมในเครื่อง หรือค้นผ่านหลังบ้านแบบเดิม */ }
@@ -2516,9 +2523,9 @@ async function doSearch(){
   const myToken = ++searchToken;
   if (!searchIndex && searchIndexPromise) {
     // เปิดหน้าครั้งแรก รายชื่อยายังโหลดไม่เสร็จ → รอให้เสร็จก่อน (ไม่ยิงค้นซ้ำไปหลังบ้านพร้อมกัน)
-    suggestList.innerHTML = '<div class="suggest-item"><span>⏳ กำลังโหลดรายชื่อยา (ครั้งแรกเท่านั้น)...</span></div>';
+    suggestList.innerHTML = '<div class="suggest-item"><span>⏳ กำลังค้นหา...</span></div>';
     suggestList.classList.add('show');
-    await searchIndexPromise;
+    await waitAtMost(searchIndexPromise, 3000); // รอไม่เกิน 3 วินาที แล้วค้นแบบเดิมไปก่อน
     if (myToken !== searchToken) return;
   }
   let results = searchIndex ? searchProductsLocal(kw) : null;
