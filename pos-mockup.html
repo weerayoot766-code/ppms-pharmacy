@@ -1070,6 +1070,91 @@
   .label-sheet .ls-note { font-size: 3.2mm; margin-top: 1mm; line-height: 1.3; }
   .label-sheet .ls-pharm { font-size: 2.3mm; margin-top: 1mm; line-height: 1.3; }
   .label-sheet .ls-check { color: #111; margin-right: 1mm; }
+
+  /* ---------- กลุ่มปุ่มบนแถบหัว: บนคอมไม่มีผลอะไรเลย (display: contents = เหมือนไม่มีกล่องนี้) ---------- */
+  .topbar-actions { display: contents; }
+
+  /* ============================================================
+     มือถือ (iPhone ฯลฯ จอกว้างไม่เกิน 640px) — มีผลเฉพาะจอเล็ก ไม่กระทบหน้าจอคอม
+     ============================================================ */
+  @media (max-width: 640px) {
+    body { padding-bottom: 12px; -webkit-text-size-adjust: 100%; }
+
+    /* แถบหัว: ชื่อร้านบรรทัดเดียว + ปุ่มเรียงเป็นแถวเลื่อนซ้าย-ขวาได้ */
+    .topbar { flex-wrap: wrap; padding: 10px 12px; gap: 8px 10px; margin-bottom: 10px; }
+    .topbar .logo-badge { width: 32px; height: 32px; font-size: 16px; }
+    .topbar .titles { flex: 1 1 0; min-width: 0; }
+    .topbar .titles .th-name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar .titles .en-name { font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-actions {
+      display: flex; gap: 8px; align-items: center;
+      flex: 1 1 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px; scrollbar-width: none;
+    }
+    .topbar-actions::-webkit-scrollbar { display: none; }
+    .topbar-actions > button { flex: 0 0 auto; padding: 7px 11px; font-size: 12.5px; margin-left: 0; }
+    .topbar-actions .pharmacist-chip { flex: 0 0 auto; align-items: flex-start; }
+
+    .layout { padding: 0 8px; gap: 10px; }
+    .left, .right { width: 100%; flex: 1 1 auto; }
+    .panel { padding: 12px; border-radius: 10px; }
+
+    /* แถวสมาชิก: ช่องค้นหาเต็มบรรทัด ปุ่มอื่นลงบรรทัดถัดไป */
+    .member-row { flex-wrap: wrap; gap: 8px; }
+    .member-row .search-suggest, .member-row .member-suggest { flex: 1 1 100%; max-width: 100%; }
+    .member-chip { flex: 1 1 auto; min-width: 0; white-space: normal; padding: 8px 10px; font-size: 13px; }
+    .register-member-btn, .remed-btn { padding: 8px 10px; font-size: 12.5px; }
+    .search-row { margin-bottom: 12px; }
+    .search-box input { font-size: 16px; } /* 16px กัน iPhone ซูมจอเองตอนแตะช่องพิมพ์ */
+
+    .sale-header { font-size: 16px; margin: 2px 0 8px; }
+
+    /* ตะกร้า: เปลี่ยนตารางเป็นการ์ดทีละรายการ */
+    .cart-table thead { display: none; }
+    .cart-table, .cart-table tbody { display: block; width: 100%; }
+    .cart-table tbody tr.selectable {
+      display: grid;
+      grid-template-columns: auto auto auto 1fr auto;
+      grid-template-areas: "name name name name name" "price qty unit total act";
+      align-items: center; gap: 4px 8px;
+      padding: 10px 4px; border-bottom: 1px solid #eef2ef;
+    }
+    .cart-table tbody tr.selectable td { border: none; padding: 0; font-size: 14px; }
+    .cart-table tbody tr.selectable td:nth-child(1) { display: none; }
+    .cart-table tbody tr.selectable td:nth-child(2) { grid-area: name; font-weight: 600; }
+    .cart-table tbody tr.selectable td:nth-child(3) { grid-area: price; color: #5b6b60; }
+    .cart-table tbody tr.selectable td:nth-child(3)::after { content: ' ×'; }
+    .cart-table tbody tr.selectable td:nth-child(4) { grid-area: qty; }
+    .cart-table tbody tr.selectable td:nth-child(5) { grid-area: unit; color: #5b6b60; }
+    .cart-table tbody tr.selectable td:nth-child(6) { grid-area: total; text-align: right; font-weight: 700; }
+    .cart-table tbody tr.selectable td:nth-child(6)::before { content: '= '; font-weight: 400; color: #8a978f; }
+    .cart-table tbody tr.selectable td:nth-child(7) { grid-area: act; display: flex; gap: 6px; }
+    .cart-table .qty-input { width: 56px; font-size: 16px; }
+    .cart-table tr.empty-row { display: block; }
+    .cart-table tr.empty-row td { display: block; }
+
+    /* ปุ่มด้านล่าง + สรุปยอด เต็มความกว้าง */
+    .bottom-row { flex-direction: column; gap: 12px; }
+    .bottom-actions { max-width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+    .bottom-actions > button { padding: 9px 6px; font-size: 13px; white-space: normal; }
+    .summary-box { width: 100%; align-items: stretch; }
+    .summary-line { max-width: 100%; justify-content: space-between; }
+    .summary-discount input { font-size: 16px; }
+
+    /* ฉลากยา */
+    .label-top { flex-wrap: wrap; gap: 8px; }
+    .right input, .right select, .right textarea { max-width: 100%; }
+    .right .field-row { flex-wrap: wrap; }
+    .right .note-row { flex-wrap: wrap; }
+    .right .note-row input[type=text] { flex: 1 1 100%; width: 100%; min-width: 0; }
+    .right .field-row > .field { flex: 1 1 100%; min-width: 0; }
+    .right .field-row > .field select, .right .field-row > .field input { width: 100%; }
+    .right input:not([type=checkbox]):not([type=radio]), .right select, .right textarea { font-size: 16px; }
+
+    /* หน้าต่างป๊อปอัป */
+    .modal-overlay { padding: 8px; align-items: flex-start; }
+    .modal-card { max-width: 100% !important; width: 100%; max-height: calc(100vh - 16px); overflow-y: auto; }
+  }
 </style>
 </head>
 <body>
@@ -1084,6 +1169,7 @@
     <div class="th-name">ปรุงยาเภสัช — ระบบร้านขายยา</div>
     <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
   </div>
+  <div class="topbar-actions">
   <button class="backoffice-btn" onclick="window.open('backoffice-mockup.html', '_blank')">🗂️ ระบบหลังบ้านและคลังสินค้า</button>
   <button class="telepharmacy-btn" onclick="alert('มอคอัพ: ยังไม่เชื่อมต่อระบบ Telepharmacy จริง')">💊📱 เชื่อมต่อระบบ Telepharmacy</button>
   <button class="delivery-btn" onclick="alert('มอคอัพ: ยังไม่เชื่อมต่อพระแสงเดลิเวอรี่จริง')">🏍️ เชื่อมต่อพระแสงเดลิเวอรี่</button>
@@ -1093,6 +1179,7 @@
     <span class="ph-name" id="phNameDisplay">ภก.วีระยุทธิ์ เพชรทอง</span>
   </div>
   <button class="logout-btn" onclick="doLogout()">🚪 Log Out</button>
+  </div>
 </div>
 
 <div class="layout">
@@ -1131,7 +1218,7 @@
 
     <div class="sale-header">เลขที่บิล : <span id="saleId">SR26082400001</span></div>
 
-    <table>
+    <table class="cart-table">
       <thead>
         <tr>
           <th style="width:56px;">ลำดับที่</th>
