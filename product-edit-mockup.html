@@ -713,7 +713,7 @@ async function loadProductByCode(code){
 // เพิ่ม/ลบค่าออกจาก array แบบแก้ไขที่ตัวเดิม (ไม่สร้าง array ใหม่ กัน reference หลุด)
 // ---------- ส่วนผสมยา (Generic Name) — พิมพ์ชื่อ+ปริมาณ mg แยกช่อง แล้วรวมเป็นข้อความเดียวไปเก็บใน "ชื่อยาสามัญ" ----------
 function addGenericNameRow() {
-  genericNameData.push({ name: '', mg: '' });
+  genericNameData.push({ name: '', mg: '', unit: 'mg' });
   switchTab('drug');
 }
 
@@ -749,8 +749,8 @@ function buildGenericNameString() {
   return genericNameData
     .filter(g => g.name && g.name.trim())
     .map(g => {
-      const mg = (g.mg || '').toString().trim();
-      return mg ? `${g.name.trim()} ${mg} mg` : g.name.trim();
+      const amt = (g.mg || '').toString().trim();
+      return amt ? `${g.name.trim()} ${amt} ${g.unit || 'mg'}` : g.name.trim(); // หน่วยตามที่เลือก (mg / mcg / g / IU / ...) ไม่บังคับ mg แล้ว
     })
     .join(', ');
 }
@@ -763,12 +763,20 @@ function syncGenericSummary() {
 }
 
 /** แยกข้อความ "ชื่อยาสามัญ" ก้อนเดียวจากข้อมูลเก่า กลับมาเป็นรายการ {name, mg} เท่าที่พอแยกได้ (รูปแบบ "ชื่อ ตัวเลข mg" คั่นด้วยจุลภาค) */
+// หน่วยปริมาณของส่วนผสมยาที่เลือกได้
+const GENERIC_UNITS = ['mg', 'mcg', 'g', 'IU', 'mL', '%', 'mg/mL', 'mg/5mL', 'unit'];
+const GENERIC_UNIT_PATTERN = 'mg/5ml|mg/ml|mcg|µg|mg|ml|iu|g|%|units?';
+
 function parseGenericNameString(str) {
   if (!str || !str.trim() || str.trim() === '-') return [];
   return str.split(',').map(part => {
     part = part.trim();
-    const match = part.match(/^(.*?)\s+([\d.]+)\s*mg$/i);
-    return match ? { name: match[1].trim(), mg: match[2].trim() } : { name: part, mg: '' };
+    // ล้าง "mg" ที่ระบบเดิมแอบต่อท้ายซ้ำ เช่น "100 mg mg" → "100 mg", "200 mcg mg" → "200 mcg"
+    part = part.replace(new RegExp('\\s+(' + GENERIC_UNIT_PATTERN + ')(\\s+mg)+$', 'i'), ' $1');
+    const match = part.match(new RegExp('^(.*?)\\s+([\\d.,]+)\\s*(' + GENERIC_UNIT_PATTERN + ')$', 'i'));
+    if (!match) return { name: part, mg: '', unit: 'mg' };
+    const unit = GENERIC_UNITS.find(u => u.toLowerCase() === match[3].toLowerCase().replace('µg', 'mcg')) || match[3];
+    return { name: match[1].trim(), mg: match[2].trim(), unit };
   }).filter(g => g.name);
 }
 
@@ -1046,21 +1054,22 @@ function renderDrugTab() {
     <h3>ข้อมูลทางยา</h3>
     <h4>ส่วนผสมยา (Generic Name)</h4>
     <table class="data-table" style="margin-bottom:8px;">
-      <thead><tr><th>ชื่อยา</th><th style="width:160px;">ปริมาณ (mg)</th><th></th></tr></thead>
+      <thead><tr><th>ชื่อยา</th><th style="width:130px;">ปริมาณ</th><th style="width:110px;">หน่วย</th><th></th></tr></thead>
       <tbody>
         ${genericNameData.length === 0
-          ? '<tr><td colspan="3" style="text-align:center;color:#8fa198;">ยังไม่มีข้อมูลส่วนผสม — กด "+ เพิ่มส่วนผสม" ด้านล่าง</td></tr>'
+          ? '<tr><td colspan="4" style="text-align:center;color:#8fa198;">ยังไม่มีข้อมูลส่วนผสม — กด "+ เพิ่มส่วนผสม" ด้านล่าง</td></tr>'
           : genericNameData.map((g,i) => `
           <tr>
             <td><input type="text" value="${g.name}" placeholder="เช่น Naproxen" oninput="genericNameData[${i}].name=this.value; syncGenericSummary();"></td>
             <td><input type="text" value="${g.mg}" placeholder="เช่น 250" oninput="genericNameData[${i}].mg=this.value; syncGenericSummary();"></td>
+            <td><select onchange="genericNameData[${i}].unit=this.value; syncGenericSummary();">${GENERIC_UNITS.map(u => `<option ${u === (g.unit || 'mg') ? 'selected' : ''}>${u}</option>`).join('')}</select></td>
             <td><button class="del-icon-btn" onclick="removeGenericNameRow(${i})">ลบ</button></td>
           </tr>
         `).join("")}
       </tbody>
     </table>
     <button class="add-row-btn" style="height:38px;" onclick="addGenericNameRow()">+ เพิ่มส่วนผสม</button>
-    <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — พิมพ์ชื่อยา + ปริมาณ (mg) แล้วช่อง "ชื่อยาสามัญ" ที่ข้อมูลพื้นฐานด้านบนสุดของหน้าจะรวมให้อัตโนมัติ กด "บันทึก" มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง</div>
+    <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — พิมพ์ชื่อยา + ปริมาณ แล้วเลือกหน่วย (mg / mcg / g / IU ...) ช่อง "ชื่อยาสามัญ" ที่ข้อมูลพื้นฐานด้านบนสุดของหน้าจะรวมให้อัตโนมัติ กด "บันทึก" มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง</div>
 
     <h4>ข้อมูลทางยา</h4>
     <div class="inline-fields" style="margin-bottom:24px;">
