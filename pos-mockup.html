@@ -2380,8 +2380,10 @@ async function loadBillIntoCart(bill) {
     if (!u) { notes.push(`❌ ${it.name}: ไม่มีหน่วย "${it.unit}" แล้ว — กรุณาเพิ่มเองจากช่องค้นหา`); continue; }
 
     const cartKey = p.id + "-" + u.label;
-    const alreadyInCart = cart.filter(c => c.cartKey === cartKey).reduce((s, c) => s + c.qty, 0);
-    const canAdd = Math.max(0, (u.stock || 0) - alreadyInCart);
+    const multOf = label => ((p.units.find(x => x.label === label) || {}).multiplier) || 1;
+    const usedBase = cart.filter(c => c.id === p.id).reduce((s, c) => s + c.qty * multOf(c.unit), 0);
+    const baseStock = p.baseStock != null ? p.baseStock : (u.stock || 0) * (u.multiplier || 1);
+    const canAdd = Math.max(0, Math.floor((baseStock - usedBase) / (u.multiplier || 1)));
     if (canAdd <= 0) { notes.push(`❌ ${it.name}: สต๊อกหมด (${u.label}) — ข้ามรายการนี้`); continue; }
     const qty = Math.min(it.qty, canAdd);
     if (qty < it.qty) notes.push(`⚠️ ${it.name}: บิลเดิม ${it.qty} ${u.label} แต่คงเหลือ ${canAdd} — ใส่ให้ ${qty} ${u.label}`);
@@ -2676,13 +2678,10 @@ async function fetchProductDetailRaw(code){
   const costPerSmallUnit = Number(product['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0;
   const smallUnitLabel = product['หน่วยเล็กสุด(อัตโนมัติ)'] || 'หน่วย';
 
-  // คงเหลือแยกตาม "หน่วยที่ระบุในล็อตเป๊ะๆ" (ไม่แปลงหน่วยข้ามกัน) — ต้องตรงกับที่ backend
-  // ใช้เช็คตอนกันขายเกินสต๊อกจริงใน createSale (getExactUnitStock_) ไม่งั้นจะลงตะกร้าได้แต่บันทึกบิลไม่ผ่าน
-  const stockByUnit = {};
-  (detail.stockLots || []).forEach(l => {
-    const u = l['หน่วยนับสต๊อก'];
-    stockByUnit[u] = (stockByUnit[u] || 0) + (Number(l['จำนวนคงเหลือ']) || 0);
-  });
+  // คงเหลือรวมทุกล็อต (หน่วยเล็กสุด, ไม่นับล็อตหมดอายุ) แล้วแปลงเป็นแต่ละหน่วยด้วยตัวคูณ
+  // เช่น มี 25 แผง → ขายได้ 25 แผง หรือ 2 กล่อง (กล่องละ 10) — ตรงกับที่หลังบ้านตัดข้ามหน่วยได้
+  const baseStock = Number(detail.liveStock) || 0;
+  const stockFor = mult => Math.floor(baseStock / (mult || 1));
 
   let units = (detail.units || []).map(u => {
     const multiplier = Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1;
@@ -2694,7 +2693,7 @@ async function fetchProductDetailRaw(code){
       cost: cost,
       multiplier: multiplier,
       priceIsEstimate: !priceRow, // true = ยังไม่มีราคาขายจริงในชีต ใช้ต้นทุนแทนไปก่อน ต้องระวังตอนขาย
-      stock: stockByUnit[u['หน่วย(ใหญ่)']] || 0,
+      stock: stockFor(multiplier),
     };
   });
 
@@ -2708,7 +2707,7 @@ async function fetchProductDetailRaw(code){
       cost: costPerSmallUnit,
       multiplier: 1,
       priceIsEstimate: !priceRow,
-      stock: stockByUnit[smallUnitLabel] || 0,
+      stock: baseStock,
     });
   }
 
@@ -2716,10 +2715,12 @@ async function fetchProductDetailRaw(code){
   units.sort((a, b) => (a.multiplier || 1) - (b.multiplier || 1));
 
   if (units.length === 0) {
-    units = [{ label: smallUnitLabel, price: costPerSmallUnit, cost: costPerSmallUnit, multiplier: 1, priceIsEstimate: true, stock: stockByUnit[smallUnitLabel] || 0 }];
+    units = [{ label: smallUnitLabel, price: costPerSmallUnit, cost: costPerSmallUnit, multiplier: 1, priceIsEstimate: true, stock: baseStock }];
   }
 
-  const lots = (detail.stockLots || []).filter(l => Number(l['จำนวนคงเหลือ']) > 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const lots = (detail.stockLots || []).filter(l => Number(l['จำนวนคงเหลือ']) > 0 &&
+    !(l['วันหมดอายุ (EXP)'] && new Date(l['วันหมดอายุ (EXP)']) < today)); // ไม่โชว์ EXP ของล็อตที่หมดอายุแล้ว
   lots.sort((a, b) => new Date(a['วันหมดอายุ (EXP)']) - new Date(b['วันหมดอายุ (EXP)']));
 
   // ค่าเริ่มต้นฉลากยาที่เคยบันทึกไว้สำหรับสินค้านี้ (ถ้ามี) — เก็บเป็น JSON ไว้ในชีต DrugInfo
@@ -2736,6 +2737,7 @@ async function fetchProductDetailRaw(code){
     indication: (labelDefaults && labelDefaults.indication) || (detail.drugInfo ? (detail.drugInfo['ชื่อยาสามัญ (Generic Name)'] || '') : ''),
     expiry: lots[0] ? lots[0]['วันหมดอายุ (EXP)'] : '',
     stock: detail.liveStock != null ? detail.liveStock : (product['คงเหลือรวมทุกล็อต(อัตโนมัติ)'] || 0),
+    baseStock,
     units,
     labelDefaults,
   };
@@ -2878,18 +2880,21 @@ function confirmAddToCart(){
 
   // ---------- กันขายเกินสต๊อกตั้งแต่ตอนลงตะกร้า (ไม่ต้องรอไปเจอตอนกดชำระเงิน) ----------
   // รวมจำนวนของสินค้า+หน่วยเดียวกันที่มีอยู่ในตะกร้าแล้ว (ถ้ากำลังแก้ไขรายการเดิม ไม่นับซ้ำรายการที่กำลังแก้)
-  let alreadyInCart = 0;
+  // นับข้ามหน่วย: สินค้าเดียวกันในตะกร้า (ทั้งแผง/กล่อง) แปลงเป็นหน่วยเล็กสุดแล้วรวมกัน เทียบกับคงเหลือรวม
+  const multOf = label => ((modalProduct.units.find(x => x.label === label) || {}).multiplier) || 1;
+  let usedBase = 0;
   cart.forEach((c, i) => {
-    if (c.cartKey === cartKey && i !== editingCartIndex) alreadyInCart += c.qty;
+    if (c.id === modalProduct.id && i !== editingCartIndex) usedBase += c.qty * multOf(c.unit);
   });
-  const totalNeeded = alreadyInCart + modalQty;
-  const available = u.stock || 0;
-  if (totalNeeded > available) {
+  const baseStock = modalProduct.baseStock != null ? modalProduct.baseStock : (u.stock || 0) * (u.multiplier || 1);
+  const canAddQty = Math.max(0, Math.floor((baseStock - usedBase) / (u.multiplier || 1)));
+  if (modalQty > canAddQty) {
+    const smallLabel = (modalProduct.units.find(x => (x.multiplier || 1) === 1) || u).label;
     alert(
       `สต๊อกไม่พอ: ${modalProduct.name} (${u.label})\n` +
-      `คงเหลือ ${available} ${u.label}` +
-      (alreadyInCart > 0 ? ` — ในตะกร้ามีอยู่แล้ว ${alreadyInCart} ${u.label}` : '') +
-      `\nลดจำนวนที่จะเพิ่มลงเหลือไม่เกิน ${Math.max(0, available - alreadyInCart)} ${u.label}`
+      `คงเหลือรวม ${baseStock} ${smallLabel}` +
+      (usedBase > 0 ? ` — ในตะกร้าใช้ไปแล้ว ${usedBase} ${smallLabel}` : '') +
+      `\nเพิ่มได้อีกไม่เกิน ${canAddQty} ${u.label}`
     );
     return;
   }
