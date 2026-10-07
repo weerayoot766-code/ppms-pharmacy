@@ -208,6 +208,14 @@
   .add-row-btn:hover { background: #dcefe0; }
 
   .barcode-preview { font-family: 'Courier New', monospace; letter-spacing: 1px; }
+  /* ---------- แท็บบาร์โค้ด: จัดแถวให้ตรงกัน ---------- */
+  table.barcode-table td { vertical-align: middle; }
+  .bc-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; white-space: nowrap; }
+  .bc-btn { height: 38px; margin: 0 !important; padding: 0 14px; display: inline-flex; align-items: center; }
+  .bc-preview { height: 46px; display: flex; align-items: center; }
+  .bc-preview svg { max-width: 170px; height: 40px; }
+  .bc-empty { color: #8fa198; font-size: 12px; }
+  .bc-dup-warn { color: #a9701a; font-size: 11.5px; margin-top: 4px; }
   .barcode-svg { display: block; margin-top: 4px; }
 
   .checkbox-grid {
@@ -898,20 +906,30 @@ function renderBarcodeTab() {
   return `
     <h3>บาร์โค้ด</h3>
     ${barcodeData.length === 0 ? '<div class="empty-note">ยังไม่มีบาร์โค้ดของสินค้านี้ในระบบ</div>' : `
-    <table class="data-table">
-      <thead><tr><th style="width:140px;">หน่วย</th><th>บาร์โค้ด</th><th style="width:150px;"></th><th>ตัวอย่าง</th></tr></thead>
+    <table class="data-table barcode-table">
+      <thead><tr>
+        <th style="width:130px;">หน่วย</th>
+        <th>บาร์โค้ด</th>
+        <th style="width:190px;">ตัวอย่าง</th>
+        <th style="width:190px;"></th>
+      </tr></thead>
       <tbody>
         ${barcodeData.map((b,i) => `
           <tr>
             <td>
               <select onchange="barcodeData[${i}].unit=this.value">${unitData.map(u=>`<option ${u.unit===b.unit?'selected':''}>${u.unit}</option>`).join("")}</select>
             </td>
-            <td><input type="text" class="barcode-preview" placeholder="ใส่บาร์โค้ดจริงจากสินค้า หรือกด &quot;สร้างบาร์โค้ด&quot;" value="${b.code}" oninput="barcodeData[${i}].code=this.value"></td>
             <td>
-              <button class="add-row-btn" style="margin:0 6px 0 0;" onclick="generateBarcodeForRow(${i})">สร้างบาร์โค้ด</button>
-              <button class="del-icon-btn" onclick="removeBarcodeRow(${i})">ลบ</button>
+              <input type="text" class="barcode-preview" placeholder="ใส่บาร์โค้ดจริงจากสินค้า หรือกด &quot;สร้าง&quot;" value="${b.code}"
+                oninput="barcodeData[${i}].code=this.value; updateBarcodePreview(${i});">
             </td>
-            <td>${b.code ? renderBarcodeSVG(b.code) : '<span style="color:#8fa198;font-size:12px;">ยังไม่มีบาร์โค้ด</span>'}</td>
+            <td><div class="bc-preview" id="bcPreview${i}">${b.code ? renderBarcodeSVG(b.code) : '<span class="bc-empty">ยังไม่มีบาร์โค้ด</span>'}</div></td>
+            <td>
+              <div class="bc-actions">
+                <button class="add-row-btn bc-btn" onclick="generateBarcodeForRow(${i})">สร้างบาร์โค้ด</button>
+                <button class="del-icon-btn bc-btn" onclick="removeBarcodeRow(${i})">ลบ</button>
+              </div>
+            </td>
           </tr>
         `).join("")}
       </tbody>
@@ -920,6 +938,14 @@ function renderBarcodeTab() {
     <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — ใส่บาร์โค้ดจริงเอง หรือกด "สร้างบาร์โค้ด" ให้ระบบสร้างให้อัตโนมัติถ้าสินค้าไม่มีบาร์โค้ดมาจากผู้ผลิต แล้วกด "บันทึก" มุมล่างขวาของหน้า</div>
     <button class="add-row-btn" onclick="addBarcodeRow()">+ เพิ่ม</button>
   `;
+}
+
+/** อัปเดตภาพตัวอย่างบาร์โค้ดสดๆ ขณะพิมพ์ (ไม่ต้องวาดทั้งแท็บใหม่ ช่องพิมพ์จึงไม่หลุดโฟกัส) */
+function updateBarcodePreview(i) {
+  const el = document.getElementById('bcPreview' + i);
+  if (!el) return;
+  const code = String(barcodeData[i].code || '').trim();
+  el.innerHTML = code ? renderBarcodeSVG(code) : '<span class="bc-empty">ยังไม่มีบาร์โค้ด</span>';
 }
 
 function addBarcodeRow() {
