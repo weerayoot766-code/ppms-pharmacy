@@ -332,13 +332,6 @@
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
 
-async function apiGet(action, params = {}) {
-  const query = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(`${API_URL}?${query}`);
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error);
-  return json.data;
-}
 
 /**
  * อ่านผลตอบกลับจาก Apps Script อย่างปลอดภัย
@@ -357,6 +350,36 @@ async function readApiJson(res) {
   }
   if (!json.ok) throw new Error(json.error);
   return json.data;
+}
+
+/**
+ * ดึงข้อมูล (GET) — แนบรหัสคำขอ (requestId) ไปด้วย
+ * บางครั้งสคริปต์ทำงานเสร็จแล้ว แต่ตอนรับผล Google ตอบ 404 (script.googleusercontent.com) แทนผลลัพธ์
+ * ถ้าเจอ: ถามผลจริงด้วยรหัสเดิมก่อน (เร็ว) ถ้ายังไม่ได้ค่อยส่งใหม่ด้วยรหัสเดิม — หลังบ้านจำผลไว้ จึงตอบได้ทันทีไม่ต้องทำงานซ้ำ
+ */
+async function apiGet(action, params = {}) {
+  const requestId = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const query = new URLSearchParams({ action, ...params, requestId }).toString();
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(`${API_URL}?${query}`);
+      return await readApiJson(res);
+    } catch (err) {
+      const transient = err.nonJson || err instanceof TypeError;
+      if (!transient || attempt >= 4) throw err;
+      console.warn('[PPMS] Google ตอบกลับผิดพลาด (' + action + ') กำลังกู้คืนครั้งที่ ' + attempt);
+      await new Promise(r => setTimeout(r, 250));
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        const r = await readApiJson(await fetch(`${API_URL}?${q}`));
+        if (r && r.found) {
+          if (!r.response.ok) throw new Error(r.response.error);
+          return r.response.data;
+        }
+      } catch (e2) { if (!e2.nonJson && !(e2 instanceof TypeError)) throw e2; }
+      // ยังไม่ได้ผล → วนส่งคำขอเดิมใหม่ทันที (ไม่ต้องรอนาน)
+    }
+  }
 }
 
 /**
@@ -1276,30 +1299,30 @@ async function saveAll(){
   btn.textContent = '⏳ กำลังบันทึก...';
 
   try {
-    await apiPost('updateProduct', {
+    // ส่งทุกแท็บไปในคำขอเดียว (เดิมส่งแยก 9 คำขอต่อกัน ใช้เวลารวม ~30 วินาที)
+    await apiPost('saveProductAll', {
       code: currentProductCode,
-      product: {
-        name: document.getElementById('fProductName').value.trim(),
-        isDrug: document.getElementById('fIsDrug').checked,
-        active: document.getElementById('fActiveStatus').checked,
-        groups: productGroupsSelected,
+      all: {
+        product: {
+          name: document.getElementById('fProductName').value.trim(),
+          isDrug: document.getElementById('fIsDrug').checked,
+          active: document.getElementById('fActiveStatus').checked,
+          groups: productGroupsSelected,
+        },
+        labelDefaults: defaults,
+        genericName: buildGenericNameString(),
+        units: unitData,
+        barcodes: barcodeData,
+        prices: priceData,
+        drugMeta: {
+          productTypes: productTypeChecked,
+          printKY9: printKY9, printKY10: printKY10, printKY11: printKY11,
+          treatmentClass: treatmentClassChecked,
+        },
+        safetyStock: safetyStockData,
+        shelfLocations: shelfLocationData,
       }
     });
-    await apiPost('saveLabelDefaults', { code: currentProductCode, defaults });
-    await apiPost('saveGenericName', { code: currentProductCode, genericName: buildGenericNameString() });
-    await apiPost('saveUnits', { code: currentProductCode, units: unitData });
-    await apiPost('saveBarcodes', { code: currentProductCode, barcodes: barcodeData });
-    await apiPost('savePrices', { code: currentProductCode, prices: priceData });
-    await apiPost('saveDrugMeta', {
-      code: currentProductCode,
-      meta: {
-        productTypes: productTypeChecked,
-        printKY9: printKY9, printKY10: printKY10, printKY11: printKY11,
-        treatmentClass: treatmentClassChecked,
-      }
-    });
-    await apiPost('saveSafetyStock', { code: currentProductCode, rows: safetyStockData });
-    await apiPost('saveShelfLocations', { code: currentProductCode, rows: shelfLocationData });
     alert('บันทึกเรียบร้อย\n\n✅ ข้อมูลสินค้า "' + currentProductCode + '" บันทึกเข้าระบบจริงแล้วทั้งหมด (ชื่อสินค้า, หน่วย, บาร์โค้ด, ราคา, ชื่อยาสามัญ, ประเภทสินค้า, รายงาน ขย., Treatment Class, Safety Stock, ชั้นวางสินค้า, กลุ่มสินค้า, ค่าเริ่มต้นฉลากยา)\n\n⚠️ เหลือแค่ "ผู้แทนจำหน่าย" ที่เปลี่ยนเป็นดึงประวัติจริงจากใบรับสินค้าให้อัตโนมัติแล้ว ไม่ต้องบันทึกอะไรเพิ่มในส่วนนั้น');
     // โหลดข้อมูลสินค้าใหม่จาก sheet เพื่อยืนยันว่าที่บันทึกไปตรงกับที่ระบบเก็บจริง (เช่น ลำดับแถวใหม่)
     await loadProductByCode(currentProductCode);
