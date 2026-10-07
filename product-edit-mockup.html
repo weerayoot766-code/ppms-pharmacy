@@ -288,15 +288,15 @@
     <div class="basic-grid">
       <div class="field">
         <label>รหัสสินค้า <span class="required">*</span></label>
-        <input type="text" id="fProductCode" value="PCU00309" class="readonly" disabled>
+        <input type="text" id="fProductCode" value="" placeholder="-" class="readonly" disabled>
       </div>
       <div class="field">
         <label>ชื่อสินค้า <span class="required">*</span></label>
-        <input type="text" id="fProductName" value="Sonap Forte 550 mg">
+        <input type="text" id="fProductName" value="" placeholder="ค้นหาสินค้าด้านบนก่อน">
       </div>
       <div class="field">
         <label>ชื่อยาสามัญ</label>
-        <input type="text" id="fGenericSummary" value="NAPROXEN" class="readonly" disabled>
+        <input type="text" id="fGenericSummary" value="" placeholder="-" class="readonly" disabled>
       </div>
 
       <div class="basic-checks">
@@ -569,7 +569,9 @@ function resetToNewProduct() {
 }
 
 // ================= โหลดสินค้าจริงจาก Sheet =================
+let productLoadToken = 0;
 async function loadProductByCode(code){
+  const myToken = ++productLoadToken; // เลือกสินค้าใหม่ระหว่างรอ → ผลของตัวเก่าที่ตอบกลับมาทีหลังจะถูกทิ้ง ไม่ทับตัวใหม่
   const loadedTag = document.getElementById('loadedTag');
   loadedTag.style.display = 'inline-block';
   loadedTag.textContent = 'กำลังโหลดข้อมูล ' + code + '...';
@@ -578,9 +580,11 @@ async function loadProductByCode(code){
   try {
     detail = await apiGet('getProduct', { code });
   } catch (err) {
+    if (myToken !== productLoadToken) return;
     loadedTag.textContent = 'โหลดไม่สำเร็จ: ' + err.message;
     return;
   }
+  if (myToken !== productLoadToken) return;
 
   const product = detail.product || {};
   currentProductRaw = product;
@@ -1360,7 +1364,14 @@ if (urlParams.get('new')) {
   resetToNewProduct();
 } else {
   switchTab(urlParams.get('code') ? 'print' : 'unit');
-  loadProductByCode(urlParams.get('code') || 'PCU00309'); // ถ้ามี ?code=... ต่อท้าย URL จะเปิดสินค้านั้นโดยตรง (เช่น ลิงก์มาจากหน้าขาย)
+  if (urlParams.get('code')) {
+    loadProductByCode(urlParams.get('code')); // มี ?code=... ต่อท้าย URL → เปิดสินค้านั้นโดยตรง (เช่น ลิงก์มาจากหน้าขาย/รายการสินค้า)
+  } else {
+    // ไม่โหลดสินค้าตัวอย่างอัตโนมัติแล้ว (เดิมโหลด Sonap ทุกครั้ง ทำให้ช้าและอาจทับสินค้าที่ค้นเลือก) → รอผู้ใช้ค้นหาเอง
+    const tag = document.getElementById('loadedTag');
+    tag.style.display = 'inline-block';
+    tag.textContent = '🔍 พิมพ์ค้นหาสินค้าที่ต้องการแก้ไขด้านบน';
+  }
 }
 </script>
 
