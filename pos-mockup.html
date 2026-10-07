@@ -1579,15 +1579,32 @@ async function readApiJson(res) {
 }
 
 // GET เป็นการอ่านข้อมูลอย่างเดียว ลองใหม่อัตโนมัติได้ปลอดภัย (สูงสุด 2 ครั้ง) ถ้า Google ตอบกลับผิดรูปแบบ
+/**
+ * ดึงข้อมูล (GET) — แนบรหัสคำขอ (requestId) ไปด้วย
+ * บางครั้งสคริปต์ทำงานเสร็จแล้ว แต่ตอนรับผล Google ตอบ 404 (script.googleusercontent.com) แทนผลลัพธ์
+ * ถ้าเจอ: ถามผลจริงด้วยรหัสเดิมก่อน (เร็ว) ถ้ายังไม่ได้ค่อยส่งใหม่ด้วยรหัสเดิม — หลังบ้านจำผลไว้ จึงตอบได้ทันทีไม่ต้องทำงานซ้ำ
+ */
 async function apiGet(action, params = {}) {
-  const query = new URLSearchParams({ action, ...params }).toString();
+  const requestId = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const query = new URLSearchParams({ action, ...params, requestId }).toString();
   for (let attempt = 1; ; attempt++) {
     try {
       const res = await fetch(`${API_URL}?${query}`);
       return await readApiJson(res);
     } catch (err) {
-      if (!err.nonJson || attempt >= 3) throw err;
-      await new Promise(r => setTimeout(r, 800 * attempt));
+      const transient = err.nonJson || err instanceof TypeError;
+      if (!transient || attempt >= 4) throw err;
+      console.warn('[PPMS] Google ตอบกลับผิดพลาด (' + action + ') กำลังกู้คืนครั้งที่ ' + attempt);
+      await new Promise(r => setTimeout(r, 250));
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        const r = await readApiJson(await fetch(`${API_URL}?${q}`));
+        if (r && r.found) {
+          if (!r.response.ok) throw new Error(r.response.error);
+          return r.response.data;
+        }
+      } catch (e2) { if (!e2.nonJson && !(e2 instanceof TypeError)) throw e2; }
+      // ยังไม่ได้ผล → วนส่งคำขอเดิมใหม่ทันที (ไม่ต้องรอนาน)
     }
   }
 }
@@ -2553,13 +2570,13 @@ async function doSearch(){
             <span>📦 ${p.name} <b style="color:#a9701a;font-weight:700;">[ชุด]</b></span>
             <b>฿${(Number(p.price)||0).toFixed(2)}</b>
           </div>`
-        : `<div class="suggest-item" onmouseenter="prefetchProductDetail('${p.code}')" onclick="openProductModal('${p.code}')">
+        : `<div class="suggest-item" onclick="openProductModal('${p.code}')">
             <span>${p.name}</span>
             <b>คงเหลือ ${p.stock || 0} ${p.unit || ''}</b>
           </div>`
     ).join('');
     const firstProduct = results.find(r => r.type !== 'bundle');
-    if (firstProduct && results.length <= 3) prefetchProductDetail(firstProduct.code); // ผลน้อย (เช่น ยิงบาร์โค้ด) → โหลดตัวแรกรอไว้เลย
+    if (firstProduct && results.length === 1) prefetchProductDetail(firstProduct.code); // เจอตัวเดียว (เช่น ยิงบาร์โค้ด) → โหลดรอไว้เลย
   }
   suggestList.classList.add('show');
 }
