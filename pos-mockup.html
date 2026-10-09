@@ -2292,6 +2292,7 @@ async function selectMember(id){
   if (quick) {
     currentMember = Object.assign({}, quick);
     redeemPointsAmount = 0;
+    repriceCartForLevel();
     renderMemberChip();
     renderPointsRedeemUI();
     document.getElementById('lblPatient').value = `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim();
@@ -2309,6 +2310,7 @@ async function selectMember(id){
   const keepRedeem = quick ? redeemPointsAmount : 0;
   currentMember = full;
   redeemPointsAmount = keepRedeem;
+  repriceCartForLevel();
   renderMemberChip();
   renderPointsRedeemUI();
   if (!quick) document.getElementById('lblPatient').value = `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim();
@@ -2317,6 +2319,7 @@ async function selectMember(id){
 function useGeneralCustomer(){
   currentMember = null;
   redeemPointsAmount = 0;
+  repriceCartForLevel();
   renderMemberChip();
   renderPointsRedeemUI();
   memberSearchInput.value = "";
@@ -2329,7 +2332,10 @@ function renderMemberChip(){
   if(currentMember){
     chip.classList.add('is-member');
     const fullName = `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim();
-    chip.innerHTML = `👤 ${fullName} (${(currentMember.points||0).toLocaleString()} แต้ม) <span class="change-link" onclick="useGeneralCustomer()">เปลี่ยน</span>`;
+    const lv = currentPriceLevel();
+    const lvName = lv > 1 ? ((priceLevels.find(l => l.level === lv) || {}).name || ('ราคา' + lv)) : '';
+    const lvBadge = lvName ? ` <span style="background:#fff3d6;color:#8a6d00;border:1px solid #f0cf7c;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700;">${escHtml(lvName)}</span>` : '';
+    chip.innerHTML = `👤 ${fullName} (${(currentMember.points||0).toLocaleString()} แต้ม)${lvBadge} <span class="change-link" onclick="useGeneralCustomer()">เปลี่ยน</span>`;
   } else {
     chip.classList.remove('is-member');
     chip.innerHTML = `👤 ลูกค้าทั่วไป`;
@@ -2474,7 +2480,8 @@ async function loadBillIntoCart(bill) {
     if (canAdd <= 0) { notes.push(`❌ ${it.name}: สต๊อกหมด (${u.label}) — ข้ามรายการนี้`); continue; }
     const qty = Math.min(it.qty, canAdd);
     if (qty < it.qty) notes.push(`⚠️ ${it.name}: บิลเดิม ${it.qty} ${u.label} แต่คงเหลือ ${canAdd} — ใส่ให้ ${qty} ${u.label}`);
-    if (Math.abs(u.price - it.price) > 0.001) notes.push(`💲 ${it.name}: ราคาเปลี่ยนจาก ${it.price.toFixed(2)} เป็น ${u.price.toFixed(2)} บาท/${u.label}`);
+    const levelPrice = priceFor(u);
+    if (Math.abs(levelPrice - it.price) > 0.001) notes.push(`💲 ${it.name}: ราคาเปลี่ยนจาก ${it.price.toFixed(2)} เป็น ${levelPrice.toFixed(2)} บาท/${u.label}`);
 
     const existing = cart.find(c => c.cartKey === cartKey);
     if (existing) {
@@ -2482,7 +2489,8 @@ async function loadBillIntoCart(bill) {
       if (firstAddedIndex === null) firstAddedIndex = cart.indexOf(existing);
     } else {
       cart.push({
-        cartKey, id: p.id, name: p.name, strength: p.strength, unit: u.label, price: u.price, qty,
+        cartKey, id: p.id, name: p.name, strength: p.strength, unit: u.label, price: levelPrice, qty,
+        basePrice: u.basePrice, levelPrices: u.levelPrices, priceManual: false,
         indication: p.indication, expiry: p.expiry, labelDefaults: p.labelDefaults || null,
         label: it.label || null, // วิธีใช้ยาเดิมจากบิลนั้น (ถ้ามี) — ฉลากจะขึ้นแบบเดิมให้เลย
       });
@@ -2757,6 +2765,46 @@ async function fetchProductDetail(code){
   return fetchProductDetailRaw(code);
 }
 
+// ---------- ระดับราคาสมาชิก (ราคา1-4) ----------
+// ราคา1 = ราคาขายปกติ / ราคา2-4 ตั้งต่อสินค้าในหน้าแก้ไขสินค้า (ว่าง = ใช้ราคา1) / ระดับของลูกค้าตั้งในข้อมูลลูกค้า
+const LV_CACHE_KEY = 'ppms_price_levels_v1';
+let priceLevels = (() => {
+  try { const c = JSON.parse(localStorage.getItem(LV_CACHE_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return [1, 2, 3, 4].map((n, i) => ({ level: n, name: ['ราคาปกติ', 'ลูกค้าประจำ', 'ลูกค้าส่ง', 'ราคาพิเศษ'][i] }));
+})();
+apiGet('getPriceLevels').then(l => {
+  priceLevels = l;
+  try { localStorage.setItem(LV_CACHE_KEY, JSON.stringify(l)); } catch (e) {}
+  renderMemberChip();
+}).catch(() => {});
+
+function levelNumber(v) {
+  const n = Number((String(v == null ? '' : v).match(/(\d+)/) || [])[1]) || 1;
+  return n >= 1 && n <= 4 ? n : 1;
+}
+function currentPriceLevel() { return currentMember ? levelNumber(currentMember.priceLevel) : 1; }
+function levelPricesOf(priceRow, basePrice) {
+  const g = k => (priceRow && Number(priceRow[k]) > 0) ? Number(priceRow[k]) : 0;
+  return [basePrice, g('ราคาขาย2'), g('ราคาขาย3'), g('ราคาขาย4')];
+}
+/** ราคาของหน่วยนี้ตามระดับลูกค้าปัจจุบัน (ระดับนั้นไม่ได้ตั้งราคาไว้ = ราคา1) */
+function priceFor(u, level) {
+  level = level || currentPriceLevel();
+  const lp = (u && u.levelPrices) || [];
+  if (level > 1 && lp[level - 1] > 0) return lp[level - 1];
+  return u ? (u.basePrice != null ? u.basePrice : u.price) : 0;
+}
+/** เปลี่ยนสมาชิก/ระดับ → ปรับราคาสินค้าในตะกร้าตามระดับใหม่ (ยกเว้นรายการที่แก้ราคาเองไว้) */
+function repriceCartForLevel() {
+  let changed = false;
+  cart.forEach(it => {
+    if (it.priceManual || !it.levelPrices) return;
+    const np = priceFor({ levelPrices: it.levelPrices, basePrice: it.basePrice });
+    if (Math.abs(np - it.price) > 0.0001) { it.price = np; changed = true; }
+  });
+  if (changed) renderCart();
+}
+
 async function fetchProductDetailRaw(code){
   if (productDetailCache[code]) return productDetailCache[code];
 
@@ -2774,9 +2822,12 @@ async function fetchProductDetailRaw(code){
     const multiplier = Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1;
     const priceRow = (detail.prices || []).find(p => p['หน่วย'] === u['หน่วย(ใหญ่)']);
     const cost = Math.round(costPerSmallUnit * multiplier * 100) / 100;
+    const basePrice = priceRow ? (Number(priceRow['ราคาขาย']) || 0) : cost;
     return {
       label: u['หน่วย(ใหญ่)'],
-      price: priceRow ? (Number(priceRow['ราคาขาย']) || 0) : cost, // ยังไม่เคยตั้งราคาขาย → ใช้ต้นทุนไปพลางก่อน ต้องไปตั้งราคาจริงทีหลัง
+      basePrice: basePrice,
+      levelPrices: levelPricesOf(priceRow, basePrice),
+      price: basePrice, // ยังไม่เคยตั้งราคาขาย → ใช้ต้นทุนไปพลางก่อน ต้องไปตั้งราคาจริงทีหลัง (ราคาจริงตามระดับสมาชิก ดู priceFor)
       cost: cost,
       multiplier: multiplier,
       priceIsEstimate: !priceRow, // true = ยังไม่มีราคาขายจริงในชีต ใช้ต้นทุนแทนไปก่อน ต้องระวังตอนขาย
@@ -2788,9 +2839,12 @@ async function fetchProductDetailRaw(code){
   // จึงต้องเช็คและเติมหน่วยเล็กสุดเข้าไปเอง ถ้ายังไม่มีอยู่ในลิสต์ กันไม่ให้ค่าเริ่มต้นเป็นหน่วยใหญ่ที่ไม่ได้ตั้งใจขาย
   if (!units.some(u => u.label === smallUnitLabel)) {
     const priceRow = (detail.prices || []).find(p => p['หน่วย'] === smallUnitLabel);
+    const basePrice = priceRow ? (Number(priceRow['ราคาขาย']) || 0) : costPerSmallUnit;
     units.unshift({
       label: smallUnitLabel,
-      price: priceRow ? (Number(priceRow['ราคาขาย']) || 0) : costPerSmallUnit,
+      basePrice: basePrice,
+      levelPrices: levelPricesOf(priceRow, basePrice),
+      price: basePrice,
       cost: costPerSmallUnit,
       multiplier: 1,
       priceIsEstimate: !priceRow,
@@ -2802,7 +2856,7 @@ async function fetchProductDetailRaw(code){
   units.sort((a, b) => (a.multiplier || 1) - (b.multiplier || 1));
 
   if (units.length === 0) {
-    units = [{ label: smallUnitLabel, price: costPerSmallUnit, cost: costPerSmallUnit, multiplier: 1, priceIsEstimate: true, stock: baseStock }];
+    units = [{ label: smallUnitLabel, basePrice: costPerSmallUnit, levelPrices: [costPerSmallUnit, 0, 0, 0], price: costPerSmallUnit, cost: costPerSmallUnit, multiplier: 1, priceIsEstimate: true, stock: baseStock }];
   }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -2869,6 +2923,7 @@ async function openProductModal(code){
   document.querySelector('#productModalOverlay .modal-confirm-btn').disabled = false;
 
   modalProduct = p;
+  p.units.forEach(u => { u.price = priceFor(u); }); // ราคาตามระดับสมาชิกที่เลือกอยู่
   modalUnitIndex = 0;
   modalQty = 1;
   editingCartIndex = null;
@@ -2894,6 +2949,7 @@ async function editCartItem(i){
   }
 
   modalProduct = p;
+  p.units.forEach(u => { u.price = priceFor(u); });
   modalQty = line.qty;
   editingCartIndex = i;
 
@@ -2995,10 +3051,14 @@ function confirmAddToCart(){
       strength: modalProduct.strength,
       unit: u.label,
       price: u.price,
+      basePrice: u.basePrice,
+      levelPrices: u.levelPrices,
+      priceManual: Math.abs(u.price - priceFor(u)) > 0.0001, // แก้ราคาเองในหน้าต่างนี้ → ไม่ปรับตามระดับสมาชิกทีหลัง
       qty: modalQty,
       indication: modalProduct.indication,
       expiry: modalProduct.expiry,
       labelDefaults: modalProduct.labelDefaults || null,
+      label: (cart[editingCartIndex] && cart[editingCartIndex].unit === u.label) ? cart[editingCartIndex].label : undefined,
     };
     activeCartIndex = editingCartIndex;
   } else {
@@ -3014,6 +3074,9 @@ function confirmAddToCart(){
         strength: modalProduct.strength,
         unit: u.label,
         price: u.price,
+        basePrice: u.basePrice,
+        levelPrices: u.levelPrices,
+        priceManual: Math.abs(u.price - priceFor(u)) > 0.0001, // แก้ราคาเองในหน้าต่างนี้ → ไม่ปรับตามระดับสมาชิกทีหลัง
         qty: modalQty,
         indication: modalProduct.indication,
         expiry: modalProduct.expiry,

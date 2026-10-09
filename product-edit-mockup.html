@@ -631,6 +631,9 @@ async function loadProductByCode(code){
     branch: p['สาขา'] || '-',
     unit: p['หน่วย'] || '-',
     price: Number(p['ราคาขาย']) || 0,
+    price2: Number(p['ราคาขาย2']) || '', // ว่าง = ใช้ราคา1
+    price3: Number(p['ราคาขาย3']) || '',
+    price4: Number(p['ราคาขาย4']) || '',
     lastSold: p['ณ วันที่ขายล่าสุด'] || '',
   }));
 
@@ -964,12 +967,32 @@ function generateBarcodeForRow(i) {
   switchTab('barcode');
 }
 
+// ชื่อระดับราคา 4 ระดับ (แก้ได้ที่หน้า ระดับสมาชิก)
+const LV_CACHE_KEY = 'ppms_price_levels_v1';
+let priceLevels = (() => {
+  try { const c = JSON.parse(localStorage.getItem(LV_CACHE_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return [1, 2, 3, 4].map((n, i) => ({ level: n, name: ['ราคาปกติ', 'ลูกค้าประจำ', 'ลูกค้าส่ง', 'ราคาพิเศษ'][i] }));
+})();
+apiGet('getPriceLevels').then(l => {
+  priceLevels = l;
+  try { localStorage.setItem(LV_CACHE_KEY, JSON.stringify(l)); } catch (e) {}
+  const active = document.querySelector('.tab-item.active');
+  if (active && active.dataset.tab === 'price') switchTab('price');
+}).catch(() => {});
+
+function escPrice_(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
 function renderPriceTab() {
+  const lvName = n => escPrice_((priceLevels.find(l => l.level === n) || {}).name || '');
   return `
     <h3>ราคา</h3>
     ${priceData.length === 0 ? '<div class="empty-note">ยังไม่มีข้อมูลราคาขายของสินค้านี้ในระบบ</div>' : `
-    <table class="data-table">
-      <thead><tr><th>สาขา</th><th>หน่วย</th><th>ราคาขาย</th><th>ณ วันที่ขายล่าสุด</th><th></th></tr></thead>
+    <table class="data-table price-level-table">
+      <thead><tr>
+        <th>สาขา</th><th>หน่วย</th>
+        ${[1,2,3,4].map(n => `<th>ราคา${n}<div style="font-weight:400;font-size:11.5px;color:#8fa198;">${lvName(n)}</div></th>`).join('')}
+        <th>ณ วันที่ขายล่าสุด</th><th></th>
+      </tr></thead>
       <tbody>
         ${priceData.map((row,i) => `
           <tr>
@@ -979,7 +1002,8 @@ function renderPriceTab() {
                 ? `<select onchange="priceData[${i}].unit=this.value">${unitData.map(u=>`<option ${u.unit===row.unit?'selected':''}>${u.unit}</option>`).join("")}</select>`
                 : row.unit}
             </td>
-            <td><input type="number" value="${row.price}" step="0.01" oninput="priceData[${i}].price=Number(this.value)||0"></td>
+            <td><input type="number" value="${row.price}" step="0.01" min="0" oninput="priceData[${i}].price=Number(this.value)||0"></td>
+            ${[2,3,4].map(n => `<td><input type="number" value="${row['price'+n] || ''}" step="0.01" min="0" placeholder="= ราคา1" oninput="priceData[${i}].price${n}=Number(this.value)||''"></td>`).join('')}
             <td>${row.lastSold || '-'}</td>
             <td><button class="del-icon-btn" onclick="removePriceRow(${i})">ลบ</button></td>
           </tr>
@@ -987,14 +1011,14 @@ function renderPriceTab() {
       </tbody>
     </table>
     `}
-    <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — เพิ่มแถวราคาใหม่จะเลือกหน่วยได้จากหน่วยที่สร้างไว้ในแท็บ "หน่วย" เท่านั้น (ไปเพิ่มหน่วยที่แท็บนั้นก่อน ถ้ายังไม่มีหน่วยที่ต้องการ) กด "บันทึก" มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง</div>
+    <div class="connected-hint" style="margin-top:14px;">💡 ราคา1 = ราคาขายปกติ / ราคา2–4 ใช้กับสมาชิกตามระดับที่ตั้งไว้ในข้อมูลลูกค้า — <b>เว้นว่าง = ขายราคา1</b> (แก้ชื่อระดับได้ที่ หลังบ้าน → ระบบสมาชิก → ระดับสมาชิก) · กด "บันทึก" มุมล่างขวาเพื่อบันทึกเข้าระบบ</div>
     <button class="add-row-btn" onclick="addPriceRow()" ${unitData.length === 0 ? 'disabled title="ต้องมีหน่วยอย่างน้อย 1 หน่วยก่อน (ไปเพิ่มที่แท็บ หน่วย)"' : ''}>+ เพิ่ม</button>
   `;
 }
 
 function addPriceRow() {
   if (unitData.length === 0) { alert('กรุณาเพิ่มหน่วยในแท็บ "หน่วย" ก่อน ถึงจะตั้งราคาได้'); return; }
-  priceData.push({ branch: 'สำนักงานใหญ่', unit: unitData[0].unit, price: 0, lastSold: '' });
+  priceData.push({ branch: 'สำนักงานใหญ่', unit: unitData[0].unit, price: 0, price2: '', price3: '', price4: '', lastSold: '' });
   switchTab('price');
 }
 

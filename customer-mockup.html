@@ -380,7 +380,7 @@ function blankCustomer() {
     citizenId: "", nationality: "Thai", birthdate: "", gender: "", blood: "",
     weight: "", height: "",
     address: { place:"", no:"", moo:"", road:"", tambon:"", amphoe:"", province:"", zip:"" },
-    priceLevel: "ราคา1 (ราคาปกติ)",
+    priceLevel: "ราคา1",
     drugInfo: { allergies:"", chronic:[], regularMeds:"" },
     purchaseHistory: { month:0, total:0, recent:[] },
     note: "",
@@ -529,6 +529,22 @@ document.getElementById('subtabMenu').addEventListener('click', e => {
   if (item) switchSubtab(item.dataset.tab);
 });
 
+// ระดับราคา 4 ระดับ (ชื่อแก้ได้ที่หน้า ระดับสมาชิก) — ใช้ชื่อที่จำไว้ในเครื่องก่อน แล้วโหลดล่าสุดตามหลัง
+const LV_CACHE_KEY = 'ppms_price_levels_v1';
+let priceLevels = (() => {
+  try { const c = JSON.parse(localStorage.getItem(LV_CACHE_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return [1, 2, 3, 4].map((n, i) => ({ level: n, name: ['ราคาปกติ', 'ลูกค้าประจำ', 'ลูกค้าส่ง', 'ราคาพิเศษ'][i] }));
+})();
+apiGet('getPriceLevels').then(l => {
+  priceLevels = l;
+  try { localStorage.setItem(LV_CACHE_KEY, JSON.stringify(l)); } catch (e) {}
+  if (currentSubtab === 'price' && document.getElementById('fPriceLevel')) {
+    const v = document.getElementById('fPriceLevel').value;
+    renderSubtab(!currentCustomer);
+    document.getElementById('fPriceLevel').value = v;
+  }
+}).catch(() => {});
+
 function escAttr_(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 function renderSubtab(blank) {
@@ -553,22 +569,18 @@ function renderSubtab(blank) {
       </div>
     `;
   } else if (currentSubtab === "price") {
-    const lvl = c ? c.priceLevel : "ราคา1 (ราคาปกติ)";
+    const lvlNo = Number((String(c ? c.priceLevel : '').match(/(\d+)/) || [])[1]) || 1;
     area.innerHTML = `
       <h4>ราคาขาย</h4>
       <div class="field-row">
-        <div class="field" style="max-width:280px;">
+        <div class="field" style="max-width:320px;">
           <label>ระดับราคาที่ใช้กับลูกค้ารายนี้</label>
           <select id="fPriceLevel">
-            <option ${lvl.startsWith('ราคา1')?'selected':''}>ราคา1 (ราคาปกติ)</option>
-            <option ${lvl.startsWith('ราคา2')?'selected':''}>ราคา2 (ลูกค้าประจำ)</option>
-            <option ${lvl.startsWith('ราคา3')?'selected':''}>ราคา3 (ลูกค้าส่ง)</option>
-            <option ${lvl.startsWith('ราคา4')?'selected':''}>ราคา4</option>
-            <option ${lvl.startsWith('ราคา5')?'selected':''}>ราคา5</option>
+            ${priceLevels.map(l => `<option value="ราคา${l.level}" ${l.level === lvlNo ? 'selected' : ''}>ราคา${l.level} (${escAttr_(l.name)})</option>`).join('')}
           </select>
         </div>
       </div>
-      <div class="kv-hint">ระดับราคานี้จะถูกใช้อัตโนมัติเวลาลูกค้ารายนี้ซื้อสินค้าที่หน้าขาย (ตรงกับตาราง "ราคาขาย" ที่ตั้งไว้ในหน้าแก้ไขสินค้า)</div>
+      <div class="kv-hint">ราคาระดับนี้จะใช้อัตโนมัติเมื่อเลือกลูกค้ารายนี้ที่หน้าขาย (สินค้าที่ไม่ได้ตั้งราคาระดับนี้ไว้ จะขายราคา1) — แก้ชื่อระดับได้ที่ <a href="member-level-mockup.html" target="_blank">ระดับสมาชิก</a></div>
     `;
   } else if (currentSubtab === "drug") {
     const d = c ? c.drugInfo : { allergies:"", chronic:[], regularMeds:"" };
