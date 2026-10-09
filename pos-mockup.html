@@ -3505,7 +3505,7 @@ async function confirmPayment(){
     saleResult = await apiPost('createSale', {
       sale: {
         saleId, branch: 'สำนักงานใหญ่', userId,
-        customer: patientName || (currentMember ? `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim() : ''),
+        customer: patientName || (currentMember ? `${currentMember.prefix||''}${currentMember.first} ${currentMember.last}`.trim() : '') || 'ลูกค้าทั่วไป ไม่ระบุชื่อ',
         customerId: currentMember ? currentMember.id : null,
         redeemPoints: redeemPointsAmount || 0,
         subtotal, discount, tax, total,
