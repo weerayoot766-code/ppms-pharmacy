@@ -256,7 +256,7 @@
         <div class="field-row">
           <div class="field"><label>เลขที่บัตรประจำตัวประชาชน</label><input type="text" id="fCitizenId" placeholder="เลขที่บัตรประชาชน / Passport"></div>
           <div class="field" style="max-width:130px;"><label>สัญชาติ</label><select id="fNationality"><option>Thai</option><option>Other</option></select></div>
-          <div class="field"><label>วันเกิด <span class="required">*</span></label><input type="text" id="fBirthdate" placeholder="วันเกิด เช่น 1983-01-01" onchange="calcAge()"></div>
+          <div class="field"><label>วันเกิด <span class="required">*</span></label><input type="text" id="fBirthdate" placeholder="วว-ดด-ปปปป (พ.ศ.) เช่น 24-05-2522" inputmode="numeric" maxlength="10" oninput="formatBirthInput(this)" onchange="calcAge()"></div>
           <div class="field" style="max-width:100px;"><label>อายุ</label><input type="text" id="fAge" disabled></div>
           <div class="field" style="max-width:140px;"><label>เพศ <span class="required">*</span></label><select id="fGender"><option>-- เลือกเพศ --</option><option>ชาย</option><option>หญิง</option><option>อื่นๆ</option></select></div>
           <div class="field" style="max-width:140px;"><label>หมู่เลือด</label><select id="fBloodType"><option>-- เลือกหมู่เลือด --</option><option>A</option><option>B</option><option>AB</option><option>O</option></select></div>
@@ -427,15 +427,49 @@ function doSearch() {
   renderList();
 }
 
+/**
+ * วันเกิด: หน้าจอใช้ "วว-ดด-ปปปป (พ.ศ.)" เช่น 24-05-2522 / ในชีตเก็บเป็น ค.ศ. yyyy-mm-dd เหมือนเดิม (ไม่กระทบข้อมูลเก่า)
+ * รับได้หลายแบบ: 24-05-2522, 24/05/2522, 24052522, หรือปี ค.ศ. (1979) ก็แปลงให้
+ */
+function parseBirthInput_(val) {
+  val = String(val || '').trim();
+  if (!val) return null;
+  let d, m, y, mt;
+  if ((mt = val.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+  else if ((mt = val.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/))) { d = +mt[1]; m = +mt[2]; y = +mt[3]; }
+  else if ((mt = val.match(/^(\d{2})(\d{2})(\d{4})$/))) { d = +mt[1]; m = +mt[2]; y = +mt[3]; }
+  else return null;
+  if (y > 2400) y -= 543; // พ.ศ. → ค.ศ.
+  const dt = new Date(y, m - 1, d);
+  if (isNaN(dt) || dt.getDate() !== d || dt.getMonth() !== m - 1) return null;
+  return { y, m, d, iso: `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}` };
+}
+/** ค่าจากชีต (ค.ศ. yyyy-mm-dd) → แสดงเป็น วว-ดด-ปปปป พ.ศ. */
+function birthToDisplay_(val) {
+  const p = parseBirthInput_(val);
+  if (!p) return val || '';
+  return `${String(p.d).padStart(2, '0')}-${String(p.m).padStart(2, '0')}-${p.y + 543}`;
+}
+/** พิมพ์ตัวเลขล้วน ใส่ขีดให้อัตโนมัติ: 24052522 → 24-05-2522 */
+function formatBirthInput(el) {
+  const digits = el.value.replace(/\D/g, '').slice(0, 8);
+  if (/^\d{4}-/.test(el.value)) return; // พิมพ์แบบ ค.ศ. yyyy-mm-dd มาเอง ไม่ยุ่ง
+  let out = digits.slice(0, 2);
+  if (digits.length > 2) out += '-' + digits.slice(2, 4);
+  if (digits.length > 4) out += '-' + digits.slice(4);
+  el.value = out;
+  if (digits.length === 8) calcAge();
+}
 function calcAge() {
-  const val = document.getElementById('fBirthdate').value.trim();
-  const d = new Date(val);
-  if (isNaN(d.getTime())) { document.getElementById('fAge').value = ""; return; }
+  const el = document.getElementById('fBirthdate');
+  const p = parseBirthInput_(el.value);
+  if (!p) { document.getElementById('fAge').value = ""; return; }
+  el.value = birthToDisplay_(p.iso); // จัดรูปให้เป็น วว-ดด-ปปปป พ.ศ. เสมอ
   const today = new Date();
-  let age = today.getFullYear() - d.getFullYear();
-  const m = today.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
-  document.getElementById('fAge').value = age + " ปี";
+  let age = today.getFullYear() - p.y;
+  const m = today.getMonth() + 1 - p.m;
+  if (m < 0 || (m === 0 && today.getDate() < p.d)) age--;
+  document.getElementById('fAge').value = (age >= 0 && age < 150) ? age + " ปี" : "";
 }
 
 async function loadCustomer(id) {
@@ -461,7 +495,7 @@ async function loadCustomer(id) {
   document.getElementById('fPhone').value = c.phone;
   document.getElementById('fCitizenId').value = c.citizenId;
   document.getElementById('fNationality').value = c.nationality;
-  document.getElementById('fBirthdate').value = c.birthdate;
+  document.getElementById('fBirthdate').value = birthToDisplay_(c.birthdate);
   document.getElementById('fGender').value = c.gender;
   document.getElementById('fBloodType').value = c.blood;
   calcAge();
@@ -790,6 +824,8 @@ async function saveCustomer() {
 
   const first = document.getElementById('fFirstName').value.trim();
   if (!first) { alert('กรุณากรอกชื่อลูกค้าอย่างน้อยชื่อจริง'); return; }
+  const birthRaw = document.getElementById('fBirthdate').value.trim();
+  if (birthRaw && !parseBirthInput_(birthRaw)) { alert('วันเกิดไม่ถูกต้อง กรุณากรอกแบบ วว-ดด-ปปปป (พ.ศ.) เช่น 24-05-2522'); return; }
 
   const payload = Object.assign({}, currentCustomer, {
     prefix: document.getElementById('fPrefix').value,
@@ -802,7 +838,7 @@ async function saveCustomer() {
     phone: document.getElementById('fPhone').value.trim(),
     citizenId: document.getElementById('fCitizenId').value.trim(),
     nationality: document.getElementById('fNationality').value.trim(),
-    birthdate: document.getElementById('fBirthdate').value,
+    birthdate: birthRaw ? parseBirthInput_(birthRaw).iso : '',
     gender: document.getElementById('fGender').value,
     blood: document.getElementById('fBloodType').value,
   });
