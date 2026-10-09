@@ -379,7 +379,7 @@ function blankCustomer() {
     phone: "",
     citizenId: "", nationality: "Thai", birthdate: "", gender: "", blood: "",
     weight: "", height: "",
-    address: { no:"", moo:"", road:"", tambon:"", amphoe:"", province:"", zip:"" },
+    address: { place:"", no:"", moo:"", road:"", tambon:"", amphoe:"", province:"", zip:"" },
     priceLevel: "ราคา1 (ราคาปกติ)",
     drugInfo: { allergies:"", chronic:[], regularMeds:"" },
     purchaseHistory: { month:0, total:0, recent:[] },
@@ -529,18 +529,21 @@ document.getElementById('subtabMenu').addEventListener('click', e => {
   if (item) switchSubtab(item.dataset.tab);
 });
 
+function escAttr_(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
 function renderSubtab(blank) {
   const c = blank ? null : currentCustomer;
   const area = document.getElementById('subtabContent');
 
   if (currentSubtab === "address") {
-    const a = c ? c.address : { no:"", moo:"", road:"", tambon:"", amphoe:"", province:"", zip:"" };
+    const a = c ? c.address : { place:"", no:"", moo:"", road:"", tambon:"", amphoe:"", province:"", zip:"" };
     area.innerHTML = `
       <h4>ที่อยู่</h4>
       <div class="field-row">
-        <div class="field" style="max-width:120px;"><label>บ้านเลขที่</label><input type="text" id="fAddrNo" value="${a.no}"></div>
-        <div class="field" style="max-width:100px;"><label>หมู่</label><input type="text" id="fAddrMoo" value="${a.moo}"></div>
-        <div class="field"><label>ถนน</label><input type="text" id="fAddrRoad" value="${a.road}"></div>
+        <div class="field" style="flex:2 1 0;"><label>ชื่อร้าน/บริษัท/สถานที่</label><input type="text" id="fAddrPlace" value="${escAttr_(a.place)}" placeholder="เช่น ร้านปรุงยาเภสัช"></div>
+        <div class="field" style="max-width:120px;"><label>บ้านเลขที่</label><input type="text" id="fAddrNo" value="${escAttr_(a.no)}"></div>
+        <div class="field" style="max-width:100px;"><label>หมู่</label><input type="text" id="fAddrMoo" value="${escAttr_(a.moo)}"></div>
+        <div class="field" style="flex:1 1 0;"><label>ถนน</label><input type="text" id="fAddrRoad" value="${escAttr_(a.road)}"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>ตำบล</label><input type="text" id="fAddrTambon" value="${a.tambon}"></div>
@@ -789,6 +792,7 @@ function syncSubtabToState() {
     currentCustomer.address = {
       no: document.getElementById('fAddrNo').value,
       moo: document.getElementById('fAddrMoo').value,
+      place: document.getElementById('fAddrPlace').value.trim(),
       road: document.getElementById('fAddrRoad').value,
       tambon: document.getElementById('fAddrTambon').value,
       amphoe: document.getElementById('fAddrAmphoe').value,
