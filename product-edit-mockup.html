@@ -989,22 +989,22 @@ function renderPriceTab() {
     ${priceData.length === 0 ? '<div class="empty-note">ยังไม่มีข้อมูลราคาขายของสินค้านี้ในระบบ</div>' : `
     <table class="data-table price-level-table">
       <thead><tr>
-        <th>สาขา</th><th>หน่วย</th>
+        <th>สาขา</th><th style="min-width:130px;">หน่วย</th>
         ${[1,2,3,4].map(n => `<th>ราคา${n}<div style="font-weight:400;font-size:11.5px;color:#8fa198;">${lvName(n)}</div></th>`).join('')}
         <th>ณ วันที่ขายล่าสุด</th><th></th>
       </tr></thead>
       <tbody>
         ${priceData.map((row,i) => `
           <tr>
-            <td>${row.branch}</td>
+            <td style="white-space:nowrap;">${row.branch}</td>
             <td>
               ${unitData.length
-                ? `<select onchange="priceData[${i}].unit=this.value">${unitData.map(u=>`<option ${u.unit===row.unit?'selected':''}>${u.unit}</option>`).join("")}</select>`
+                ? `<select style="min-width:120px;" onchange="priceData[${i}].unit=this.value">${unitData.map(u=>`<option ${u.unit===row.unit?'selected':''}>${u.unit}</option>`).join("")}</select>`
                 : row.unit}
             </td>
             <td><input type="number" value="${row.price}" step="0.01" min="0" oninput="priceData[${i}].price=Number(this.value)||0"></td>
             ${[2,3,4].map(n => `<td><input type="number" value="${row['price'+n] || ''}" step="0.01" min="0" placeholder="= ราคา1" oninput="priceData[${i}].price${n}=Number(this.value)||''"></td>`).join('')}
-            <td>${row.lastSold || '-'}</td>
+            <td style="white-space:nowrap;">${row.lastSold ? String(row.lastSold).slice(0, 10) : '-'}</td>
             <td><button class="del-icon-btn" onclick="removePriceRow(${i})">ลบ</button></td>
           </tr>
         `).join("")}
