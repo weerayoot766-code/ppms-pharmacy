@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - ปรับสต๊อกสินค้า</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 950px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #eef2ef;
+    flex-wrap: wrap;
+  }
+  .panel-header h2 {
+    font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    border: 1px solid #cfe0d3;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .search-box input {
+    flex: 1; border: none; padding: 10px 12px; font-size: 14px; font-family: inherit;
+  }
+  .search-box button {
+    background: #eef6ee; border: none; padding: 0 16px; cursor: pointer; color: #2e8b4f; font-size: 15px;
+  }
+  .add-btn {
+    background: #2e8b4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-btn:hover { background: #257a43; }
+
+  .result-count { padding: 12px 22px 0; font-size: 12.5px; color: #6b7a70; }
+
+  table.group-table { width: 100%; border-collapse: collapse; }
+  table.group-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 10px 14px; white-space: nowrap;
+  }
+  table.group-table td {
+    padding: 12px 14px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: middle;
+  }
+  table.group-table tr:hover td { background: #f6faf7; }
+  .group-name { font-weight: 600; color: #24312a; }
+  .count-pill {
+    display: inline-block; background: #eef6ee; color: #1e6b3c; font-weight: 600;
+    font-size: 12.5px; padding: 3px 10px; border-radius: 20px;
+  }
+
+  .action-btns { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid #cfe0d3; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: #4a5a4f;
+  }
+  .icon-btn:hover { background: #eef6ee; border-color: #2e8b4f; color: #1e6b3c; }
+  .icon-btn.danger:hover { background: #fdecea; border-color: #f2544a; color: #d9433a; }
+
+  .empty-state { padding: 40px; text-align: center; color: #8fa198; font-size: 13.5px; }
+
+  /* ---------- Popup เพิ่มกลุ่มสินค้า ---------- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(20,40,28,.45);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    background: #fff; border-radius: 14px; width: 100%; max-width: 380px;
+    box-shadow: 0 12px 34px rgba(20,60,35,.25);
+  }
+  .modal-header {
+    background: #eaf7ec; border-bottom: 1px solid #d3ecd8; border-radius: 14px 14px 0 0;
+    padding: 16px 18px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: #1e6b3c; }
+  .modal-close { background: none; border: none; font-size: 16px; color: #6b7a70; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; }
+  .modal-close:hover { background: #dcefe0; color: #2c3a32; }
+  .modal-body { padding: 18px; }
+  .modal-body label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 7px; }
+  .modal-body input {
+    width: 100%; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  .modal-confirm-btn {
+    width: 100%; margin-top: 18px; background: #2e8b4f; color: #fff; border: none;
+    border-radius: 10px; padding: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+  }
+  .modal-confirm-btn:hover { background: #257a43; }
+  .content { max-width: 1150px; }
+  .panel-body { padding: 16px 20px 22px; }
+  .search-wrap { position: relative; }
+  .search-wrap input { width: 100%; padding: 12px 14px; border: 1.5px solid #4a90d9; border-radius: 10px; font-size: 15.5px; font-family: inherit; }
+  .search-wrap input:focus { outline: none; box-shadow: 0 0 0 3px rgba(74,144,217,.15); }
+  .sug { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #d7e4da; border-radius: 10px; box-shadow: 0 8px 24px rgba(20,60,35,.14); max-height: 360px; overflow-y: auto; z-index: 20; display: none; }
+  .sug.show { display: block; }
+  .sug-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f4f1; display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
+  .sug-item:hover, .sug-item.hl { background: #eef7f0; }
+  .sug-item small { color: #8fa198; }
+  .prod-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 18px 0 4px; }
+  .prod-head h3 { margin: 0; font-size: 19px; color: #1e6b3c; }
+  .prod-meta { font-size: 13px; color: #6b7a70; }
+  .sec-title { font-size: 15px; font-weight: 700; color: #24312a; margin: 22px 0 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sec-title .sub { font-weight: 400; font-size: 12.5px; color: #8fa198; }
+  table.t { width: 100%; border-collapse: collapse; }
+  table.t th { text-align: left; font-size: 12.5px; color: #5b6b60; border-bottom: 2px solid #2e8b4f; padding: 8px 6px; font-weight: 600; white-space: nowrap; }
+  table.t td { padding: 8px 6px; border-bottom: 1px solid #eef2ef; font-size: 14px; vertical-align: middle; }
+  table.t input, table.t select, .f input, .f select { width: 100%; padding: 8px 10px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 14.5px; font-family: inherit; background: #fff; }
+  table.t input:focus, .f input:focus, .f select:focus { outline: none; border-color: #2e8b4f; box-shadow: 0 0 0 3px rgba(46,139,79,.12); }
+  table.t input.changed { border-color: #e0a800; background: #fffbea; }
+  .num { text-align: right; }
+  .old-qty { font-weight: 700; color: #24312a; white-space: nowrap; }
+  .diff { font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .diff.up { color: #1e7a3c; } .diff.down { color: #c0392b; }
+  .eq { font-size: 11.5px; color: #8fa198; margin-top: 2px; white-space: nowrap; }
+  .badge-exp { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #fdecea; color: #c0392b; margin-top: 3px; }
+  .badge-new { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #e4f6e8; color: #1e6b3c; }
+  .btn-light { background: #f3f8f4; border: 1px dashed #9cc9a8; color: #1e6b3c; padding: 9px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 10px; }
+  .btn-light:hover { background: #e6f2e9; }
+  .link-btn { background: none; border: none; color: #4a90d9; cursor: pointer; font-size: 12.5px; font-family: inherit; padding: 0; }
+  .del-x { background: #fdecea; color: #c0392b; border: none; border-radius: 6px; padding: 6px 9px; cursor: pointer; font-weight: 700; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .f label { display: block; font-size: 12.5px; color: #5b6b60; font-weight: 600; margin-bottom: 4px; }
+  .totals { margin-top: 10px; font-size: 13.5px; color: #4a5a4f; display: flex; gap: 18px; flex-wrap: wrap; }
+  .totals b { color: #1e6b3c; }
+  .actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+  .save-btn { background: #2e8b4f; color: #fff; border: none; border-radius: 10px; padding: 12px 26px; font-size: 15.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .save-btn:hover { background: #257a43; }
+  .save-btn:disabled { opacity: .55; cursor: default; }
+  .status { font-size: 13px; color: #6b7a70; }
+  .empty { padding: 30px 10px; text-align: center; color: #8fa198; font-size: 14px; }
+  .hint { font-size: 12.5px; color: #6b7a70; line-height: 1.7; background: #f6faf6; border: 1px solid #e1eee3; border-radius: 10px; padding: 10px 12px; margin-top: 14px; }
+  @media (max-width: 760px) {
+    .panel-body { padding: 12px; }
+    .content { padding: 12px 8px 40px; }
+    table.t thead { display: none; }
+    table.t, table.t tbody { display: block; }
+    table.t tr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; padding: 10px 0; border-bottom: 1px solid #e3ece5; }
+    table.t td { border: none; padding: 0; }
+    table.t td[data-l]::before { content: attr(data-l); display: block; font-size: 11.5px; color: #8fa198; margin-bottom: 2px; }
+    .search-wrap input, table.t input, .f input, .f select { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> คลังสินค้า <span class="sep">/</span> <b>ปรับสต๊อก</b>
+</div>
+
+<div class="content">
+  <div class="panel">
+    <div class="panel-header"><h2>📦 ปรับสต๊อกสินค้า</h2></div>
+
+    <div class="panel-body">
+    <div class="search-wrap">
+      <input id="q" placeholder="ค้นหายา: ชื่อ / รหัส / ยิงบาร์โค้ด..." autocomplete="off">
+      <div class="sug" id="sug"></div>
+    </div>
+
+    <div id="area"><div class="empty">เลือกรายการยาด้านบน เพื่อดูจำนวนคงเหลือและปรับสต๊อก / ราคาทุน / ราคาขาย</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+/**
+ * ดึงข้อมูล (GET) — แนบรหัสคำขอ (requestId) ไปด้วย
+ * บางครั้งสคริปต์ทำงานเสร็จแล้ว แต่ตอนรับผล Google ตอบ 404 (script.googleusercontent.com) แทนผลลัพธ์
+ * ถ้าเจอ: ถามผลจริงด้วยรหัสเดิมก่อน (เร็ว) ถ้ายังไม่ได้ค่อยส่งใหม่ด้วยรหัสเดิม — หลังบ้านจำผลไว้ จึงตอบได้ทันทีไม่ต้องทำงานซ้ำ
+ */
+async function apiGet(action, params = {}) {
+  const requestId = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const query = new URLSearchParams({ action, ...params, requestId }).toString();
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(`${API_URL}?${query}`);
+      return await readApiJson(res);
+    } catch (err) {
+      const transient = err.nonJson || err instanceof TypeError;
+      if (!transient || attempt >= 4) throw err;
+      console.warn('[PPMS] Google ตอบกลับผิดพลาด (' + action + ') กำลังกู้คืนครั้งที่ ' + attempt);
+      await new Promise(r => setTimeout(r, 250));
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        const r = await readApiJson(await fetch(`${API_URL}?${q}`));
+        if (r && r.found) {
+          if (!r.response.ok) throw new Error(r.response.error);
+          return r.response.data;
+        }
+      } catch (e2) { if (!e2.nonJson && !(e2 instanceof TypeError)) throw e2; }
+      // ยังไม่ได้ผล → วนส่งคำขอเดิมใหม่ทันที (ไม่ต้องรอนาน)
+    }
+  }
+}
+
+
+/**
+ * อ่านผลตอบกลับจาก Apps Script อย่างปลอดภัย
+ * บางครั้ง Google ตอบกลับเป็นหน้า HTML (<!DOCTYPE ...) แทน JSON ทั้งที่สคริปต์ทำงานเสร็จไปแล้ว
+ * ถ้าเจอแบบนั้นจะโยน error ที่มี flag nonJson = true ให้ผู้เรียกตัดสินใจเองว่าจะลองใหม่/ตรวจสอบซ้ำอย่างไร
+ */
+async function readApiJson(res) {
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    const err = new Error('เซิร์ฟเวอร์ Google ตอบกลับผิดรูปแบบชั่วคราว (ไม่ใช่ข้อมูล JSON)');
+    err.nonJson = true;
+    throw err;
+  }
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+/**
+ * บันทึกข้อมูล (POST) — แนบรหัสคำขอ (requestId) ไปด้วยทุกครั้ง
+ * ถ้า Google ตอบกลับเป็นหน้า HTML (ทั้งที่หลังบ้านบันทึกสำเร็จแล้ว) จะไปถามผลจริงด้วยรหัสนั้นผ่าน GET แทน
+ * หลังบ้านจำผลของรหัสนี้ไว้ ถ้าคำขอเดิมถูกส่งซ้ำจะไม่ทำงานซ้ำ (กันบันทึกซ้ำ/ตัดสต๊อกซ้ำ)
+ */
+async function apiPost(action, payload = {}) {
+  const requestId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, requestId, ...payload }), // ห้ามตั้ง Content-Type เอง ไม่งั้นชน CORS preflight
+    });
+    return await readApiJson(res);
+  } catch (err) {
+    if (!err.nonJson && !(err instanceof TypeError)) throw err; // error จริงจากหลังบ้าน → แจ้งตามปกติ
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await new Promise(r => setTimeout(r, 700 * attempt));
+      let r;
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        r = await readApiJson(await fetch(`${API_URL}?${q}`));
+      } catch (e) { continue; }
+      if (r && r.found) {
+        if (!r.response.ok) throw new Error(r.response.error);
+        return r.response.data;
+      }
+    }
+    throw err;
+  }
+}
+
+
+const SEARCH_INDEX_KEY = 'ppms_search_index_v1';
+let index = [];       // [{code,name,hay,barcodes}]
+let prod = null;      // ข้อมูลสินค้าที่เลือกอยู่
+let lots = [];        // [{row, lotNo, exp, oldQty, qty, oldCost, cost, isNew}]
+let showEmpty = false;
+let loadToken = 0;
+
+const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const fmt = (n, d = 2) => (Number(n) || 0).toLocaleString('th-TH', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtQ = n => (Number(n) || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+
+// ---------- รายชื่อยา (ใช้ชุดเดียวกับหน้าขาย จำไว้ในเครื่อง) ----------
+function buildIndex(raw) {
+  const bc = {};
+  (raw.barcodes || []).forEach(([b, c]) => { (bc[c] = bc[c] || []).push(String(b).toLowerCase()); });
+  index = (raw.products || []).map(([code, name, short, unit]) => ({ code, name, unit, hay: (name + ' ' + code + ' ' + short).toLowerCase(), barcodes: bc[code] || [] }));
+}
+try { const c = localStorage.getItem(SEARCH_INDEX_KEY); if (c) buildIndex(JSON.parse(c)); } catch (e) {}
+apiGet('getSearchIndex').then(raw => { buildIndex(raw); try { localStorage.setItem(SEARCH_INDEX_KEY, JSON.stringify(raw)); } catch (e) {} }).catch(() => {});
+
+const q = document.getElementById('q'), sug = document.getElementById('sug');
+let hl = -1, results = [];
+q.addEventListener('input', () => {
+  const k = q.value.trim().toLowerCase();
+  if (!k) { sug.classList.remove('show'); return; }
+  const exact = index.filter(p => p.barcodes.includes(k) || p.code.toLowerCase() === k);
+  results = exact.length ? exact : index.filter(p => p.hay.includes(k) || p.barcodes.some(b => b.includes(k))).slice(0, 30);
+  hl = results.length ? 0 : -1;
+  renderSug();
+});
+q.addEventListener('keydown', e => {
+  if (!sug.classList.contains('show')) return;
+  if (e.key === 'ArrowDown') { hl = Math.min(results.length - 1, hl + 1); renderSug(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { hl = Math.max(0, hl - 1); renderSug(); e.preventDefault(); }
+  else if (e.key === 'Enter' && hl >= 0) { pick(results[hl].code); e.preventDefault(); }
+  else if (e.key === 'Escape') sug.classList.remove('show');
+});
+document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) sug.classList.remove('show'); });
+function renderSug() {
+  sug.innerHTML = results.length
+    ? results.map((p, i) => `<div class="sug-item ${i === hl ? 'hl' : ''}" onclick="pick('${esc(p.code)}')"><span>${esc(p.name)}</span><small>${esc(p.code)}</small></div>`).join('')
+    : '<div class="sug-item"><span style="color:#8fa198;">ไม่พบรายการ' + (index.length ? '' : ' (รายชื่อยายังโหลดไม่เสร็จ ลองใหม่อีกครั้ง)') + '</span></div>';
+  sug.classList.add('show');
+}
+
+// ---------- โหลดสินค้า ----------
+function toDateInput(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(v);
+  if (isNaN(d)) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+const todayStr = toDateInput(new Date());
+
+async function pick(code) {
+  sug.classList.remove('show');
+  q.value = '';
+  const my = ++loadToken;
+  document.getElementById('area').innerHTML = '<div class="empty">⏳ กำลังโหลดข้อมูลสินค้า...</div>';
+  let d;
+  try { d = await apiGet('getProduct', { code, mode: 'pos' }); }
+  catch (err) { if (my === loadToken) document.getElementById('area').innerHTML = `<div class="empty">โหลดไม่สำเร็จ: ${esc(err.message)}</div>`; return; }
+  if (my !== loadToken) return;
+  const p = d.product || {};
+  const small = String(p['หน่วยเล็กสุด(อัตโนมัติ)'] || 'หน่วย');
+  const mult = { [small]: 1 };
+  const units = [{ label: small, mult: 1 }];
+  (d.units || []).forEach(u => {
+    const l = String(u['หน่วย(ใหญ่)'] || '').trim(), m = Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1;
+    if (l && !mult[l]) { mult[l] = m; units.push({ label: l, mult: m }); }
+  });
+  units.sort((a, b) => a.mult - b.mult);
+  const priceOf = l => { const r = (d.prices || []).find(x => String(x['หน่วย']) === l); return r ? Number(r['ราคาขาย']) || 0 : ''; };
+  prod = {
+    code, name: p['ชื่อสินค้า'] || code, small, mult, units,
+    latestCost: Number(p['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0,
+    newLatestCost: Number(p['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0,
+    prices: units.map(u => ({ unit: u.label, old: priceOf(u.label), price: priceOf(u.label) })),
+  };
+  lots = (d.stockLots || []).map(l => {
+    const m = mult[String(l['หน่วยนับสต๊อก'] || '').trim()] || 1;
+    const qty = (Number(l['จำนวนคงเหลือ']) || 0) * m;
+    const cost = Math.round(((Number(l['ต้นทุนต่อหน่วยนับสต๊อก']) || 0) / m) * 10000) / 10000;
+    const exp = toDateInput(l['วันหมดอายุ (EXP)']);
+    return { row: l.__row, lotNo: String(l['เลขที่ผลิต'] || l['รหัสสต็อค'] || ''), exp, oldExp: exp, oldLot: String(l['เลขที่ผลิต'] || l['รหัสสต็อค'] || ''),
+      oldQty: qty, qty, oldCost: cost, cost, isNew: false };
+  }).sort((a, b) => (a.exp || '9999') < (b.exp || '9999') ? -1 : 1);
+  showEmpty = false;
+  if (!lots.some(l => l.oldQty > 0)) addLot(true);
+  render();
+}
+
+function addLot(silent) {
+  lots.push({ row: null, lotNo: '', exp: '', oldExp: '', oldLot: '', oldQty: 0, qty: '', oldCost: 0, cost: prod.latestCost || '', isNew: true });
+  if (!silent) render();
+}
+function removeLot(i) { lots.splice(i, 1); render(); }
+
+function bigUnitEq(perSmall) {
+  const big = prod.units.filter(u => u.mult > 1);
+  if (!big.length || !(Number(perSmall) > 0)) return '';
+  return big.map(u => `= ${fmt(perSmall * u.mult)} /${esc(u.label)}`).join(' · ');
+}
+function qtyEq(n) {
+  const big = prod.units.filter(u => u.mult > 1).sort((a, b) => b.mult - a.mult)[0];
+  if (!big || !(n >= big.mult)) return '';
+  const whole = Math.floor(n / big.mult), rest = n - whole * big.mult;
+  return `= ${whole} ${esc(big.label)}${rest ? ' ' + fmtQ(rest) + ' ' + esc(prod.small) : ''}`;
+}
+
+function render() {
+  if (!prod) return;
+  const visible = lots.map((l, i) => ({ l, i })).filter(({ l }) => showEmpty || l.isNew || l.oldQty > 0);
+  const hidden = lots.filter(l => !l.isNew && l.oldQty <= 0).length;
+  const unitText = prod.units.filter(u => u.mult > 1).map(u => `1 ${esc(u.label)} = ${fmtQ(u.mult)} ${esc(prod.small)}`).join(', ');
+  document.getElementById('area').innerHTML = `
+    <div class="prod-head"><h3>${esc(prod.name)}</h3><span class="prod-meta">รหัส ${esc(prod.code)} · นับสต๊อกเป็น <b>${esc(prod.small)}</b>${unitText ? ' (' + unitText + ')' : ''}</span></div>
+
+    <div class="sec-title">ล็อตคงคลัง <span class="sub">จำนวนและต้นทุนเป็น "ต่อ ${esc(prod.small)}"</span>
+      ${hidden ? `<button class="link-btn" onclick="showEmpty=!showEmpty;render()">${showEmpty ? 'ซ่อน' : 'แสดง'}ล็อตที่หมดแล้ว (${hidden})</button>` : ''}</div>
+    <table class="t">
+      <thead><tr><th>เลขล็อต</th><th style="width:150px;">วันหมดอายุ</th><th class="num" style="width:90px;">จำนวนเดิม</th><th style="width:130px;">จำนวนใหม่</th><th style="width:150px;">ทุน/${esc(prod.small)}</th><th style="width:40px;"></th></tr></thead>
+      <tbody>
+        ${visible.length ? visible.map(({ l, i }) => {
+          const diff = (l.qty === '' ? 0 : Number(l.qty)) - l.oldQty;
+          const expired = l.exp && l.exp < todayStr;
+          return `<tr>
+            <td data-l="เลขล็อต">${l.isNew ? '<span class="badge-new">ล็อตใหม่</span> ' : ''}<input value="${esc(l.lotNo)}" placeholder="เลขล็อต" oninput="lots[${i}].lotNo=this.value;mark(this,${i},'lot')" class="${!l.isNew && l.lotNo !== l.oldLot ? 'changed' : ''}"></td>
+            <td data-l="วันหมดอายุ"><input type="date" value="${esc(l.exp)}" onchange="lots[${i}].exp=this.value;render()" class="${!l.isNew && l.exp !== l.oldExp ? 'changed' : ''}">${expired ? '<span class="badge-exp">หมดอายุแล้ว</span>' : ''}</td>
+            <td data-l="จำนวนเดิม" class="num"><span class="old-qty">${l.isNew ? '-' : fmtQ(l.oldQty)}</span></td>
+            <td data-l="จำนวนใหม่ (${esc(prod.small)})"><input type="number" min="0" step="any" value="${l.qty}" oninput="lots[${i}].qty=this.value===''?'':Math.max(0,Number(this.value));updRow(${i})" class="${!l.isNew && Number(l.qty) !== l.oldQty ? 'changed' : ''}">
+              <div class="eq" id="qeq${i}">${diff ? `<span class="diff ${diff > 0 ? 'up' : 'down'}">${diff > 0 ? '+' : ''}${fmtQ(diff)}</span> ` : ''}${qtyEq(Number(l.qty) || 0)}</div></td>
+            <td data-l="ทุน/${esc(prod.small)}"><input type="number" min="0" step="any" value="${l.cost}" oninput="lots[${i}].cost=this.value===''?'':Math.max(0,Number(this.value));updRow(${i})" class="${!l.isNew && Number(l.cost) !== l.oldCost ? 'changed' : ''}">
+              <div class="eq" id="ceq${i}">${bigUnitEq(Number(l.cost))}</div></td>
+            <td>${l.isNew ? `<button class="del-x" title="ลบล็อตใหม่นี้" onclick="removeLot(${i})">✕</button>` : ''}</td>
+          </tr>`; }).join('') : `<tr><td colspan="6" class="empty">ไม่มีล็อตที่มีของเหลืออยู่</td></tr>`}
+      </tbody>
+    </table>
+    <button class="btn-light" onclick="addLot()">＋ เพิ่มล็อตใหม่ (เช่น ยอดยกมา / ของที่นับเจอเพิ่ม)</button>
+    <div class="totals" id="totals"></div>
+
+    <div class="sec-title">ราคาทุน / ราคาขาย</div>
+    <div class="grid">
+      <div class="f"><label>ต้นทุนล่าสุด / ${esc(prod.small)} (ที่หน้าขายแสดง)</label>
+        <input type="number" min="0" step="any" id="latestCost" value="${prod.newLatestCost}" oninput="prod.newLatestCost=this.value===''?'':Math.max(0,Number(this.value));document.getElementById('lceq').innerHTML=bigUnitEq(prod.newLatestCost)">
+        <div class="eq" id="lceq">${bigUnitEq(prod.newLatestCost)}</div></div>
+      ${prod.prices.map((p, i) => `<div class="f"><label>ราคาขายปกติ (ราคา1) / ${esc(p.unit)}</label>
+        <input type="number" min="0" step="any" value="${p.price}" placeholder="ยังไม่ได้ตั้งราคา" oninput="prod.prices[${i}].price=this.value===''?'':Math.max(0,Number(this.value))"></div>`).join('')}
+    </div>
+
+    <div class="sec-title">เหตุผลการปรับ</div>
+    <div class="grid">
+      <div class="f"><select id="reason">
+        <option>ยอดยกมาจากระบบเดิม</option><option>นับสต๊อกจริง</option><option>ของเสีย / แตก / ชำรุด</option>
+        <option>หมดอายุ / ทำลาย</option><option>แก้ไขข้อมูลผิด</option><option>อื่นๆ</option></select></div>
+      <div class="f"><input id="reasonNote" placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)"></div>
+    </div>
+
+    <div class="hint">• ล็อตที่หมดอายุแล้วจะไม่ถูกตัดขาย / ล็อตที่ไม่ใส่วันหมดอายุจะถูกตัดขายทีหลังสุด<br>
+      • การปรับจำนวนทุกครั้งเก็บประวัติไว้ในชีต "ปรับสต๊อก (StockAdjustments)" (จำนวนเดิม → ใหม่, ผู้ปรับ, เหตุผล)</div>
+
+    <div class="actions"><span class="status" id="status"></span><button class="save-btn" id="saveBtn" onclick="save()">💾 บันทึกการปรับสต๊อก</button></div>
+  `;
+  updTotals();
+}
+
+function mark(el, i, kind) { const l = lots[i]; if (!l.isNew) el.classList.toggle('changed', l.lotNo !== l.oldLot); }
+function updRow(i) {
+  const l = lots[i];
+  const diff = (l.qty === '' ? 0 : Number(l.qty)) - l.oldQty;
+  document.getElementById('qeq' + i).innerHTML = `${diff ? `<span class="diff ${diff > 0 ? 'up' : 'down'}">${diff > 0 ? '+' : ''}${fmtQ(diff)}</span> ` : ''}${qtyEq(Number(l.qty) || 0)}`;
+  document.getElementById('ceq' + i).innerHTML = bigUnitEq(Number(l.cost));
+  updTotals();
+}
+function updTotals() {
+  const sellable = lots.reduce((s, l) => s + ((l.exp && l.exp < todayStr) ? 0 : (Number(l.qty) || 0)), 0);
+  const oldTotal = lots.reduce((s, l) => s + l.oldQty, 0);
+  const newTotal = lots.reduce((s, l) => s + (Number(l.qty) || 0), 0);
+  const value = lots.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.cost) || 0), 0);
+  const el = document.getElementById('totals');
+  if (el) el.innerHTML = `<span>รวมเดิม <b>${fmtQ(oldTotal)}</b> ${esc(prod.small)}</span><span>รวมใหม่ <b>${fmtQ(newTotal)}</b> ${esc(prod.small)} ${qtyEq(newTotal)}</span><span>ขายได้ (ไม่รวมหมดอายุ) <b>${fmtQ(sellable)}</b></span><span>มูลค่าทุนรวม <b>${fmt(value)}</b> บาท</span>`;
+}
+
+async function save() {
+  if (!prod) return;
+  for (const l of lots) {
+    if (l.isNew && Number(l.qty) > 0 && !l.exp && !confirm('มีล็อตใหม่ที่ยังไม่ใส่วันหมดอายุ — ล็อตนี้จะถูกตัดขายทีหลังสุด\nบันทึกต่อเลยไหม?')) return;
+    if (l.qty === '' && !l.isNew) { alert('กรุณาใส่จำนวนใหม่ให้ครบทุกล็อต (ถ้าหมดแล้วใส่ 0)'); return; }
+  }
+  const changedLots = lots.filter(l => l.isNew ? Number(l.qty) > 0
+    : (Number(l.qty) !== l.oldQty || Number(l.cost) !== l.oldCost || l.exp !== l.oldExp || l.lotNo !== l.oldLot));
+  const priceChanges = prod.prices.filter(p => p.price !== '' && Number(p.price) !== Number(p.old));
+  let costChanged = prod.newLatestCost !== '' && Number(prod.newLatestCost) !== prod.latestCost;
+  // ไม่ได้แก้ต้นทุนล่าสุดเอง แต่เพิ่มล็อตใหม่พร้อมทุน → ใช้ทุนของล็อตใหม่ล่าสุดเป็นต้นทุนล่าสุด (เหมือนการรับของ)
+  const newWithCost = lots.filter(l => l.isNew && Number(l.qty) > 0 && Number(l.cost) > 0);
+  if (!costChanged && newWithCost.length && Number(newWithCost[newWithCost.length - 1].cost) !== prod.latestCost) {
+    prod.newLatestCost = Number(newWithCost[newWithCost.length - 1].cost);
+    costChanged = true;
+  }
+  if (!changedLots.length && !priceChanges.length && !costChanged) { alert('ยังไม่ได้แก้อะไร'); return; }
+
+  const reason = document.getElementById('reason').value + (document.getElementById('reasonNote').value.trim() ? ' — ' + document.getElementById('reasonNote').value.trim() : '');
+  let userId = '';
+  try { const u = JSON.parse(localStorage.getItem('ppms_user') || 'null'); userId = u ? (u['Username'] || u['ชื่อ-นามสกุล'] || u.name || '') : ''; } catch (e) {}
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+  try {
+    const r = await apiPost('adjustStock', { code: prod.code, adjust: {
+      lots: changedLots.map(l => ({ row: l.row, lotNo: l.lotNo.trim(), exp: l.exp, qty: Number(l.qty) || 0, cost: Number(l.cost) || 0 })),
+      latestCost: costChanged ? Number(prod.newLatestCost) : '',
+      prices: priceChanges.map(p => ({ unit: p.unit, price: Number(p.price) })),
+      reason, userId,
+    } });
+    const code = prod.code;
+    await pick(code);
+    document.getElementById('status').textContent = `✅ บันทึกแล้ว — ปรับ ${r.changedLots} ล็อต${r.changedPrices ? ', ราคาขาย ' + r.changedPrices + ' หน่วย' : ''}${costChanged ? ', ต้นทุนล่าสุด' : ''}`;
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+    btn.disabled = false; btn.textContent = '💾 บันทึกการปรับสต๊อก';
+  }
+}
+
+const urlCode = new URLSearchParams(location.search).get('code');
+if (urlCode) pick(urlCode); else q.focus();
+</script>
+</body>
+</html>
