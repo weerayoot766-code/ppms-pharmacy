@@ -636,10 +636,11 @@ async function loadProductByCode(code){
     price4: Number(p['ราคาขาย4']) || '',
     lastSold: p['ณ วันที่ขายล่าสุด'] || '',
   }));
-  // ชื่อหน่วยในตารางราคาที่ต่างจากแท็บหน่วยแค่เว้นวรรคหัว/ท้าย → แก้ให้ตรงอัตโนมัติ (กดบันทึกแล้วหน้าขายจะเห็นราคา)
+  // ชื่อหน่วยในตารางราคาที่ต่างจากแท็บหน่วยแค่ตัวพิมพ์เล็ก/ใหญ่หรือเว้นวรรค (เช่น PACK 10 กับ pack 10) → แก้ให้ตรงอัตโนมัติ (กดบันทึกแล้วหน้าขายจะเห็นราคา)
   priceData.forEach(r => {
     if (unitData.some(u => u.unit === r.unit)) return;
-    const m = unitData.find(u => String(u.unit || '').trim() === String(r.unit || '').trim());
+    const key = v => String(v == null ? '' : v).trim().replace(/\s+/g, ' ').toLowerCase(); // PACK 10 = pack 10
+    const m = unitData.find(u => key(u.unit) === key(r.unit));
     if (m) r.unit = m.unit;
   });
 

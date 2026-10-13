@@ -2805,6 +2805,8 @@ function repriceCartForLevel() {
   if (changed) renderCart();
 }
 
+function unitKey(v) { return String(v == null ? '' : v).trim().replace(/\s+/g, ' ').toLowerCase(); }
+
 async function fetchProductDetailRaw(code){
   if (productDetailCache[code]) return productDetailCache[code];
 
@@ -2820,7 +2822,7 @@ async function fetchProductDetailRaw(code){
 
   let units = (detail.units || []).map(u => {
     const multiplier = Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1;
-    const priceRow = (detail.prices || []).find(p => String(p['หน่วย'] || '').trim() === String(u['หน่วย(ใหญ่)'] || '').trim()); // ตัดช่องว่างหัวท้าย กันชื่อหน่วยไม่ตรงเพราะเว้นวรรคเกิน
+    const priceRow = (detail.prices || []).find(p => unitKey(p['หน่วย']) === unitKey(u['หน่วย(ใหญ่)'])); // ไม่สนตัวพิมพ์เล็ก/ใหญ่และเว้นวรรค (PACK 10 = pack 10)
     const cost = Math.round(costPerSmallUnit * multiplier * 100) / 100;
     const basePrice = priceRow ? (Number(priceRow['ราคาขาย']) || 0) : cost;
     return {
@@ -2838,7 +2840,7 @@ async function fetchProductDetailRaw(code){
   // บางสินค้าในชีต 'หน่วยนับ (Units)' มีข้อมูลไม่ครบ (เช่น มีแต่ "กล่อง" ไม่มี "แผง" ซึ่งเป็นหน่วยเล็กสุดที่ขายจริงบ่อยสุด)
   // จึงต้องเช็คและเติมหน่วยเล็กสุดเข้าไปเอง ถ้ายังไม่มีอยู่ในลิสต์ กันไม่ให้ค่าเริ่มต้นเป็นหน่วยใหญ่ที่ไม่ได้ตั้งใจขาย
   if (!units.some(u => u.label === smallUnitLabel)) {
-    const priceRow = (detail.prices || []).find(p => String(p['หน่วย'] || '').trim() === String(smallUnitLabel).trim());
+    const priceRow = (detail.prices || []).find(p => unitKey(p['หน่วย']) === unitKey(smallUnitLabel));
     const basePrice = priceRow ? (Number(priceRow['ราคาขาย']) || 0) : costPerSmallUnit;
     units.unshift({
       label: smallUnitLabel,
