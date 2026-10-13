@@ -462,6 +462,37 @@ async function loadCommonUnitNames() {
   }
   const dl = document.getElementById('unitNameList');
   if (dl) dl.innerHTML = commonUnitNames.map(n => `<option value="${n}">`).join('');
+  const activeTab = document.querySelector('.tab-item.active');
+  if (activeTab && activeTab.dataset.tab === 'unit') switchTab('unit'); // โหลดรายชื่อหน่วยเสร็จทีหลัง → เติมตัวเลือกให้ครบ
+}
+
+// ---------- ช่องเลือกหน่วย (เลือกจากรายการหน่วยนับเท่านั้น กันชื่อหน่วยไม่ตรงกัน) ----------
+const unitKey_ = v => String(v == null ? '' : v).trim().replace(/\s+/g, ' ').toLowerCase();
+function unitOptionsHtml(current) {
+  const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const names = commonUnitNames.slice().sort((a, b) => a.localeCompare(b, 'th'));
+  const inList = !current || names.some(n => n === current);
+  return `<option value="" ${current ? '' : 'selected'} disabled>— เลือกหน่วย —</option>`
+    + (inList ? '' : `<option value="${esc(current)}" selected>${esc(current)}</option>`)
+    + names.map(n => `<option value="${esc(n)}" ${n === current ? 'selected' : ''}>${esc(n)}</option>`).join('')
+    + `<option value="__new__">＋ เพิ่มหน่วยใหม่...</option>`;
+}
+async function pickUnitName(sel, i) {
+  let name = sel.value;
+  if (name === '__new__') {
+    name = (prompt('ชื่อหน่วยใหม่ (จะถูกเพิ่มในรายการหน่วยนับด้วย)') || '').trim().replace(/\s+/g, ' ');
+    if (!name) { switchTab('unit'); return; }
+    const same = commonUnitNames.find(n => unitKey_(n) === unitKey_(name));
+    if (same) name = same; else registerCustomUnitName(name);
+  }
+  if (unitData.some((u, j) => j !== i && unitKey_(u.unit) === unitKey_(name))) {
+    alert(`สินค้านี้มีหน่วย "${name}" อยู่แล้ว`);
+    switchTab('unit');
+    return;
+  }
+  unitData[i].unit = name;
+  if (unitData[i].base) syncBaseUnitDisplay(name);
+  switchTab('unit');
 }
 
 async function loadRealProductGroups() {
@@ -480,7 +511,7 @@ async function loadRealProductGroups() {
 /** ถ้าพิมพ์ชื่อหน่วยที่ยังไม่มีในลิสต์ ให้เพิ่มเข้าไปอัตโนมัติทั้งในหน้าปัจจุบันและบันทึกถาวรลงชีต ใช้ซ้ำได้ทุกครั้งที่เปิดหน้านี้ในอนาคต */
 async function registerCustomUnitName(name) {
   name = (name || '').trim();
-  if (!name || commonUnitNames.includes(name)) return;
+  if (!name || commonUnitNames.some(n => String(n).trim().toLowerCase() === name.toLowerCase())) return;
   commonUnitNames.push(name);
   const dl = document.getElementById('unitNameList');
   if (dl) dl.innerHTML = commonUnitNames.map(n => `<option value="${n}">`).join('');
@@ -871,11 +902,11 @@ function renderUnitTab() {
       <div class="field" style="max-width:220px;">
         <label>หน่วยเล็กสุด</label>
         ${isNewProduct
-          ? `<input type="text" list="unitNameList" value="${smallUnit ? smallUnit.unit : ''}" placeholder="เช่น เม็ด, แผง, ขวด" oninput="unitData[0].unit=this.value; syncBaseUnitDisplay(this.value);" onchange="registerCustomUnitName(this.value)">`
+          ? `<select onchange="pickUnitName(this, ${Math.max(0, unitData.indexOf(smallUnit))})">${unitOptionsHtml(smallUnit ? smallUnit.unit : '')}</select>`
           : `<input type="text" value="${smallUnit ? smallUnit.unit : '-'}" class="readonly" disabled>`}
       </div>
     </div>
-    ${isNewProduct ? '<div class="connected-hint" style="margin-top:-8px;">สินค้าใหม่: กรอก "หน่วยเล็กสุด" ก่อน (หน่วยที่แบ่งขายได้ละเอียดที่สุด เช่น เม็ด/แผง/ขวด) แล้วค่อยเพิ่มหน่วยใหญ่กว่า (เช่น กล่อง) เพิ่มเติมได้ด้านล่าง — พิมพ์ชื่อหน่วยใหม่ที่ไม่มีในลิสต์ได้เลย ระบบจะจำไว้ในลิสต์ให้เลือกใช้ได้อีกในครั้งถัดไป (เฉพาะรอบใช้งานนี้)</div>' : ''}
+    ${isNewProduct ? '<div class="connected-hint" style="margin-top:-8px;">สินค้าใหม่: กรอก "หน่วยเล็กสุด" ก่อน (หน่วยที่แบ่งขายได้ละเอียดที่สุด เช่น เม็ด/แผง/ขวด) แล้วค่อยเพิ่มหน่วยใหญ่กว่า (เช่น กล่อง) เพิ่มเติมได้ด้านล่าง — ถ้าไม่มีหน่วยที่ต้องการ เลือก "＋ เพิ่มหน่วยใหม่..." ท้ายรายการ หรือไปเพิ่มที่ หลังบ้าน → ข้อมูลสินค้า → หน่วยนับ</div>' : ''}
     <datalist id="unitNameList">
       ${commonUnitNames.map(n => `<option value="${n}">`).join('')}
     </datalist>
@@ -887,7 +918,7 @@ function renderUnitTab() {
           <tr>
             <td>${u.base
               ? (isNewProduct ? `<i id="baseUnitDisplay" style="color:${u.unit ? '#24312a' : '#8fa198'};">${u.unit || '(หน่วยเล็กสุด — กรอกด้านบน)'}</i>` : u.unit)
-              : `<input type="text" list="unitNameList" value="${u.unit}" placeholder="เลือกจากลิสต์ หรือพิมพ์เอง" oninput="unitData[${i}].unit=this.value" onchange="registerCustomUnitName(this.value)">`}</td>
+              : `<select style="min-width:150px;" onchange="pickUnitName(this, ${i})">${unitOptionsHtml(u.unit)}</select>`}</td>
             <td><input type="number" value="${u.pack}" ${u.base ? "disabled" : ""} oninput="unitData[${i}].pack=Number(this.value)||1"></td>
             <td><input type="text" value="${u.note}" placeholder="-" oninput="unitData[${i}].note=this.value"></td>
             <td><input type="checkbox" ${u.retail ? "checked" : ""} onchange="unitData[${i}].retail=this.checked"></td>
@@ -897,7 +928,7 @@ function renderUnitTab() {
       </tbody>
     </table>
     `}
-    <div class="connected-hint" style="margin-top:14px;">✅ เชื่อมบันทึกจริงแล้ว — เพิ่ม/ลบ/แก้ไขหน่วยตรงนี้ แล้วกด "บันทึก" มุมล่างขวาของหน้าเพื่อบันทึกเข้าระบบจริง</div>
+    <div class="connected-hint" style="margin-top:14px;">✅ เลือกหน่วยจากรายการหน่วยนับ (ไม่มี → เลือก "＋ เพิ่มหน่วยใหม่..." หรือเพิ่มที่ หลังบ้าน → ข้อมูลสินค้า → หน่วยนับ) แล้วกด "บันทึก" มุมล่างขวา</div>
     <button class="add-row-btn" onclick="addUnitRow()">+ เพิ่มหน่วย</button>
   `;
 }
