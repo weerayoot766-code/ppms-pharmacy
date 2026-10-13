@@ -636,6 +636,12 @@ async function loadProductByCode(code){
     price4: Number(p['ราคาขาย4']) || '',
     lastSold: p['ณ วันที่ขายล่าสุด'] || '',
   }));
+  // ชื่อหน่วยในตารางราคาที่ต่างจากแท็บหน่วยแค่เว้นวรรคหัว/ท้าย → แก้ให้ตรงอัตโนมัติ (กดบันทึกแล้วหน้าขายจะเห็นราคา)
+  priceData.forEach(r => {
+    if (unitData.some(u => u.unit === r.unit)) return;
+    const m = unitData.find(u => String(u.unit || '').trim() === String(r.unit || '').trim());
+    if (m) r.unit = m.unit;
+  });
 
   // ---------- ข้อมูลทางยา ----------
   genericNameData = parseGenericNameString(drugInfo['ชื่อยาสามัญ (Generic Name)'] || '');
@@ -999,7 +1005,7 @@ function renderPriceTab() {
             <td style="white-space:nowrap;">${row.branch}</td>
             <td>
               ${unitData.length
-                ? `<select style="min-width:120px;" onchange="priceData[${i}].unit=this.value">${unitData.map(u=>`<option ${u.unit===row.unit?'selected':''}>${u.unit}</option>`).join("")}</select>`
+                ? `<select style="min-width:120px;${unitData.some(u => u.unit === row.unit) ? '' : 'border-color:#e0a800;background:#fffbea;'}" onchange="priceData[${i}].unit=this.value;switchTab('price')">${unitData.some(u => u.unit === row.unit) ? '' : `<option selected value="${escPrice_(row.unit)}">⚠ ${escPrice_(row.unit || '(ว่าง)')} — ไม่ตรงกับหน่วยในแท็บหน่วย</option>`}${unitData.map(u=>`<option value="${escPrice_(u.unit)}" ${u.unit===row.unit?'selected':''}>${escPrice_(u.unit)}</option>`).join("")}</select>`
                 : row.unit}
             </td>
             <td><input type="number" value="${row.price}" step="0.01" min="0" oninput="priceData[${i}].price=Number(this.value)||0"></td>
