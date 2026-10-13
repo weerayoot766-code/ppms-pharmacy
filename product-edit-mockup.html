@@ -991,8 +991,12 @@ function escPrice_(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').
 
 function renderPriceTab() {
   const lvName = n => escPrice_((priceLevels.find(l => l.level === n) || {}).name || '');
+  // หน่วยซ้ำกันในตารางราคา (เช่น ข้อมูลเก่า PACK 10 + แถวใหม่ pack 10) → หน้าขายจะใช้แถวแรก ต้องแก้ให้เหลือหน่วยละ 1 แถว
+  const ukey = v => String(v == null ? '' : v).trim().replace(/\s+/g, ' ').toLowerCase();
+  const dupUnits = priceData.map(r => ukey(r.unit)).filter((k, i, a) => a.indexOf(k) !== i);
   return `
     <h3>ราคา</h3>
+    ${dupUnits.length ? `<div style="background:#fff3d6;border:1px solid #f0cf7c;color:#8a5a00;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13.5px;">⚠️ มีหน่วยซ้ำกัน (${[...new Set(dupUnits)].map(escPrice_).join(', ')}) — หน้าขายจะใช้ราคาแถวแรกเท่านั้น กรุณาเปลี่ยนหน่วยของแถวที่ผิด หรือกด "ลบ" แถวที่ไม่ใช้ แล้วกดบันทึก</div>` : ''}
     ${priceData.length === 0 ? '<div class="empty-note">ยังไม่มีข้อมูลราคาขายของสินค้านี้ในระบบ</div>' : `
     <table class="data-table price-level-table">
       <thead><tr>
@@ -1006,7 +1010,7 @@ function renderPriceTab() {
             <td style="white-space:nowrap;">${row.branch}</td>
             <td>
               ${unitData.length
-                ? `<select style="min-width:120px;${unitData.some(u => u.unit === row.unit) ? '' : 'border-color:#e0a800;background:#fffbea;'}" onchange="priceData[${i}].unit=this.value;switchTab('price')">${unitData.some(u => u.unit === row.unit) ? '' : `<option selected value="${escPrice_(row.unit)}">⚠ ${escPrice_(row.unit || '(ว่าง)')} — ไม่ตรงกับหน่วยในแท็บหน่วย</option>`}${unitData.map(u=>`<option value="${escPrice_(u.unit)}" ${u.unit===row.unit?'selected':''}>${escPrice_(u.unit)}</option>`).join("")}</select>`
+                ? `<select style="min-width:120px;${unitData.some(u => u.unit === row.unit) && !dupUnits.includes(ukey(row.unit)) ? '' : 'border-color:#e0a800;background:#fffbea;'}" onchange="priceData[${i}].unit=this.value;switchTab('price')">${unitData.some(u => u.unit === row.unit) ? '' : `<option selected value="${escPrice_(row.unit)}">⚠ ${escPrice_(row.unit || '(ว่าง)')} — ไม่ตรงกับหน่วยในแท็บหน่วย</option>`}${unitData.map(u=>`<option value="${escPrice_(u.unit)}" ${u.unit===row.unit?'selected':''}>${escPrice_(u.unit)}</option>`).join("")}</select>`
                 : row.unit}
             </td>
             <td><input type="number" value="${row.price}" step="0.01" min="0" oninput="priceData[${i}].price=Number(this.value)||0"></td>
