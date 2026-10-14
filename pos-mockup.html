@@ -961,6 +961,16 @@
   }
   .cost-price-box b { color: #fff; font-size: 13.5px; }
   .price-total-row { font-size: 12.5px; color: #6b7a70; margin-top: 8px; }
+  .level-prices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+  .lv-btn { min-width: 0; border: 1px solid #d7e4da; background: #fff; border-radius: 9px; padding: 6px 4px; cursor: pointer; text-align: center;
+    font-family: inherit; line-height: 1.25; color: #24312a; position: relative; }
+  .lv-btn small { display: block; font-size: 10.5px; color: #8fa198; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lv-btn b { font-size: 14px; }
+  .lv-btn:hover:not(:disabled) { border-color: #2e8b4f; background: #f3faf5; }
+  .lv-btn.active { border-color: #2e8b4f; background: #e4f6e8; box-shadow: 0 0 0 2px rgba(46,139,79,.18); }
+  .lv-btn.active b { color: #1e6b3c; }
+  .lv-btn:disabled { opacity: .45; cursor: default; }
+  .lv-btn .lv-mem { position: absolute; top: -7px; right: 4px; background: #f0b429; color: #fff; font-size: 9.5px; font-weight: 700; border-radius: 5px; padding: 0 4px; }
   .price-total-row b { color: #1e6b3c; font-size: 14px; }
 
   .modal-confirm-btn {
@@ -1468,6 +1478,7 @@
         <span class="price-currency">บาท</span>
         <span class="cost-price-box"><span>ราคาทุน</span><b id="modalCostPrice">0.00</b></span>
       </div>
+      <div class="level-prices" id="modalLevelPrices"></div>
       <div class="price-estimate-warning" id="priceEstimateWarning" style="display:none;">
         ⚠️ ยังไม่เคยตั้งราคาขายของหน่วยนี้ในระบบ — ราคาที่โชว์นี้คือ<b>ราคาทุน</b>ที่ระบบใส่ให้ชั่วคราว
         (เท่ากับต้นทุน = ไม่มีกำไร) กรุณาตรวจสอบ/แก้ไขราคาก่อนขายจริง
@@ -2904,6 +2915,7 @@ async function openProductModal(code){
     document.getElementById('modalStock').textContent = '-';
     document.getElementById('modalExpiry').textContent = '-';
     document.getElementById('modalPriceInput').value = '';
+    const lvBox = document.getElementById('modalLevelPrices'); if (lvBox) lvBox.innerHTML = '';
     document.getElementById('modalCostPrice').textContent = '-';
     document.getElementById('priceEstimateWarning').style.display = 'none';
     document.querySelector('#productModalOverlay .modal-confirm-btn').disabled = true;
@@ -2990,6 +3002,33 @@ function renderModalQtyPrice(){
   document.getElementById('modalCostPrice').textContent = (u.cost || 0).toFixed(2);
   document.getElementById('modalPriceTotal').textContent = (u.price * modalQty).toFixed(2);
   document.getElementById('priceEstimateWarning').style.display = u.priceIsEstimate ? 'block' : 'none';
+  renderLevelPrices();
+}
+
+/** ปุ่มราคา 1-4 ใต้ช่องราคา — กดเลือกเพื่อใช้ราคาระดับนั้น (เช่น ลดราคาให้ลูกค้าทั่วไปเป็นราคาลูกค้าประจำ) */
+function renderLevelPrices() {
+  const box = document.getElementById('modalLevelPrices');
+  if (!box || !modalProduct) return;
+  const u = modalProduct.units[modalUnitIndex];
+  const lp = u.levelPrices || [u.basePrice != null ? u.basePrice : u.price, 0, 0, 0];
+  const memberLv = currentPriceLevel();
+  box.innerHTML = [1, 2, 3, 4].map(n => {
+    const val = n === 1 ? (u.basePrice != null ? u.basePrice : lp[0]) : lp[n - 1];
+    const has = n === 1 || val > 0;
+    const name = (priceLevels.find(l => l.level === n) || {}).name || ('ราคา' + n);
+    const active = has && Math.abs((Number(u.price) || 0) - val) < 0.001;
+    return `<button type="button" class="lv-btn ${active ? 'active' : ''}" ${has ? '' : 'disabled'} onclick="pickLevelPrice(${n})" title="${escHtml(name)}">
+      ${n === memberLv && currentMember ? '<span class="lv-mem">สมาชิก</span>' : ''}
+      <small>ราคา${n}</small><small>${escHtml(name)}</small><b>${has ? Number(val).toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '—'}</b></button>`;
+  }).join('');
+}
+function pickLevelPrice(n) {
+  const u = modalProduct.units[modalUnitIndex];
+  const lp = u.levelPrices || [];
+  const val = n === 1 ? (u.basePrice != null ? u.basePrice : lp[0]) : lp[n - 1];
+  if (!(n === 1 || val > 0)) return;
+  document.getElementById('modalPriceInput').value = val;
+  setModalPrice(val);
 }
 
 function stepModalQty(delta){
@@ -3008,6 +3047,7 @@ function setModalPrice(val){
   document.getElementById('modalPriceTotal').textContent = (modalProduct.units[modalUnitIndex].price * modalQty).toFixed(2);
   document.getElementById('priceEstimateWarning').style.display = 'none';
   renderModalUnits(); // อัปเดตจุดแดงบนปุ่มหน่วยด้วย
+  renderLevelPrices();
 }
 
 function closeProductModal(){
