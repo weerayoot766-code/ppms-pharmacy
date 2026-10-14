@@ -118,8 +118,21 @@
     padding: 1px 7px; border-radius: 5px; background: #fdecea; color: #c0392b; border: 1px solid #f5b7b1;
     font-size: 11.5px; font-weight: 700; margin-left: 6px; white-space: nowrap; vertical-align: 1px;
   }
-  .status-pill { color: #2e8b4f; font-weight: 600; font-size: 13px; }
-  .status-pill.off { color: #b0b8b3; }
+  .status-pill { color: #2e8b4f; font-weight: 600; font-size: 13px; white-space: nowrap; }
+  .status-pill.off { color: #c77700; }
+  .status-pill small { display: block; font-weight: 400; font-size: 11.5px; color: #8fa198; }
+  tr.inactive td { color: #a3ada7; }
+  tr.inactive .status-pill { opacity: .6; }
+  .toggle-switch.busy { opacity: .5; pointer-events: none; }
+  .more-wrap { position: relative; }
+  .more-menu { position: fixed; background: #fff; border: 1px solid #d7e4da; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(20,60,35,.16); min-width: 190px; z-index: 30; display: none; overflow: hidden; }
+  .more-menu.show { display: block; }
+  .more-menu button { display: block; width: 100%; text-align: left; background: #fff; border: none; padding: 10px 14px;
+    font-size: 13.5px; cursor: pointer; font-family: inherit; color: #24312a; }
+  .more-menu button:hover { background: #f1f7f2; }
+  .more-menu button.danger { color: #c0392b; border-top: 1px solid #f0f4f1; }
+  .more-menu button.danger:hover { background: #fdecea; }
   .toggle-switch {
     width: 34px; height: 19px; border-radius: 10px; background: #cfe6d2; position: relative; cursor: pointer;
     display: inline-block;
@@ -252,6 +265,32 @@ async function apiGet(action, params = {}) {
 }
 
 
+async function apiPost(action, payload = {}) {
+  const requestId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, requestId, ...payload }), // ห้ามตั้ง Content-Type เอง ไม่งั้นชน CORS preflight
+    });
+    return await readApiJson(res);
+  } catch (err) {
+    if (!err.nonJson && !(err instanceof TypeError)) throw err; // error จริงจากหลังบ้าน → แจ้งตามปกติ
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await new Promise(r => setTimeout(r, 700 * attempt));
+      let r;
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        r = await readApiJson(await fetch(`${API_URL}?${q}`));
+      } catch (e) { continue; }
+      if (r && r.found) {
+        if (!r.response.ok) throw new Error(r.response.error);
+        return r.response.data;
+      }
+    }
+    throw err;
+  }
+}
+
 // ---------- ผู้ใช้งานที่ล็อกอินอยู่ ----------
 (function () {
   if (!localStorage.getItem('ppms_user')) {
@@ -290,17 +329,24 @@ function renderTable() {
     body.innerHTML = `<tr><td colspan="6"><div class="empty-state">ไม่พบสินค้าที่ค้นหา</div></td></tr>`;
   } else {
     body.innerHTML = products.map((p, i) => `
-      <tr>
+      <tr class="${p.active ? '' : 'inactive'}">
         <td>${start + i + 1}</td>
         <td>${p.code}</td>
         <td>${p.name} ${p.danger ? '<span class="tag-danger" title="ยาที่ต้องลงบัญชีการขาย ขย.11 (ยาอันตรายเฉพาะรายการ)">ขย.11</span>' : ''}</td>
-        <td><span class="status-pill ${p.active ? '' : 'off'}">${p.status}</span></td>
-        <td><div class="toggle-switch ${p.active ? 'on' : ''}" onclick="alert('มอคอัพ: จะเปิด/ปิดการใช้งานสินค้านี้ (backend ยังไม่มี action สำหรับอัปเดตค่านี้)')"><div class="knob"></div></div></td>
+        <td><span class="status-pill ${p.stock > 0 ? '' : 'off'}">${p.stock > 0 ? 'มีสินค้าในคลัง' : 'ของหมดชั่วคราว'}<small>${p.stock > 0 ? 'คงเหลือ ' + Number(p.stock).toLocaleString() + ' ' + (p.unit || '') : 'คงเหลือ 0'}</small></span></td>
+        <td><div class="toggle-switch ${p.active ? 'on' : ''}" title="${p.active ? 'เปิดใช้งานอยู่ — กดเพื่อปิด (จะไม่ขึ้นในหน้าขาย)' : 'ปิดใช้งานอยู่ — กดเพื่อเปิด'}" onclick="toggleActive(${i}, this)"><div class="knob"></div></div></td>
         <td>
           <div class="action-btns">
             <button class="icon-btn" title="ดูรายละเอียด" onclick="window.location.href='product-edit-mockup.html?code=${p.code}'">📄</button>
             <button class="icon-btn edit" title="แก้ไข" onclick="window.location.href='product-edit-mockup.html?code=${p.code}'">✏️</button>
-            <button class="icon-btn" title="เพิ่มเติม" onclick="alert('มอคอัพ: เมนูเพิ่มเติม (ลบ/ทำสำเนา ฯลฯ)')">⋯</button>
+            <div class="more-wrap">
+              <button class="icon-btn" title="เพิ่มเติม" onclick="toggleMore(event, ${i})">⋯</button>
+              <div class="more-menu" id="more${i}">
+                <button onclick="window.location.href='product-edit-mockup.html?code=${encodeURIComponent(p.code)}'">✏️ แก้ไขข้อมูลสินค้า</button>
+                <button onclick="window.location.href='stock-adjust-mockup.html?code=${encodeURIComponent(p.code)}'">📦 ปรับสต๊อก</button>
+                <button class="danger" onclick="deleteProductRow(${i})">🗑️ ลบรายการสินค้า</button>
+              </div>
+            </div>
           </div>
         </td>
       </tr>
@@ -309,6 +355,58 @@ function renderTable() {
 
   document.getElementById('resultCount').textContent = `พบ ${totalCount.toLocaleString()} รายการ`;
   renderPagination();
+}
+
+function toggleMore(e, i) {
+  e.stopPropagation();
+  const m = document.getElementById('more' + i);
+  const wasOpen = m.classList.contains('show');
+  document.querySelectorAll('.more-menu.show').forEach(x => x.classList.remove('show'));
+  if (wasOpen) return;
+  // วางเมนูแบบ fixed ตามตำแหน่งปุ่ม (กันโดนกรอบตารางตัด)
+  const r = e.currentTarget.getBoundingClientRect();
+  m.classList.add('show');
+  const mh = m.offsetHeight, mw = m.offsetWidth;
+  const below = r.bottom + 4 + mh <= window.innerHeight;
+  m.style.top = (below ? r.bottom + 4 : r.top - mh - 4) + 'px';
+  m.style.left = Math.max(8, r.right - mw) + 'px';
+}
+window.addEventListener('scroll', () => document.querySelectorAll('.more-menu.show').forEach(x => x.classList.remove('show')), true);
+document.addEventListener('click', () => document.querySelectorAll('.more-menu.show').forEach(x => x.classList.remove('show')));
+
+async function toggleActive(i, el) {
+  const p = products[i];
+  const next = !p.active;
+  if (!next && !confirm(`ปิดใช้งาน "${p.name}" ?\n\nสินค้านี้จะไม่ขึ้นในการค้นหาที่หน้าขาย (ข้อมูลและประวัติยังอยู่ครบ เปิดกลับได้ทุกเมื่อ)`)) return;
+  el.classList.add('busy');
+  try {
+    await apiPost('setProductActive', { code: p.code, active: next });
+    p.active = next;
+    renderTable();
+  } catch (err) {
+    el.classList.remove('busy');
+    alert('เปลี่ยนสถานะไม่สำเร็จ: ' + err.message);
+  }
+}
+
+async function deleteProductRow(i) {
+  const p = products[i];
+  document.querySelectorAll('.more-menu.show').forEach(x => x.classList.remove('show'));
+  if (p.stock > 0) {
+    alert(`ลบ "${p.name}" ไม่ได้ — ยังมีของคงเหลือ ${Number(p.stock).toLocaleString()} ${p.unit || ''}\n\nถ้าจะเลิกขาย ให้กดปิด "เปิดใช้งาน" แทน หรือไปปรับสต๊อกเป็น 0 ก่อนแล้วค่อยลบ`);
+    return;
+  }
+  if (!confirm(`⚠️ ยืนยันลบสินค้า?\n\n${p.code}  ${p.name}\n\nจะลบข้อมูลสินค้า หน่วย ราคา บาร์โค้ด และข้อมูลยาของรายการนี้ — กู้คืนไม่ได้\n(ประวัติการขาย/การรับสินค้าเดิมยังเก็บไว้)`)) return;
+  if (!confirm(`ยืนยันอีกครั้ง: ลบ "${p.name}" ถาวร?`)) return;
+  try {
+    await apiPost('deleteProduct', { code: p.code });
+    try { localStorage.removeItem('ppms_search_index_v1'); } catch (e) {}
+    if (products.length === 1 && currentPage > 1) currentPage--;
+    await loadProducts();
+    alert(`ลบ "${p.name}" แล้ว`);
+  } catch (err) {
+    alert('ลบไม่สำเร็จ: ' + err.message);
+  }
 }
 
 function renderPagination() {
