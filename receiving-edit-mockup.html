@@ -90,6 +90,16 @@
   }
   .field input:focus, .field select:focus { outline: none; border-color: #2e8b4f; }
   .field input[readonly] { background: #f3f7f3; color: #6b7a70; }
+  .sup-wrap { position: relative; }
+  .sup-wrap input { width: 100%; }
+  .sup-wrap input.picked { border-color: #2e8b4f; background: #f3faf5; font-weight: 600; }
+  .sup-list { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #d7e4da; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(20,60,35,.16); max-height: 320px; overflow-y: auto; z-index: 40; display: none; }
+  .sup-list.show { display: block; }
+  .sup-item { padding: 9px 12px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #f0f4f1; }
+  .sup-item:hover, .sup-item.hl { background: #eef7f0; }
+  .sup-item.add { color: #1e6b3c; font-weight: 700; background: #f6fbf7; }
+  .sup-item.empty { color: #8fa198; cursor: default; }
 
   .product-suggest {
     display: none;
@@ -195,9 +205,11 @@
         </div>
         <div class="field">
           <label>ผู้จัดจำหน่าย <span class="req">*</span></label>
-          <select id="supplier">
-            <option value="">-- กำลังโหลดรายชื่อผู้จัดจำหน่าย... --</option>
-          </select>
+          <div class="sup-wrap">
+            <input type="text" id="supplierSearch" placeholder="⏳ กำลังโหลดรายชื่อ..." autocomplete="off">
+            <input type="hidden" id="supplier">
+            <div class="sup-list" id="supplierList"></div>
+          </div>
         </div>
         <div class="field">
           <label>วันที่รับสินค้า <span class="req">*</span></label>
@@ -407,17 +419,84 @@ function genDocNo() {
 document.getElementById('docNo').textContent = genDocNo();
 document.getElementById('recvDate').value = new Date().toISOString().slice(0, 10);
 
-// ---------- โหลดรายชื่อผู้จัดจำหน่ายจริงจาก Sheet ----------
+// ---------- ผู้จัดจำหน่าย: พิมพ์ค้นหาได้ + เพิ่มใหม่ได้ถ้ายังไม่มี ----------
+let suppliers = [];   // รายชื่อ (string)
+let supHl = -1, supResults = [];
+const supKey = v => String(v == null ? '' : v).trim().replace(/\s+/g, ' ').toLowerCase();
+const supEsc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const supInput = document.getElementById('supplierSearch'), supList = document.getElementById('supplierList');
+
 async function loadSuppliers() {
-  const sel = document.getElementById('supplier');
   try {
-    const suppliers = await apiGet('listSuppliers');
-    sel.innerHTML = '<option value="">-- เลือกผู้จัดจำหน่าย --</option>' +
-      suppliers.map(s => `<option value="${s['ชื่อเจ้าหนี้']}">${s['ชื่อเจ้าหนี้']}</option>`).join('');
+    const rows = await apiGet('listSuppliers');
+    suppliers = rows.map(s => String(s['ชื่อเจ้าหนี้'] || '').trim()).filter(Boolean);
+    supInput.placeholder = '🔍 พิมพ์ค้นหาผู้จัดจำหน่าย...';
   } catch (err) {
-    sel.innerHTML = `<option value="">โหลดรายชื่อผู้จัดจำหน่ายไม่สำเร็จ: ${err.message}</option>`;
+    supInput.placeholder = 'โหลดรายชื่อไม่สำเร็จ: ' + err.message;
   }
 }
+function renderSupList() {
+  const k = supKey(supInput.value);
+  supResults = suppliers.filter(n => !k || supKey(n).includes(k)).slice(0, 60);
+  const exact = suppliers.some(n => supKey(n) === k);
+  let html = supResults.map((n, i) => `<div class="sup-item ${i === supHl ? 'hl' : ''}" data-i="${i}">${supEsc(n)}</div>`).join('');
+  if (!supResults.length) html = `<div class="sup-item empty">ไม่พบ "${supEsc(supInput.value.trim())}"</div>`;
+  if (k && !exact) html += `<div class="sup-item add" data-add="1">＋ เพิ่มผู้จัดจำหน่ายใหม่: "${supEsc(supInput.value.trim())}"</div>`;
+  supList.innerHTML = html;
+  supList.classList.add('show');
+}
+function pickSupplier(name) {
+  document.getElementById('supplier').value = name;
+  supInput.value = name;
+  supInput.classList.add('picked');
+  supList.classList.remove('show');
+}
+async function addSupplier(name) {
+  name = String(name || '').trim().replace(/\s+/g, ' ');
+  if (!name) return;
+  const contact = prompt(`เพิ่มผู้จัดจำหน่ายใหม่: "${name}"\n\nชื่อผู้ติดต่อ (ไม่บังคับ — กด OK ข้ามได้)`, '');
+  if (contact === null) return; // กดยกเลิก
+  const phone = prompt('เบอร์โทร (ไม่บังคับ — กด OK ข้ามได้)', '') || '';
+  supInput.disabled = true;
+  try {
+    const r = await apiPost('createSupplier', { supplier: { name, contact, phone } });
+    if (!suppliers.includes(r.name)) suppliers.push(r.name);
+    pickSupplier(r.name);
+    if (r.alreadyExists) alert(`มีผู้จัดจำหน่าย "${r.name}" อยู่แล้ว — เลือกให้แล้ว`);
+  } catch (err) {
+    alert('เพิ่มผู้จัดจำหน่ายไม่สำเร็จ: ' + err.message);
+  }
+  supInput.disabled = false;
+}
+supInput.addEventListener('focus', () => { supHl = -1; renderSupList(); });
+supInput.addEventListener('input', () => {
+  document.getElementById('supplier').value = ''; // พิมพ์ใหม่ = ยังไม่ได้เลือก
+  supInput.classList.remove('picked');
+  supHl = 0; renderSupList();
+});
+supInput.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { supHl = Math.min(supResults.length - 1, supHl + 1); renderSupList(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { supHl = Math.max(0, supHl - 1); renderSupList(); e.preventDefault(); }
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (supHl >= 0 && supResults[supHl]) pickSupplier(supResults[supHl]);
+    else if (supInput.value.trim()) addSupplier(supInput.value);
+  } else if (e.key === 'Escape') supList.classList.remove('show');
+});
+supList.addEventListener('mousedown', e => {
+  const it = e.target.closest('.sup-item');
+  if (!it || it.classList.contains('empty')) return;
+  e.preventDefault();
+  if (it.dataset.add) addSupplier(supInput.value); else pickSupplier(supResults[Number(it.dataset.i)]);
+});
+supInput.addEventListener('blur', () => setTimeout(() => {
+  supList.classList.remove('show');
+  // พิมพ์ชื่อตรงกับที่มีอยู่เป๊ะแต่ไม่ได้คลิก → เลือกให้เลย
+  if (!document.getElementById('supplier').value) {
+    const m = suppliers.find(n => supKey(n) === supKey(supInput.value));
+    if (m) pickSupplier(m);
+  }
+}, 150));
 loadSuppliers();
 
 // ---------- ค้นหาสินค้า (เหมือนหน้า POS) ----------
