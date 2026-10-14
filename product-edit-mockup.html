@@ -447,6 +447,16 @@ let reqKY9 = false, reqKY10 = false, reqKY11 = false;
 // "พิมพ์รายงาน ขย.9/10/11" — แก้ไข/บันทึกได้จริงตามที่ชีตต้นทางระบุว่า override ได้
 let printKY9 = false, printKY10 = false, printKY11 = false;
 let treatmentClassChecked = [];
+const TREAT_CLASSES = [
+    "ระบบทางเดินอาหาร (Gastro-Intestinal System)","ระบบหัวใจและหลอดเลือด (Cardiovascular System)",
+    "ระบบทางเดินหายใจ (Respiratory System)","ระบบประสาท (Central Nervous System)",
+    "ยาปฏิชีวนะ/ยาฆ่าเชื้อ (Infections)","ระบบต่อมไร้ท่อ (Endocrine System)",
+    "ระบบสูตินรีเวช (Obstetrics, gynaecology and urinary-tract disorders)","มะเร็งและยากดภูมิคุ้มกัน (Malignant disease and immunosuppression)",
+    "สารอาหารและผลิตภัณฑ์เกี่ยวกับเลือด (Nutrition and blood)","กระดูก กล้ามเนื้อ และข้อ (Musculoskeletal and joint diseases)",
+    "ตา (Eye)","หู คอ จมูก และช่องปาก (Ear, nose, oropharynx and oral cavity)",
+    "ผิวหนัง (Skin)","วัคซีนและภูมิคุ้มกัน (Immunological products and vaccines)",
+    "ยาดมสลบ (Anaesthesia)","อื่นๆ ที่เป็นยา (Unclassified medicines)"
+  ];
 
 // ---------- รายชื่อหน่วยนับที่ใช้บ่อย (เลือกจากลิสต์ได้ หรือพิมพ์ชื่ออื่นเองก็ได้ ผ่าน <datalist>) ----------
 // โหลดจริงจากชีต (ผ่าน loadCommonUnitNames() ตอนเปิดหน้า) — พิมพ์ชื่อหน่วยใหม่ที่ไม่มีในลิสต์
@@ -685,7 +695,9 @@ async function loadProductByCode(code){
   printKY9 = (drugInfo['พิมพ์รายงาน ขย.9 (Y/N)'] || '') === 'Y';
   printKY10 = (drugInfo['พิมพ์รายงาน ขย.10 (Y/N)'] || '') === 'Y';
   printKY11 = (drugInfo['พิมพ์รายงาน ขย.11 (Y/N)'] || '') === 'Y';
-  treatmentClassChecked = drugInfo['Treatment Class'] ? drugInfo['Treatment Class'].split(',').map(s => s.trim()).filter(Boolean) : [];
+  // ชื่อหมวดบางตัวมีจุลภาคอยู่ในชื่อ (เช่น "Ear, nose, ...") — ห้าม split ด้วย ',' ให้เช็คทีละหมวดว่ามีอยู่ในข้อความแทน
+  const tcRaw = String(drugInfo['Treatment Class'] || '');
+  treatmentClassChecked = TREAT_CLASSES.filter(t => tcRaw.includes(t));
 
   // ---------- ประเภทสินค้า ----------
   // ลองอ่านจากคอลัมน์ JSON ใหม่ก่อน (ครบทั้ง 10 หมวด) ถ้ายังไม่เคยมี fallback ไปอ่านจาก 2 คอลัมน์เดิม (ยาอันตราย/ยาควบคุมพิเศษ)
@@ -1132,16 +1144,7 @@ function renderStockTab() {
 }
 
 function renderDrugTab() {
-  const treatClasses = [
-    "ระบบทางเดินอาหาร (Gastro-Intestinal System)","ระบบหัวใจและหลอดเลือด (Cardiovascular System)",
-    "ระบบทางเดินหายใจ (Respiratory System)","ระบบประสาท (Central Nervous System)",
-    "ยาปฏิชีวนะ/ยาฆ่าเชื้อ (Infections)","ระบบต่อมไร้ท่อ (Endocrine System)",
-    "ระบบสูตินรีเวช (Obstetrics, gynaecology and urinary-tract disorders)","มะเร็งและยากดภูมิคุ้มกัน (Malignant disease and immunosuppression)",
-    "สารอาหารและผลิตภัณฑ์เกี่ยวกับเลือด (Nutrition and blood)","กระดูก กล้ามเนื้อ และข้อ (Musculoskeletal and joint diseases)",
-    "ตา (Eye)","หู คอ จมูก และช่องปาก (Ear, nose, oropharynx and oral cavity)",
-    "ผิวหนัง (Skin)","วัคซีนและภูมิคุ้มกัน (Immunological products and vaccines)",
-    "ยาดมสลบ (Anaesthesia)","อื่นๆ ที่เป็นยา (Unclassified medicines)"
-  ];
+  const treatClasses = TREAT_CLASSES;
   return `
     <h3>ข้อมูลทางยา</h3>
     <h4>ส่วนผสมยา (Generic Name)</h4>
