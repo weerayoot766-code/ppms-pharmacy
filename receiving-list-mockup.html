@@ -147,6 +147,13 @@
   }
   .pagination button.active { background: #2e8b4f; border-color: #2e8b4f; color: #fff; font-weight: 600; }
   .pagination button:hover:not(.active) { background: #eef6ee; }
+  .pay-select { padding: 6px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid; outline: none; }
+  .pay-select:disabled { opacity: .6; }
+  .pay-none { background: #f4f6f5; color: #8fa198; border-color: #dfe6e1; }
+  .pay-cash { background: #e4f6e8; color: #1e6b3c; border-color: #9fd3ad; }
+  .pay-company { background: #fff3d6; color: #8a5a00; border-color: #f0cf7c; }
+  .pay-wholesale { background: #ece8fb; color: #5b3fb8; border-color: #c6b9f2; }
+  .pay-select option { background: #fff; color: #24312a; font-weight: 400; }
 </style>
 </head>
 <body>
@@ -265,6 +272,32 @@ async function apiGet(action, params = {}) {
   }
 })();
 
+async function apiPost(action, payload = {}) {
+  const requestId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, requestId, ...payload }), // ห้ามตั้ง Content-Type เอง ไม่งั้นชน CORS preflight
+    });
+    return await readApiJson(res);
+  } catch (err) {
+    if (!err.nonJson && !(err instanceof TypeError)) throw err; // error จริงจากหลังบ้าน → แจ้งตามปกติ
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await new Promise(r => setTimeout(r, 700 * attempt));
+      let r;
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        r = await readApiJson(await fetch(`${API_URL}?${q}`));
+      } catch (e) { continue; }
+      if (r && r.found) {
+        if (!r.response.ok) throw new Error(r.response.error);
+        return r.response.data;
+      }
+    }
+    throw err;
+  }
+}
+
 // ---------- ใบรับสินค้า: โหลดจริงจาก action 'listReceivings' ----------
 // หมายเหตุ: backend ยังไม่มีสถานะ "ร่าง/เสร็จสมบูรณ์" หรือ "จ่ายแล้ว/ยังไม่จ่าย" เก็บไว้จริง
 // (สร้างใบรับสินค้าผ่าน createReceiving แล้วถือว่าเสร็จสมบูรณ์ทันที ไม่มีแนวคิดร่างในระบบตอนนี้)
@@ -284,8 +317,9 @@ async function loadReceivings() {
       supplier: r.supplier || '-',
       amount: r.total || 0,
       status: 'complete',
-      paid: null, // ยังไม่มีข้อมูลการจ่ายเงินในระบบ
-    })).sort((a, b) => (a.doc < b.doc ? 1 : -1));
+      payment: r.payment || '',
+      ts: r.date ? new Date(r.date).getTime() || 0 : 0,
+    })).sort((a, b) => (b.ts - a.ts) || (a.doc < b.doc ? 1 : -1)); // ล่าสุดก่อน
   } catch (err) {
     document.getElementById('recvBody').innerHTML =
       `<tr><td colspan="8"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
@@ -302,12 +336,32 @@ function statusBadge(status) {
   if (status === "complete") return `<span class="badge badge-complete">เสร็จสมบูรณ์</span>`;
   return `<span class="badge badge-draft">ร่างรายการ</span>`;
 }
+const PAY_OPTIONS = [
+  { v: '', label: '— ยังไม่ระบุ —', cls: 'pay-none' },
+  { v: 'ชำระเงินสดแล้ว', label: '💵 ชำระเงินสดแล้ว', cls: 'pay-cash' },
+  { v: 'เครดิตบริษัทยา', label: '🏢 เครดิตบริษัทยา', cls: 'pay-company' },
+  { v: 'เครดิตยี่ปั๊ว', label: '🏪 เครดิตยี่ปั๊ว', cls: 'pay-wholesale' },
+];
 function paidBadge(r) {
-  if (r.status === "draft") return "-";
-  if (r.paid === null || r.paid === undefined) return "-"; // ยังไม่มีข้อมูลการจ่ายเงินในระบบ
-  return r.paid
-    ? `<span class="badge badge-paid">จ่ายแล้ว</span>`
-    : `<span class="badge badge-unpaid">ยังไม่จ่าย</span>`;
+  const opt = PAY_OPTIONS.find(o => o.v === r.payment) || PAY_OPTIONS[0];
+  return `<select class="pay-select ${opt.cls}" onchange="setPayment('${String(r.doc).replace(/'/g, "\\'")}', this)">
+    ${PAY_OPTIONS.map(o => `<option value="${o.v}" ${o.v === r.payment ? 'selected' : ''}>${o.label}</option>`).join('')}</select>`;
+}
+async function setPayment(doc, sel) {
+  const r = receivings.find(x => x.doc === doc);
+  const prev = r ? r.payment : '';
+  const v = sel.value;
+  sel.className = 'pay-select ' + (PAY_OPTIONS.find(o => o.v === v) || PAY_OPTIONS[0]).cls;
+  sel.disabled = true;
+  try {
+    await apiPost('setReceivingPayment', { docNo: doc, payment: v });
+    if (r) r.payment = v;
+  } catch (err) {
+    alert('บันทึกการชำระเงินไม่สำเร็จ: ' + err.message);
+    sel.value = prev;
+    sel.className = 'pay-select ' + (PAY_OPTIONS.find(o => o.v === prev) || PAY_OPTIONS[0]).cls;
+  }
+  sel.disabled = false;
 }
 
 function renderTable() {
