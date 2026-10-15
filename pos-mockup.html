@@ -2818,8 +2818,22 @@ function repriceCartForLevel() {
 
 function unitKey(v) { return String(v == null ? '' : v).trim().replace(/\s+/g, ' ').toLowerCase(); }
 
-async function fetchProductDetailRaw(code){
-  if (productDetailCache[code]) return productDetailCache[code];
+/** วันหมดอายุให้อ่านง่าย: วว/ดด/ปปปป (พ.ศ.) — รองรับทั้งค่าวันที่จากชีตและข้อความ yyyy-mm-dd */
+function fmtExpiry(v) {
+  if (!v) return '-';
+  const s = String(v);
+  let y, m, d, mt;
+  if ((mt = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+  else { const dt = new Date(v); if (isNaN(dt)) return s; y = dt.getFullYear(); m = dt.getMonth() + 1; d = dt.getDate(); }
+  if (y < 2400) y += 543;
+  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+}
+
+// เก็บรายละเอียดยาไว้ในเครื่องเพื่อเปิดหน้าต่างได้ทันที แต่ถ้าเก่ากว่านี้จะโหลดใหม่ตามหลัง (ราคาทุน/ราคา/สต๊อกที่เพิ่งแก้จะได้ขึ้น)
+const PRODUCT_DETAIL_FRESH_MS = 20000;
+
+async function fetchProductDetailRaw(code, force){
+  if (!force && productDetailCache[code]) return productDetailCache[code];
 
   const detail = await apiGet('getProduct', { code, mode: 'pos' }); // โหมดหน้าขาย: ดึงเฉพาะที่ใช้ + หลังบ้านจำส่วนที่ไม่ค่อยเปลี่ยนไว้ (สต๊อกอ่านสดทุกครั้ง)
   const product = detail.product || {};
@@ -2889,7 +2903,8 @@ async function fetchProductDetailRaw(code){
     name: product['ชื่อสินค้า'],
     strength: '',
     indication: (labelDefaults && labelDefaults.indication) || (detail.drugInfo ? (detail.drugInfo['ชื่อยาสามัญ (Generic Name)'] || '') : ''),
-    expiry: lots[0] ? lots[0]['วันหมดอายุ (EXP)'] : '',
+    expiry: lots[0] ? fmtExpiry(lots[0]['วันหมดอายุ (EXP)']) : '-',
+    _at: Date.now(),
     stock: detail.liveStock != null ? detail.liveStock : (product['คงเหลือรวมทุกล็อต(อัตโนมัติ)'] || 0),
     baseStock,
     units,
@@ -2948,6 +2963,26 @@ async function openProductModal(code){
   renderModalQtyPrice(); // ตั้งค่า modalStock ให้ตรงกับหน่วยที่เลือกอยู่ (ไม่ใช่ยอดรวมข้ามหน่วย) ในนี้แล้ว
 
   document.getElementById('productModalOverlay').classList.add('show');
+
+  // ข้อมูลในเครื่องเก่าแล้ว → โหลดใหม่ตามหลังเงียบๆ แล้วอัปเดตหน้าต่างที่เปิดอยู่ (ราคาทุน/ราคา/สต๊อก/EXP)
+  if (Date.now() - (p._at || 0) > PRODUCT_DETAIL_FRESH_MS) {
+    const oldAuto = p.units.map(u => Math.abs(u.price - priceFor(u)) < 0.0001); // หน่วยไหนยังไม่ได้แก้ราคาเอง
+    fetchProductDetailRaw(code, true).then(fresh => {
+      if (!fresh || myToken !== modalLoadToken || modalProduct !== p || editingCartIndex !== null) return;
+      if (!document.getElementById('productModalOverlay').classList.contains('show')) return;
+      const curLabel = p.units[modalUnitIndex] ? p.units[modalUnitIndex].label : null;
+      fresh.units.forEach(fu => {
+        const i = p.units.findIndex(u => u.label === fu.label);
+        fu.price = (i >= 0 && !oldAuto[i]) ? p.units[i].price : priceFor(fu); // ราคาที่แก้เองไว้ ไม่ทับ
+      });
+      modalProduct = fresh;
+      const ni = fresh.units.findIndex(u => u.label === curLabel);
+      modalUnitIndex = ni >= 0 ? ni : 0;
+      document.getElementById('modalExpiry').textContent = fresh.expiry;
+      renderModalUnits();
+      renderModalQtyPrice();
+    }).catch(() => {});
+  }
 }
 
 async function editCartItem(i){
