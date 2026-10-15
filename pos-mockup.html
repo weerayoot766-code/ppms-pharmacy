@@ -2837,7 +2837,8 @@ async function fetchProductDetailRaw(code, force){
 
   const detail = await apiGet('getProduct', { code, mode: 'pos' }); // โหมดหน้าขาย: ดึงเฉพาะที่ใช้ + หลังบ้านจำส่วนที่ไม่ค่อยเปลี่ยนไว้ (สต๊อกอ่านสดทุกครั้ง)
   const product = detail.product || {};
-  const costPerSmallUnit = Number(product['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0;
+  // ราคาทุน: ใช้ทุนของล็อตที่จะขายถัดไป (สดจากคลัง) ก่อน ถ้าไม่มีล็อตค่อยใช้ 'ต้นทุนล่าสุด' ของสินค้า
+  const costPerSmallUnit = Number(detail.liveCost) > 0 ? Number(detail.liveCost) : (Number(product['ต้นทุนล่าสุด/หน่วย(อัตโนมัติ)']) || 0);
   const smallUnitLabel = product['หน่วยเล็กสุด(อัตโนมัติ)'] || 'หน่วย';
 
   // คงเหลือรวมทุกล็อต (หน่วยเล็กสุด, ไม่นับล็อตหมดอายุ) แล้วแปลงเป็นแต่ละหน่วยด้วยตัวคูณ
