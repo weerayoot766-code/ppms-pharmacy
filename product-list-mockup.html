@@ -321,19 +321,33 @@ let currentPage = 1;
 const perPage = 10;
 
 async function loadProducts() {
-  document.getElementById('productBody').innerHTML =
-    `<tr><td colspan="7"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+  const dataStatus = document.getElementById('dsFilter').value;
+  const cacheKey = 'ppms_plist_' + [keyword, currentPage, perPage, dataStatus].join('|');
+  // แสดงผลครั้งก่อนที่จำไว้ในเครื่องทันที แล้วค่อยอัปเดตเป็นข้อมูลล่าสุด
+  let shownCached = false;
   try {
-    const data = await apiGet('listProducts', { keyword, page: currentPage, perPage, dataStatus: document.getElementById('dsFilter').value });
+    const c = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (c) { products = c.items; totalCount = c.total; renderTable(); shownCached = true;
+      document.getElementById('resultCount').textContent += ' · ⏳ กำลังอัปเดตข้อมูลล่าสุด...'; }
+  } catch (e) {}
+  if (!shownCached) document.getElementById('productBody').innerHTML =
+    `<tr><td colspan="7"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+  const myToken = ++loadToken;
+  try {
+    const data = await apiGet('listProducts', { keyword, page: currentPage, perPage, dataStatus });
+    if (myToken !== loadToken) return; // ระหว่างรอ เปลี่ยนหน้า/คำค้นไปแล้ว
     products = data.items;
     totalCount = data.total;
+    try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) {}
   } catch (err) {
-    document.getElementById('productBody').innerHTML =
+    if (myToken !== loadToken) return;
+    if (!shownCached) document.getElementById('productBody').innerHTML =
       `<tr><td colspan="7"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
     return;
   }
   renderTable();
 }
+let loadToken = 0;
 
 function renderTable() {
   const body = document.getElementById('productBody');
