@@ -2605,7 +2605,7 @@ function prepareSearchIndex(raw){
   (raw.barcodes || []).forEach(([bc, code]) => { (barcodeMap[code] = barcodeMap[code] || []).push(String(bc).toLowerCase()); });
   return {
     products: (raw.products || []).map(([code, name, short, unit, stock]) => ({
-      code, name, unit, stock,
+      code, name, unit, stock, short,
       hay: (name + ' ' + code + ' ' + short).toLowerCase(),
       barcodes: barcodeMap[code] || [],
     })),
@@ -2622,7 +2622,7 @@ function loadSearchIndex(){
 async function loadSearchIndexInner(){
   try {
     const cached = localStorage.getItem(SEARCH_INDEX_KEY);
-    if (cached) searchIndex = prepareSearchIndex(JSON.parse(cached));
+    if (cached && !searchIndex) searchIndex = prepareSearchIndex(JSON.parse(cached)); // โหลดซ้ำทีหลัง → ไม่ต้องย้อนไปใช้ของเก่า
   } catch (e) { /* ไม่มีของเก่าในเครื่อง */ }
   try {
     const t0 = Date.now();
@@ -2912,6 +2912,16 @@ async function fetchProductDetailRaw(code, force){
     labelDefaults,
   };
   productDetailCache[code] = result;
+  // อัปเดตชื่อ/คงเหลือในรายชื่อค้นหาให้ตรงกับข้อมูลจริงล่าสุดด้วย (เผื่อเพิ่งแก้ชื่อยา)
+  if (searchIndex && searchIndex.products) {
+    const hit = searchIndex.products.find(x => x.code === code);
+    if (hit) {
+      const short = hit.short || '';
+      hit.name = result.name || hit.name;
+      hit.stock = result.baseStock != null ? result.baseStock : hit.stock;
+      hit.hay = (hit.name + ' ' + code + ' ' + short).toLowerCase();
+    }
+  }
   return result;
 }
 
@@ -3343,6 +3353,16 @@ renderLabel();
 checkTempHumidityReminder();
 remedFromUrl();
 loadSearchIndex();
+// รายชื่อยาในเครื่องอาจเก่า (เช่น เพิ่งแก้ชื่อยาที่หลังบ้าน) → โหลดใหม่ตามหลังเมื่อกลับมาที่หน้านี้ และทุก 3 นาที
+let searchIndexLoadedAt = Date.now();
+function refreshSearchIndexIfOld(maxAgeMs) {
+  if (Date.now() - searchIndexLoadedAt < maxAgeMs) return;
+  searchIndexLoadedAt = Date.now();
+  loadSearchIndex();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSearchIndexIfOld(30000); });
+window.addEventListener('focus', () => refreshSearchIndexIfOld(30000));
+setInterval(() => refreshSearchIndexIfOld(180000), 60000);
 loadMemberIndex();
 
 // ---------- พิมพ์ฉลากยา ขนาดจริง 100x75มม. แนวนอน ----------
