@@ -577,6 +577,7 @@ let defaultLabel = {
 let isNewProduct = false;
 
 function resetToNewProduct() {
+  savedSnapshot = null; forceDirty = new Set(); // สินค้าใหม่ → บันทึกทุกส่วน
   isNewProduct = true;
   currentProductCode = null;
   currentProductRaw = {};
@@ -668,6 +669,7 @@ async function loadProductByCode(code){
     .map(b => ({ unit: b['หน่วย'], code: b['บาร์โค้ด'] }));
 
   // ---------- ราคา ----------
+  forceDirty = new Set();
   priceData = (detail.prices || []).map(p => ({
     branch: p['สาขา'] || '-',
     unit: p['หน่วย'] || '-',
@@ -682,7 +684,7 @@ async function loadProductByCode(code){
     if (unitData.some(u => u.unit === r.unit)) return;
     const key = v => String(v == null ? '' : v).trim().replace(/\s+/g, ' ').toLowerCase(); // PACK 10 = pack 10
     const m = unitData.find(u => key(u.unit) === key(r.unit));
-    if (m) r.unit = m.unit;
+    if (m) { r.unit = m.unit; forceDirty.add('prices'); }
   });
 
   // ---------- ข้อมูลทางยา ----------
@@ -765,6 +767,7 @@ async function loadProductByCode(code){
   };
 
   loadedTag.textContent = '✓ กำลังแก้ไข: ' + currentProductCode + ' — ' + (product['ชื่อสินค้า'] || '');
+  savedSnapshot = snapshotOf(buildSaveSections()); // จำค่าตอนเปิด ไว้เทียบว่าแท็บไหนถูกแก้ (บันทึกเฉพาะส่วนที่แก้)
 
   // รีเฟรชแท็บที่กำลังเปิดอยู่ให้ตรงกับข้อมูลใหม่
   const activeTab = document.querySelector('.tab-item.active');
@@ -1341,6 +1344,38 @@ function renderPrintTab() {
   `;
 }
 
+let savedSnapshot = null;      // JSON ของแต่ละส่วนตอนเปิดสินค้า/บันทึกล่าสุด
+let forceDirty = new Set();    // ส่วนที่ระบบแก้ให้อัตโนมัติตอนเปิด (ต้องบันทึกแม้ผู้ใช้ไม่ได้แตะ)
+function snapshotOf(all) { const o = {}; Object.keys(all).forEach(k => { o[k] = JSON.stringify(all[k]); }); return o; }
+function buildSaveSections() {
+  return {
+    product: {
+      name: document.getElementById('fProductName').value.trim(),
+      isDrug: document.getElementById('fIsDrug').checked,
+      active: document.getElementById('fActiveStatus').checked,
+      groups: productGroupsSelected,
+    },
+    labelDefaults: {
+      indication: defaultLabel.indication, route: defaultLabel.route, dose: defaultLabel.dose, doseUnit: defaultLabel.doseUnit,
+      perDay: defaultLabel.perDay, mealTime: defaultLabel.mealTime,
+      morning: defaultLabel.times.morning, noon: defaultLabel.times.noon, evening: defaultLabel.times.evening, bedtime: defaultLabel.times.bedtime,
+      every: defaultLabel.every.checked, everyHr: defaultLabel.every.hours, prn: defaultLabel.prn.checked, prnNote: defaultLabel.prn.note,
+      noteChecked: defaultLabel.note.checked, note: defaultLabel.note.text,
+    },
+    genericName: buildGenericNameString(),
+    units: unitData,
+    barcodes: barcodeData,
+    prices: priceData,
+    drugMeta: {
+      productTypes: productTypeChecked,
+      printKY9: printKY9, printKY10: printKY10, printKY11: printKY11,
+      treatmentClass: treatmentClassChecked,
+    },
+    safetyStock: safetyStockData,
+    shelfLocations: shelfLocationData,
+  };
+}
+
 async function saveAll(){
   if (!isNewProduct && !currentProductCode) { alert('ยังไม่ได้เลือกสินค้า'); return; }
 
@@ -1382,25 +1417,13 @@ async function saveAll(){
   const emptyUnitRow = unitData.some((u, i) => i > 0 && !u.base && !u.unit.trim());
   if (emptyUnitRow) { alert('กรุณากรอกชื่อหน่วยให้ครบทุกแถวในแท็บ "หน่วย" (หรือลบแถวที่ยังไม่ได้กรอกออกก่อน)'); return; }
 
-  // อ่านจาก defaultLabel โดยตรง (อัปเดตสดทุกครั้งที่พิมพ์ในแท็บสำหรับพิมพ์ ไม่ว่าจะเคยสลับไปแท็บอื่นแล้วกลับมาก็ตาม)
-  const defaults = {
-    indication: defaultLabel.indication,
-    route: defaultLabel.route,
-    dose: defaultLabel.dose,
-    doseUnit: defaultLabel.doseUnit,
-    perDay: defaultLabel.perDay,
-    mealTime: defaultLabel.mealTime,
-    morning: defaultLabel.times.morning,
-    noon: defaultLabel.times.noon,
-    evening: defaultLabel.times.evening,
-    bedtime: defaultLabel.times.bedtime,
-    every: defaultLabel.every.checked,
-    everyHr: defaultLabel.every.hours,
-    prn: defaultLabel.prn.checked,
-    prnNote: defaultLabel.prn.note,
-    noteChecked: defaultLabel.note.checked,
-    note: defaultLabel.note.text,
-  };
+  const fullAll = buildSaveSections();
+  // บันทึกเฉพาะส่วนที่แก้จริง (เทียบกับค่าตอนเปิดสินค้า) — ส่วนที่ไม่ได้แตะไม่ต้องส่ง/ไม่ต้องเขียนชีต เร็วขึ้นมาก
+  const all = {};
+  Object.keys(fullAll).forEach(k => {
+    if (!savedSnapshot || forceDirty.has(k) || JSON.stringify(fullAll[k]) !== savedSnapshot[k]) all[k] = fullAll[k];
+  });
+  if (!Object.keys(all).length) { alert('ยังไม่ได้แก้ไขอะไร — ไม่ต้องบันทึก'); return; }
 
   const btn = document.getElementById('mainSaveBtn');
   btn.disabled = true;
@@ -1408,32 +1431,12 @@ async function saveAll(){
 
   try {
     // ส่งทุกแท็บไปในคำขอเดียว (เดิมส่งแยก 9 คำขอต่อกัน ใช้เวลารวม ~30 วินาที)
-    await apiPost('saveProductAll', {
-      code: currentProductCode,
-      all: {
-        product: {
-          name: document.getElementById('fProductName').value.trim(),
-          isDrug: document.getElementById('fIsDrug').checked,
-          active: document.getElementById('fActiveStatus').checked,
-          groups: productGroupsSelected,
-        },
-        labelDefaults: defaults,
-        genericName: buildGenericNameString(),
-        units: unitData,
-        barcodes: barcodeData,
-        prices: priceData,
-        drugMeta: {
-          productTypes: productTypeChecked,
-          printKY9: printKY9, printKY10: printKY10, printKY11: printKY11,
-          treatmentClass: treatmentClassChecked,
-        },
-        safetyStock: safetyStockData,
-        shelfLocations: shelfLocationData,
-      }
-    });
-    alert('บันทึกเรียบร้อย\n\n✅ ข้อมูลสินค้า "' + currentProductCode + '" บันทึกเข้าระบบจริงแล้วทั้งหมด (ชื่อสินค้า, หน่วย, บาร์โค้ด, ราคา, ชื่อยาสามัญ, ประเภทสินค้า, รายงาน ขย., Treatment Class, Safety Stock, ชั้นวางสินค้า, กลุ่มสินค้า, ค่าเริ่มต้นฉลากยา)\n\n⚠️ เหลือแค่ "ผู้แทนจำหน่าย" ที่เปลี่ยนเป็นดึงประวัติจริงจากใบรับสินค้าให้อัตโนมัติแล้ว ไม่ต้องบันทึกอะไรเพิ่มในส่วนนั้น');
-    // โหลดข้อมูลสินค้าใหม่จาก sheet เพื่อยืนยันว่าที่บันทึกไปตรงกับที่ระบบเก็บจริง (เช่น ลำดับแถวใหม่)
-    await loadProductByCode(currentProductCode);
+    await apiPost('saveProductAll', { code: currentProductCode, all });
+    savedSnapshot = snapshotOf(fullAll); // ค่าปัจจุบันกลายเป็นค่าที่บันทึกแล้ว (ไม่ต้องโหลดสินค้าใหม่ทั้งหมด — เร็วขึ้น)
+    forceDirty = new Set();
+    const names = { product: 'ข้อมูลสินค้า', labelDefaults: 'ค่าเริ่มต้นฉลากยา', genericName: 'ชื่อยาสามัญ', units: 'หน่วย', barcodes: 'บาร์โค้ด',
+      prices: 'ราคา', drugMeta: 'ข้อมูลทางยา', safetyStock: 'Safety Stock', shelfLocations: 'ชั้นวางสินค้า' };
+    alert('บันทึกเรียบร้อย ✅\n\nส่วนที่บันทึก: ' + Object.keys(all).map(k => names[k] || k).join(', '));
   } catch (err) {
     alert('บันทึกไม่สำเร็จ: ' + err.message);
   }
