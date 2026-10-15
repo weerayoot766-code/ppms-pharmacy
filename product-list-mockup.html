@@ -118,6 +118,13 @@
     padding: 1px 7px; border-radius: 5px; background: #fdecea; color: #c0392b; border: 1px solid #f5b7b1;
     font-size: 11.5px; font-weight: 700; margin-left: 6px; white-space: nowrap; vertical-align: 1px;
   }
+  .ds-select { padding: 5px 9px; border-radius: 999px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid; outline: none; }
+  .ds-select:disabled { opacity: .6; }
+  .ds-none { background: #fdecea; color: #c0392b; border-color: #f5c6c0; }
+  .ds-done { background: #e3f0fb; color: #1d5f9e; border-color: #a9cdee; }
+  .ds-stock { background: #e4f6e8; color: #1e6b3c; border-color: #9fd3ad; }
+  .ds-select option { background: #fff; color: #24312a; font-weight: 400; }
+  .ds-filter { padding: 9px 10px; border: 1px solid #cfe0d3; border-radius: 9px; font-size: 13.5px; font-family: inherit; background: #fff; }
   .status-pill { color: #2e8b4f; font-weight: 600; font-size: 13px; white-space: nowrap; }
   .status-pill.off { color: #c77700; }
   .status-pill small { display: block; font-weight: 400; font-size: 11.5px; color: #8fa198; }
@@ -186,6 +193,12 @@
         <input type="text" id="searchInput" placeholder="ค้นหาด้วยรหัสสินค้า หรือ ชื่อสินค้า...">
         <button onclick="doSearch()">🔍</button>
       </div>
+      <select id="dsFilter" class="ds-filter" onchange="currentPage=1;loadProducts()" title="กรองตามการลงข้อมูลยา">
+        <option value="">ทุกสถานะการลงข้อมูล</option>
+        <option value="ยังไม่ลงข้อมูล">✗ ยังไม่ลงข้อมูล</option>
+        <option value="ลงข้อมูลเรียบร้อย">✓ ลงข้อมูลเรียบร้อย</option>
+        <option value="คงคลังปกติแล้ว">✓✓ คงคลังปกติแล้ว</option>
+      </select>
       <button class="add-product-btn" onclick="window.location.href='product-edit-mockup.html?new=1'">＋ เพิ่มสินค้าใหม่</button>
     </div>
 
@@ -198,6 +211,7 @@
             <th style="width:50px;">#</th>
             <th style="width:120px;">รหัสสินค้า</th>
             <th>ชื่อสินค้า</th>
+            <th style="width:175px;">การลงข้อมูลยา</th>
             <th style="width:130px;">สถานะ</th>
             <th style="width:100px;">เปิดใช้งาน</th>
             <th style="width:110px;">Action</th>
@@ -308,14 +322,14 @@ const perPage = 10;
 
 async function loadProducts() {
   document.getElementById('productBody').innerHTML =
-    `<tr><td colspan="6"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
+    `<tr><td colspan="7"><div class="empty-state">กำลังโหลดข้อมูลจริง...</div></td></tr>`;
   try {
-    const data = await apiGet('listProducts', { keyword, page: currentPage, perPage });
+    const data = await apiGet('listProducts', { keyword, page: currentPage, perPage, dataStatus: document.getElementById('dsFilter').value });
     products = data.items;
     totalCount = data.total;
   } catch (err) {
     document.getElementById('productBody').innerHTML =
-      `<tr><td colspan="6"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
+      `<tr><td colspan="7"><div class="empty-state">ดึงข้อมูลไม่สำเร็จ: ${err.message}</div></td></tr>`;
     return;
   }
   renderTable();
@@ -326,13 +340,14 @@ function renderTable() {
   const start = (currentPage - 1) * perPage;
 
   if (products.length === 0) {
-    body.innerHTML = `<tr><td colspan="6"><div class="empty-state">ไม่พบสินค้าที่ค้นหา</div></td></tr>`;
+    body.innerHTML = `<tr><td colspan="7"><div class="empty-state">ไม่พบสินค้าที่ค้นหา</div></td></tr>`;
   } else {
     body.innerHTML = products.map((p, i) => `
       <tr class="${p.active ? '' : 'inactive'}">
         <td>${start + i + 1}</td>
         <td>${p.code}</td>
         <td>${p.name} ${p.danger ? '<span class="tag-danger" title="ยาที่ต้องลงบัญชีการขาย ขย.11 (ยาอันตรายเฉพาะรายการ)">ขย.11</span>' : ''}</td>
+        <td>${dataStatusSelect(p, i)}</td>
         <td><span class="status-pill ${p.stock > 0 ? '' : 'off'}">${p.stock > 0 ? 'มีสินค้าในคลัง' : 'ของหมดชั่วคราว'}<small>${p.stock > 0 ? 'คงเหลือ ' + Number(p.stock).toLocaleString() + ' ' + (p.unit || '') : 'คงเหลือ 0'}</small></span></td>
         <td><div class="toggle-switch ${p.active ? 'on' : ''}" title="${p.active ? 'เปิดใช้งานอยู่ — กดเพื่อปิด (จะไม่ขึ้นในหน้าขาย)' : 'ปิดใช้งานอยู่ — กดเพื่อเปิด'}" onclick="toggleActive(${i}, this)"><div class="knob"></div></div></td>
         <td>
@@ -355,6 +370,30 @@ function renderTable() {
 
   document.getElementById('resultCount').textContent = `พบ ${totalCount.toLocaleString()} รายการ`;
   renderPagination();
+}
+
+const DATA_STATUS = [
+  { v: 'ยังไม่ลงข้อมูล', label: '✗ ยังไม่ลงข้อมูล', cls: 'ds-none' },
+  { v: 'ลงข้อมูลเรียบร้อย', label: '✓ ลงข้อมูลเรียบร้อย', cls: 'ds-done' },
+  { v: 'คงคลังปกติแล้ว', label: '✓✓ คงคลังปกติแล้ว', cls: 'ds-stock' },
+];
+function dataStatusSelect(p, i) {
+  const cur = DATA_STATUS.find(o => o.v === p.dataStatus) || DATA_STATUS[0];
+  return `<select class="ds-select ${cur.cls}" onchange="setDataStatus(${i}, this)">${DATA_STATUS.map(o => `<option value="${o.v}" ${o.v === cur.v ? 'selected' : ''}>${o.label}</option>`).join('')}</select>`;
+}
+async function setDataStatus(i, sel) {
+  const p = products[i], prev = p.dataStatus, v = sel.value;
+  sel.className = 'ds-select ' + (DATA_STATUS.find(o => o.v === v) || DATA_STATUS[0]).cls;
+  sel.disabled = true;
+  try {
+    await apiPost('setProductDataStatus', { code: p.code, status: v });
+    p.dataStatus = v;
+  } catch (err) {
+    alert('บันทึกสถานะไม่สำเร็จ: ' + err.message);
+    sel.value = prev;
+    sel.className = 'ds-select ' + (DATA_STATUS.find(o => o.v === prev) || DATA_STATUS[0]).cls;
+  }
+  sel.disabled = false;
 }
 
 function toggleMore(e, i) {
