@@ -357,7 +357,7 @@ function renderTable() {
     body.innerHTML = `<tr><td colspan="7"><div class="empty-state">ไม่พบสินค้าที่ค้นหา</div></td></tr>`;
   } else {
     body.innerHTML = products.map((p, i) => `
-      <tr class="${p.active ? '' : 'inactive'}">
+      <tr class="${p.active ? '' : 'inactive'}" onmouseenter="warmProduct('${p.code}')" ontouchstart="warmProduct('${p.code}')">
         <td>${start + i + 1}</td>
         <td>${p.code}</td>
         <td>${p.name} ${p.danger ? '<span class="tag-danger" title="ยาที่ต้องลงบัญชีการขาย ขย.11 (ยาอันตรายเฉพาะรายการ)">ขย.11</span>' : ''}</td>
@@ -408,6 +408,14 @@ async function setDataStatus(i, sel) {
     sel.className = 'ds-select ' + (DATA_STATUS.find(o => o.v === prev) || DATA_STATUS[0]).cls;
   }
   sel.disabled = false;
+}
+
+// ชี้เมาส์ที่แถวไหน → สั่งหลังบ้านเตรียมข้อมูลสินค้านั้นไว้ล่วงหน้า (หน้าแก้ไขสินค้าจะเปิดได้เร็วขึ้นมาก)
+const warmed = {};
+function warmProduct(code) {
+  if (!code || warmed[code]) return;
+  warmed[code] = true;
+  setTimeout(() => { apiGet('getProduct', { code }).catch(() => {}); }, 150);
 }
 
 function toggleMore(e, i) {
