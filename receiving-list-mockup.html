@@ -153,6 +153,7 @@
   .pay-cash { background: #e4f6e8; color: #1e6b3c; border-color: #9fd3ad; }
   .pay-company { background: #fff3d6; color: #8a5a00; border-color: #f0cf7c; }
   .pay-wholesale { background: #ece8fb; color: #5b3fb8; border-color: #c6b9f2; }
+  .pay-done { background: #e3f0fb; color: #1d5f9e; border-color: #a9cdee; }
   .pay-select option { background: #fff; color: #24312a; font-weight: 400; }
 </style>
 </head>
@@ -341,6 +342,7 @@ const PAY_OPTIONS = [
   { v: 'ชำระเงินสดแล้ว', label: '💵 ชำระเงินสดแล้ว', cls: 'pay-cash' },
   { v: 'เครดิตบริษัทยา', label: '🏢 เครดิตบริษัทยา', cls: 'pay-company' },
   { v: 'เครดิตยี่ปั๊ว', label: '🏪 เครดิตยี่ปั๊ว', cls: 'pay-wholesale' },
+  { v: 'จ่ายเครดิตแล้ว', label: '✅ จ่ายเครดิตแล้ว', cls: 'pay-done' },
 ];
 function paidBadge(r) {
   const opt = PAY_OPTIONS.find(o => o.v === r.payment) || PAY_OPTIONS[0];

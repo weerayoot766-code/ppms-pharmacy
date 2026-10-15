@@ -90,6 +90,9 @@
   }
   .field input:focus, .field select:focus { outline: none; border-color: #2e8b4f; }
   .field input[readonly] { background: #f3f7f3; color: #6b7a70; }
+  .pay-sel.pay-cash { background: #e4f6e8; color: #1e6b3c; border-color: #9fd3ad; font-weight: 700; }
+  .pay-sel.pay-company { background: #fff3d6; color: #8a5a00; border-color: #f0cf7c; font-weight: 700; }
+  .pay-sel.pay-wholesale { background: #ece8fb; color: #5b3fb8; border-color: #c6b9f2; font-weight: 700; }
   .sup-wrap { position: relative; }
   .sup-wrap input { width: 100%; }
   .sup-wrap input.picked { border-color: #2e8b4f; background: #f3faf5; font-weight: 600; }
@@ -218,6 +221,15 @@
         <div class="field">
           <label>เภสัชกรผู้รับสินค้า</label>
           <input type="text" id="pharmacistName" readonly style="background:#f3f7f3; color:#6b7a70;">
+        </div>
+        <div class="field">
+          <label>การชำระเงิน <span class="req">*</span></label>
+          <select id="payment" onchange="this.className='pay-sel '+(this.selectedOptions[0].dataset.cls||'')">
+            <option value="" data-cls="">-- เลือกวิธีชำระเงิน --</option>
+            <option value="ชำระเงินสดแล้ว" data-cls="pay-cash">💵 ชำระเงินสดแล้ว</option>
+            <option value="เครดิตบริษัทยา" data-cls="pay-company">🏢 เครดิตบริษัทยา</option>
+            <option value="เครดิตยี่ปั๊ว" data-cls="pay-wholesale">🏪 เครดิตยี่ปั๊ว</option>
+          </select>
         </div>
       </div>
     </div>
@@ -680,6 +692,8 @@ async function saveReceiving() {
 
   if (!branch) { alert('กรุณาเลือกสาขาที่รับ'); return; }
   if (!supplier) { alert('กรุณาเลือกผู้จัดจำหน่าย'); return; }
+  const payment = document.getElementById('payment').value;
+  if (!payment) { alert('กรุณาเลือกการชำระเงิน (เงินสด / เครดิตบริษัทยา / เครดิตยี่ปั๊ว)'); return; }
   if (lines.length === 0) { alert('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ'); return; }
 
   const btn = document.getElementById('saveBtn');
@@ -690,7 +704,7 @@ async function saveReceiving() {
     await apiPost('createReceiving', {
       receiving: {
         docNo: document.getElementById('docNo').textContent,
-        branch, supplier,
+        branch, supplier, payment,
         taxInvoiceNo: '',
         pharmacist: document.getElementById('pharmacistName').value,
         items: lines.map(l => ({

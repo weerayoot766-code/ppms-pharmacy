@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปรุงยาเภสัช - รายงานหนี้คงค้าง</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Arial, sans-serif;
+    background: #dff3e3;
+    margin: 0;
+    color: #24312a;
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #1e6b3c, #2e8b4f);
+    color: #fff;
+    padding: 14px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo-badge {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+  }
+  .topbar .titles { line-height: 1.25; cursor: pointer; }
+  .topbar .titles .th-name { font-size: 16px; font-weight: 700; }
+  .topbar .titles .en-name { font-size: 11px; letter-spacing: .04em; opacity: .85; }
+  .back-link {
+    margin-left: auto;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.5);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back-link:hover { background: rgba(255,255,255,.28); }
+
+  .breadcrumb {
+    background: #fff;
+    padding: 11px 22px;
+    font-size: 13px;
+    color: #6b7a70;
+    border-bottom: 1px solid #eef2ef;
+  }
+  .breadcrumb b { color: #1e6b3c; }
+  .breadcrumb .sep { margin: 0 6px; color: #b6c4bb; }
+
+  .content { max-width: 950px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(30, 90, 50, .06);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #eef2ef;
+    flex-wrap: wrap;
+  }
+  .panel-header h2 {
+    font-size: 16px; font-weight: 700; color: #1e6b3c; margin: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    border: 1px solid #cfe0d3;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .search-box input {
+    flex: 1; border: none; padding: 10px 12px; font-size: 14px; font-family: inherit;
+  }
+  .search-box button {
+    background: #eef6ee; border: none; padding: 0 16px; cursor: pointer; color: #2e8b4f; font-size: 15px;
+  }
+  .add-btn {
+    background: #2e8b4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-btn:hover { background: #257a43; }
+
+  .result-count { padding: 12px 22px 0; font-size: 12.5px; color: #6b7a70; }
+
+  table.group-table { width: 100%; border-collapse: collapse; }
+  table.group-table th {
+    text-align: left; font-size: 12.5px; color: #6b7a70; font-weight: 600;
+    border-bottom: 2px solid #2e8b4f; padding: 10px 14px; white-space: nowrap;
+  }
+  table.group-table td {
+    padding: 12px 14px; border-bottom: 1px solid #eef2ef; font-size: 13.5px; vertical-align: middle;
+  }
+  table.group-table tr:hover td { background: #f6faf7; }
+  .group-name { font-weight: 600; color: #24312a; }
+  .count-pill {
+    display: inline-block; background: #eef6ee; color: #1e6b3c; font-weight: 600;
+    font-size: 12.5px; padding: 3px 10px; border-radius: 20px;
+  }
+
+  .action-btns { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid #cfe0d3; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: #4a5a4f;
+  }
+  .icon-btn:hover { background: #eef6ee; border-color: #2e8b4f; color: #1e6b3c; }
+  .icon-btn.danger:hover { background: #fdecea; border-color: #f2544a; color: #d9433a; }
+
+  .empty-state { padding: 40px; text-align: center; color: #8fa198; font-size: 13.5px; }
+
+  /* ---------- Popup เพิ่มกลุ่มสินค้า ---------- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(20,40,28,.45);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    background: #fff; border-radius: 14px; width: 100%; max-width: 380px;
+    box-shadow: 0 12px 34px rgba(20,60,35,.25);
+  }
+  .modal-header {
+    background: #eaf7ec; border-bottom: 1px solid #d3ecd8; border-radius: 14px 14px 0 0;
+    padding: 16px 18px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: #1e6b3c; }
+  .modal-close { background: none; border: none; font-size: 16px; color: #6b7a70; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; }
+  .modal-close:hover { background: #dcefe0; color: #2c3a32; }
+  .modal-body { padding: 18px; }
+  .modal-body label { display: block; font-size: 12.5px; font-weight: 600; color: #3f4f45; margin-bottom: 7px; }
+  .modal-body input {
+    width: 100%; padding: 10px 12px; border: 1px solid #cfe0d3; border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  .modal-confirm-btn {
+    width: 100%; margin-top: 18px; background: #2e8b4f; color: #fff; border: none;
+    border-radius: 10px; padding: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+  }
+  .modal-confirm-btn:hover { background: #257a43; }
+  .content { max-width: 1100px; }
+  .pb { padding: 16px 20px 22px; }
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .filters select { padding: 8px 12px; border: 1px solid #cfe0d3; border-radius: 9px; font-size: 14px; font-family: inherit; background: #fff; }
+  .filters .sp { flex: 1; }
+  .btn2 { background: #fff; border: 1px solid #cfe0d3; color: #1e6b3c; border-radius: 9px; padding: 8px 14px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn2:hover { background: #eef6ee; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .card { border-radius: 12px; padding: 14px 16px; border: 1px solid #e1eee3; background: #f8fcf9; }
+  .card .t { font-size: 12.5px; color: #6b7a70; }
+  .card .v { font-size: 22px; font-weight: 800; color: #24312a; margin-top: 4px; }
+  .card .s { font-size: 12px; color: #8fa198; margin-top: 2px; }
+  .card.total { background: #fdecea; border-color: #f5c6c0; } .card.total .v { color: #c0392b; }
+  .card.company { background: #fff8e6; border-color: #f0d9a0; } .card.company .v { color: #8a5a00; }
+  .card.wholesale { background: #f3f0fd; border-color: #d6ccf5; } .card.wholesale .v { color: #5b3fb8; }
+  .warn { background: #fff3d6; border: 1px solid #f0cf7c; color: #8a5a00; border-radius: 10px; padding: 9px 12px; font-size: 13px; margin-bottom: 14px; }
+  .warn a { color: #8a5a00; font-weight: 700; }
+  table.m { width: 100%; border-collapse: collapse; }
+  table.m th { text-align: right; font-size: 12.5px; color: #5b6b60; border-bottom: 2px solid #2e8b4f; padding: 9px 10px; font-weight: 600; white-space: nowrap; }
+  table.m th:first-child { text-align: left; }
+  table.m td { padding: 11px 10px; border-bottom: 1px solid #eef2ef; font-size: 14px; text-align: right; white-space: nowrap; }
+  table.m td:first-child { text-align: left; font-weight: 700; }
+  tr.mrow { cursor: pointer; } tr.mrow:hover td { background: #f4faf5; }
+  tr.mrow td:first-child::before { content: '▸ '; color: #8fa198; } tr.mrow.open td:first-child::before { content: '▾ '; }
+  tr.foot td { font-weight: 800; border-top: 2px solid #2e8b4f; background: #f6faf6; }
+  .num-red { color: #c0392b; font-weight: 700; }
+  tr.detail > td { padding: 0 10px 14px; background: #fbfdfb; text-align: left; white-space: normal; }
+  .sup { border: 1px solid #e3ece5; border-radius: 10px; margin-top: 10px; overflow: hidden; background: #fff; }
+  .sup-h { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; background: #f1f7f2; font-weight: 700; font-size: 14px; }
+  .bill { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid #f0f4f1; font-size: 13.5px; }
+  .bill .amt { text-align: right; font-weight: 600; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 9px; }
+  .tag.company { background: #fff3d6; color: #8a5a00; } .tag.wholesale { background: #ece8fb; color: #5b3fb8; }
+  .pay-btn { background: #e3f0fb; color: #1d5f9e; border: 1px solid #a9cdee; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .pay-btn:hover { background: #d3e7f8; } .pay-btn:disabled { opacity: .5; }
+  .empty { padding: 30px 10px; text-align: center; color: #8fa198; }
+  @media (max-width: 700px) {
+    .content { padding: 12px 8px 40px; } .pb { padding: 12px; }
+    table.m th:nth-child(2), table.m td:nth-child(2) { display: none; }
+    .bill { grid-template-columns: 1fr 1fr; }
+  }
+  @media print {
+    .topbar, .breadcrumb, .filters .btn2, .pay-btn { display: none !important; }
+    body { background: #fff; } .panel { box-shadow: none; }
+    tr.detail { display: table-row !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-badge" onclick="window.location.href='backoffice-mockup.html'">💊</div>
+  <div class="titles" onclick="window.location.href='backoffice-mockup.html'">
+    <div class="th-name">ปรุงยาเภสัช — ระบบหลังบ้าน</div>
+    <div class="en-name">Prungya Pharmacy and Medical System (PPMS)</div>
+  </div>
+  <button class="back-link" onclick="window.location.href='backoffice-mockup.html'">← กลับหน้าหลังบ้าน</button>
+</div>
+
+<div class="breadcrumb">
+  หน้าหลัก <span class="sep">/</span> รายงาน <span class="sep">/</span> <b>หนี้คงค้างรายเดือน</b>
+</div>
+
+<div class="content">
+  <div class="panel">
+    <div class="panel-header"><h2>🧾 รายงานหนี้คงค้าง (เจ้าหนี้) รายเดือน</h2></div>
+    <div class="pb">
+      <div class="filters">
+        <select id="fYear" onchange="render()"></select>
+        <select id="fType" onchange="render()">
+          <option value="">เครดิตทั้งหมด</option>
+          <option value="เครดิตบริษัทยา">🏢 เครดิตบริษัทยา</option>
+          <option value="เครดิตยี่ปั๊ว">🏪 เครดิตยี่ปั๊ว</option>
+        </select>
+        <span class="sp"></span>
+        <button class="btn2" onclick="expandAll()">แสดงรายละเอียดทุกเดือน</button>
+        <button class="btn2" onclick="window.print()">🖨️ พิมพ์</button>
+      </div>
+      <div id="out"><div class="empty">⏳ กำลังโหลดข้อมูล...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfglKSQrUlsmroFU2e8GGA2xA5qEpKGazPNAX6yor2lJH5Xgt5b2Lo1EQIb-nNOJejmA/exec';
+
+/**
+ * ดึงข้อมูล (GET) — แนบรหัสคำขอ (requestId) ไปด้วย
+ * บางครั้งสคริปต์ทำงานเสร็จแล้ว แต่ตอนรับผล Google ตอบ 404 (script.googleusercontent.com) แทนผลลัพธ์
+ * ถ้าเจอ: ถามผลจริงด้วยรหัสเดิมก่อน (เร็ว) ถ้ายังไม่ได้ค่อยส่งใหม่ด้วยรหัสเดิม — หลังบ้านจำผลไว้ จึงตอบได้ทันทีไม่ต้องทำงานซ้ำ
+ */
+async function apiGet(action, params = {}) {
+  const requestId = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const query = new URLSearchParams({ action, ...params, requestId }).toString();
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(`${API_URL}?${query}`);
+      return await readApiJson(res);
+    } catch (err) {
+      const transient = err.nonJson || err instanceof TypeError;
+      if (!transient || attempt >= 4) throw err;
+      console.warn('[PPMS] Google ตอบกลับผิดพลาด (' + action + ') กำลังกู้คืนครั้งที่ ' + attempt);
+      await new Promise(r => setTimeout(r, 250));
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        const r = await readApiJson(await fetch(`${API_URL}?${q}`));
+        if (r && r.found) {
+          if (!r.response.ok) throw new Error(r.response.error);
+          return r.response.data;
+        }
+      } catch (e2) { if (!e2.nonJson && !(e2 instanceof TypeError)) throw e2; }
+      // ยังไม่ได้ผล → วนส่งคำขอเดิมใหม่ทันที (ไม่ต้องรอนาน)
+    }
+  }
+}
+
+
+/**
+ * อ่านผลตอบกลับจาก Apps Script อย่างปลอดภัย
+ * บางครั้ง Google ตอบกลับเป็นหน้า HTML (<!DOCTYPE ...) แทน JSON ทั้งที่สคริปต์ทำงานเสร็จไปแล้ว
+ * ถ้าเจอแบบนั้นจะโยน error ที่มี flag nonJson = true ให้ผู้เรียกตัดสินใจเองว่าจะลองใหม่/ตรวจสอบซ้ำอย่างไร
+ */
+async function readApiJson(res) {
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    const err = new Error('เซิร์ฟเวอร์ Google ตอบกลับผิดรูปแบบชั่วคราว (ไม่ใช่ข้อมูล JSON)');
+    err.nonJson = true;
+    throw err;
+  }
+  if (!json.ok) throw new Error(json.error);
+  return json.data;
+}
+
+/**
+ * บันทึกข้อมูล (POST) — แนบรหัสคำขอ (requestId) ไปด้วยทุกครั้ง
+ * ถ้า Google ตอบกลับเป็นหน้า HTML (ทั้งที่หลังบ้านบันทึกสำเร็จแล้ว) จะไปถามผลจริงด้วยรหัสนั้นผ่าน GET แทน
+ * หลังบ้านจำผลของรหัสนี้ไว้ ถ้าคำขอเดิมถูกส่งซ้ำจะไม่ทำงานซ้ำ (กันบันทึกซ้ำ/ตัดสต๊อกซ้ำ)
+ */
+async function apiPost(action, payload = {}) {
+  const requestId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, requestId, ...payload }), // ห้ามตั้ง Content-Type เอง ไม่งั้นชน CORS preflight
+    });
+    return await readApiJson(res);
+  } catch (err) {
+    if (!err.nonJson && !(err instanceof TypeError)) throw err; // error จริงจากหลังบ้าน → แจ้งตามปกติ
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await new Promise(r => setTimeout(r, 700 * attempt));
+      let r;
+      try {
+        const q = new URLSearchParams({ action: 'getResult', requestId }).toString();
+        r = await readApiJson(await fetch(`${API_URL}?${q}`));
+      } catch (e) { continue; }
+      if (r && r.found) {
+        if (!r.response.ok) throw new Error(r.response.error);
+        return r.response.data;
+      }
+    }
+    throw err;
+  }
+}
+
+
+const TH_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const CREDIT = ['เครดิตบริษัทยา', 'เครดิตยี่ปั๊ว'];
+const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const money = n => (Number(n) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const thDate = d => { const [y, m, dd] = String(d).split('-'); return y ? `${+dd}/${+m}/${+y + 543}` : '-'; };
+let bills = [];      // ใบรับทั้งหมด
+let openMonths = new Set();
+
+async function load() {
+  try {
+    bills = await apiGet('getPayables');
+  } catch (err) {
+    document.getElementById('out').innerHTML = `<div class="empty">โหลดไม่สำเร็จ: ${esc(err.message)}</div>`;
+    return;
+  }
+  const years = [...new Set(bills.filter(b => CREDIT.includes(b.payment) && b.date).map(b => b.date.slice(0, 4)))].sort().reverse();
+  const sel = document.getElementById('fYear');
+  sel.innerHTML = '<option value="">ทุกปี</option>' + years.map(y => `<option value="${y}">ปี ${+y + 543}</option>`).join('');
+  const thisYear = String(new Date().getFullYear());
+  if (years.includes(thisYear)) sel.value = thisYear;
+  const now = new Date();
+  openMonths.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+  render();
+}
+
+function render() {
+  const y = document.getElementById('fYear').value, t = document.getElementById('fType').value;
+  const credit = bills.filter(b => CREDIT.includes(b.payment) && (!t || b.payment === t) && (!y || (b.date || '').startsWith(y)));
+  const unspecified = bills.filter(b => !b.payment && (!y || (b.date || '').startsWith(y)));
+  const sum = (arr, type) => arr.filter(b => !type || b.payment === type).reduce((s, b) => s + b.total, 0);
+
+  // จัดกลุ่มตามเดือน (ล่าสุดก่อน)
+  const months = {};
+  credit.forEach(b => { const k = (b.date || '????-??').slice(0, 7); (months[k] = months[k] || []).push(b); });
+  const keys = Object.keys(months).sort().reverse();
+
+  let html = `<div class="cards">
+    <div class="card total"><div class="t">หนี้คงค้างรวม</div><div class="v">${money(sum(credit))}</div><div class="s">${credit.length} ใบ</div></div>
+    <div class="card company"><div class="t">🏢 เครดิตบริษัทยา</div><div class="v">${money(sum(credit, 'เครดิตบริษัทยา'))}</div><div class="s">${credit.filter(b => b.payment === 'เครดิตบริษัทยา').length} ใบ</div></div>
+    <div class="card wholesale"><div class="t">🏪 เครดิตยี่ปั๊ว</div><div class="v">${money(sum(credit, 'เครดิตยี่ปั๊ว'))}</div><div class="s">${credit.filter(b => b.payment === 'เครดิตยี่ปั๊ว').length} ใบ</div></div>
+  </div>`;
+  if (unspecified.length) html += `<div class="warn">⚠️ มีใบรับสินค้าที่ยังไม่ระบุวิธีชำระเงิน ${unspecified.length} ใบ (รวม ${money(sum(unspecified))} บาท) — ไม่ถูกนับในรายงานนี้ · <a href="receiving-list-mockup.html">ไประบุที่รายการใบรับสินค้า</a></div>`;
+
+  if (!keys.length) {
+    html += `<div class="empty">🎉 ไม่มีหนี้คงค้าง${y ? ' ในปี ' + (+y + 543) : ''}</div>`;
+  } else {
+    html += `<table class="m"><thead><tr><th>เดือน</th><th>จำนวนใบ</th><th>เครดิตบริษัทยา</th><th>เครดิตยี่ปั๊ว</th><th>รวมคงค้าง</th></tr></thead><tbody>`;
+    keys.forEach(k => {
+      const arr = months[k];
+      const [yy, mm] = k.split('-');
+      const label = mm && mm !== '??' ? `${TH_MONTHS[+mm - 1]} ${+yy + 543}` : 'ไม่ทราบวันที่';
+      const open = openMonths.has(k);
+      html += `<tr class="mrow ${open ? 'open' : ''}" onclick="toggleMonth('${k}')"><td>${label}</td><td>${arr.length}</td>
+        <td>${money(sum(arr, 'เครดิตบริษัทยา'))}</td><td>${money(sum(arr, 'เครดิตยี่ปั๊ว'))}</td><td class="num-red">${money(sum(arr))}</td></tr>`;
+      if (open) html += `<tr class="detail"><td colspan="5">${monthDetail(arr)}</td></tr>`;
+    });
+    html += `<tr class="foot"><td>รวมทั้งหมด</td><td>${credit.length}</td><td>${money(sum(credit, 'เครดิตบริษัทยา'))}</td><td>${money(sum(credit, 'เครดิตยี่ปั๊ว'))}</td><td class="num-red">${money(sum(credit))}</td></tr>`;
+    html += `</tbody></table>`;
+  }
+  document.getElementById('out').innerHTML = html;
+}
+
+function monthDetail(arr) {
+  const bySup = {};
+  arr.forEach(b => { (bySup[b.supplier || '-'] = bySup[b.supplier || '-'] || []).push(b); });
+  return Object.keys(bySup).sort((a, b) => bySup[b].reduce((s, x) => s + x.total, 0) - bySup[a].reduce((s, x) => s + x.total, 0)).map(sup => {
+    const list = bySup[sup].sort((a, b) => (a.date < b.date ? -1 : 1));
+    const tot = list.reduce((s, b) => s + b.total, 0);
+    return `<div class="sup"><div class="sup-h"><span>${esc(sup)}</span><span class="num-red">${money(tot)} บาท</span></div>
+      ${list.map(b => `<div class="bill">
+        <span><b>${esc(b.docNo)}</b></span><span>${thDate(b.date)}</span>
+        <span><span class="tag ${b.payment === 'เครดิตบริษัทยา' ? 'company' : 'wholesale'}">${b.payment === 'เครดิตบริษัทยา' ? '🏢 บริษัทยา' : '🏪 ยี่ปั๊ว'}</span></span>
+        <span class="amt">${money(b.total)}</span>
+        <button class="pay-btn" onclick="event.stopPropagation(); markPaid('${esc(b.docNo).replace(/'/g, "\\'")}', this)">✅ จ่ายแล้ว</button>
+      </div>`).join('')}</div>`;
+  }).join('');
+}
+
+function toggleMonth(k) { openMonths.has(k) ? openMonths.delete(k) : openMonths.add(k); render(); }
+function expandAll() {
+  bills.forEach(b => { if (CREDIT.includes(b.payment)) openMonths.add((b.date || '????-??').slice(0, 7)); });
+  render();
+}
+
+async function markPaid(docNo, btn) {
+  const b = bills.find(x => x.docNo === docNo);
+  if (!b || !confirm(`บันทึกว่า "จ่ายเครดิตแล้ว"?\n\n${docNo} — ${b.supplier}\nยอด ${money(b.total)} บาท`)) return;
+  btn.disabled = true;
+  try {
+    await apiPost('setReceivingPayment', { docNo, payment: 'จ่ายเครดิตแล้ว' });
+    b.payment = 'จ่ายเครดิตแล้ว';
+    render();
+  } catch (err) {
+    alert('บันทึกไม่สำเร็จ: ' + err.message);
+    btn.disabled = false;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
