@@ -2847,7 +2847,7 @@ async function fetchProductDetailRaw(code, force){
   const stockFor = mult => Math.floor(baseStock / (mult || 1));
 
   let units = (detail.units || []).map(u => {
-    const multiplier = Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1;
+    const multiplier = unitKey(u['หน่วย(ใหญ่)']) === unitKey(smallUnitLabel) ? 1 : (Number(u['ตัวคูณ(กี่หน่วยเล็กสุดต่อ 1 หน่วยนี้)']) || 1); // หน่วยเล็กสุด = 1 เสมอ
     const priceRow = (detail.prices || []).find(p => unitKey(p['หน่วย']) === unitKey(u['หน่วย(ใหญ่)'])); // ไม่สนตัวพิมพ์เล็ก/ใหญ่และเว้นวรรค (PACK 10 = pack 10)
     const cost = Math.round(costPerSmallUnit * multiplier * 100) / 100;
     const basePrice = priceRow ? (Number(priceRow['ราคาขาย']) || 0) : cost;

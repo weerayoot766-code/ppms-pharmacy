@@ -942,9 +942,10 @@ function renderUnitTab() {
         ${unitData.map((u,i) => `
           <tr>
             <td>${u.base
-              ? `<i id="baseUnitDisplay" style="color:${u.unit ? '#24312a' : '#8fa198'};">${u.unit || '(หน่วยเล็กสุด — เลือกด้านบน)'}</i>`
+              ? `<select style="min-width:150px;font-weight:600;" onchange="pickUnitName(this, ${i})">${unitOptionsHtml(u.unit)}</select><span id="baseUnitDisplay" style="display:none;"></span>`
               : `<select style="min-width:150px;" onchange="pickUnitName(this, ${i})">${unitOptionsHtml(u.unit)}</select>`}</td>
-            <td><input type="number" value="${u.pack}" ${u.base ? "disabled" : ""} oninput="unitData[${i}].pack=Number(this.value)||1"></td>
+            <td><input type="number" step="any" min="0" value="${u.pack}" ${u.base && Number(u.pack) !== 1 ? 'style="border-color:#e0a800;background:#fffbea;" title="หน่วยเล็กสุดควรมีขนาดบรรจุ = 1"' : ''} oninput="unitData[${i}].pack=Number(this.value)||1" onchange="switchTab('unit')">
+              ${u.base && Number(u.pack) !== 1 ? `<div style="font-size:11.5px;color:#8a5a00;margin-top:3px;">⚠ หน่วยเล็กสุดควรเป็น 1 <a href="javascript:void(0)" onclick="unitData[${i}].pack=1;switchTab('unit')">แก้เป็น 1</a></div>` : ''}</td>
             <td><input type="text" value="${u.note}" placeholder="-" oninput="unitData[${i}].note=this.value"></td>
             <td><input type="checkbox" ${u.retail ? "checked" : ""} onchange="unitData[${i}].retail=this.checked"></td>
             <td>${u.base ? "" : `<button class="del-icon-btn" onclick="removeUnitRow(${i})">ลบ</button>`}</td>
