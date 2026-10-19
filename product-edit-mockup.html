@@ -500,8 +500,17 @@ async function pickUnitName(sel, i) {
     switchTab('unit');
     return;
   }
+  const oldName = unitData[i].unit;
   unitData[i].unit = name;
-  if (unitData[i].base) syncBaseUnitDisplay(name);
+  if (unitData[i].base) {
+    syncBaseUnitDisplay(name);
+    if (!isNewProduct && oldName && oldName !== name) {
+      // เปลี่ยนหน่วยเล็กสุดของสินค้าที่มีอยู่ → เปลี่ยนชื่อหน่วยในแท็บราคา/บาร์โค้ด/Safety Stock ตามไปด้วย
+      [priceData, barcodeData, safetyStockData].forEach(list => (list || []).forEach(r => { if (r.unit === oldName) r.unit = name; }));
+      const from = baseUnitRename ? baseUnitRename.from : oldName;
+      baseUnitRename = from === name ? null : { from, to: name };
+    }
+  }
   switchTab('unit');
 }
 
@@ -577,7 +586,7 @@ let defaultLabel = {
 let isNewProduct = false;
 
 function resetToNewProduct() {
-  savedSnapshot = null; forceDirty = new Set(); // สินค้าใหม่ → บันทึกทุกส่วน
+  savedSnapshot = null; forceDirty = new Set(); baseUnitRename = null; // สินค้าใหม่ → บันทึกทุกส่วน
   isNewProduct = true;
   currentProductCode = null;
   currentProductRaw = {};
@@ -670,6 +679,7 @@ async function loadProductByCode(code){
 
   // ---------- ราคา ----------
   forceDirty = new Set();
+  baseUnitRename = null;
   priceData = (detail.prices || []).map(p => ({
     branch: p['สาขา'] || '-',
     unit: p['หน่วย'] || '-',
@@ -918,10 +928,10 @@ function renderUnitTab() {
         <label>หน่วยเล็กสุด</label>
         ${isNewProduct
           ? `<select onchange="pickUnitName(this, ${Math.max(0, unitData.indexOf(smallUnit))})">${unitOptionsHtml(smallUnit ? smallUnit.unit : '')}</select>`
-          : `<input type="text" value="${smallUnit ? smallUnit.unit : '-'}" class="readonly" disabled>`}
+          : `<select onchange="pickUnitName(this, ${Math.max(0, unitData.indexOf(smallUnit))})">${unitOptionsHtml(smallUnit ? smallUnit.unit : '')}</select>`}
       </div>
     </div>
-    ${isNewProduct ? '<div class="connected-hint" style="margin-top:-8px;">สินค้าใหม่: กรอก "หน่วยเล็กสุด" ก่อน (หน่วยที่แบ่งขายได้ละเอียดที่สุด เช่น เม็ด/แผง/ขวด) แล้วค่อยเพิ่มหน่วยใหญ่กว่า (เช่น กล่อง) เพิ่มเติมได้ด้านล่าง — ถ้าไม่มีหน่วยที่ต้องการ เลือก "＋ เพิ่มหน่วยใหม่..." ท้ายรายการ หรือไปเพิ่มที่ หลังบ้าน → ข้อมูลสินค้า → หน่วยนับ</div>' : ''}
+    ${isNewProduct ? '<div class="connected-hint" style="margin-top:-8px;">สินค้าใหม่: กรอก "หน่วยเล็กสุด" ก่อน (หน่วยที่แบ่งขายได้ละเอียดที่สุด เช่น เม็ด/แผง/ขวด) แล้วค่อยเพิ่มหน่วยใหญ่กว่า (เช่น กล่อง) เพิ่มเติมได้ด้านล่าง — ถ้าไม่มีหน่วยที่ต้องการ เลือก "＋ เพิ่มหน่วยใหม่..." ท้ายรายการ หรือไปเพิ่มที่ หลังบ้าน → ข้อมูลสินค้า → หน่วยนับ</div>' : '<div class="connected-hint" style="margin-top:-8px;">เปลี่ยน "หน่วยเล็กสุด" ได้ (เช่น ตั้งผิดเป็น TAB → เปลี่ยนเป็น เม็ด) — เป็นการ<b>เปลี่ยนชื่อหน่วย</b>เท่านั้น จำนวนคงเหลือในคลังเท่าเดิม (ไม่แปลงจำนวน) · ราคา/บาร์โค้ดที่ใช้ชื่อเดิมจะเปลี่ยนตามให้อัตโนมัติ</div>'}
     <datalist id="unitNameList">
       ${commonUnitNames.map(n => `<option value="${n}">`).join('')}
     </datalist>
@@ -932,7 +942,7 @@ function renderUnitTab() {
         ${unitData.map((u,i) => `
           <tr>
             <td>${u.base
-              ? (isNewProduct ? `<i id="baseUnitDisplay" style="color:${u.unit ? '#24312a' : '#8fa198'};">${u.unit || '(หน่วยเล็กสุด — กรอกด้านบน)'}</i>` : u.unit)
+              ? `<i id="baseUnitDisplay" style="color:${u.unit ? '#24312a' : '#8fa198'};">${u.unit || '(หน่วยเล็กสุด — เลือกด้านบน)'}</i>`
               : `<select style="min-width:150px;" onchange="pickUnitName(this, ${i})">${unitOptionsHtml(u.unit)}</select>`}</td>
             <td><input type="number" value="${u.pack}" ${u.base ? "disabled" : ""} oninput="unitData[${i}].pack=Number(this.value)||1"></td>
             <td><input type="text" value="${u.note}" placeholder="-" oninput="unitData[${i}].note=this.value"></td>
@@ -1344,6 +1354,7 @@ function renderPrintTab() {
   `;
 }
 
+let baseUnitRename = null;     // {from, to} เมื่อเปลี่ยนชื่อหน่วยเล็กสุดของสินค้าที่มีอยู่
 let savedSnapshot = null;      // JSON ของแต่ละส่วนตอนเปิดสินค้า/บันทึกล่าสุด
 let forceDirty = new Set();    // ส่วนที่ระบบแก้ให้อัตโนมัติตอนเปิด (ต้องบันทึกแม้ผู้ใช้ไม่ได้แตะ)
 function snapshotOf(all) { const o = {}; Object.keys(all).forEach(k => { o[k] = JSON.stringify(all[k]); }); return o; }
@@ -1373,6 +1384,7 @@ function buildSaveSections() {
     },
     safetyStock: safetyStockData,
     shelfLocations: shelfLocationData,
+    baseUnit: baseUnitRename,
   };
 }
 
@@ -1432,10 +1444,11 @@ async function saveAll(){
   try {
     // ส่งทุกแท็บไปในคำขอเดียว (เดิมส่งแยก 9 คำขอต่อกัน ใช้เวลารวม ~30 วินาที)
     await apiPost('saveProductAll', { code: currentProductCode, all });
-    savedSnapshot = snapshotOf(fullAll); // ค่าปัจจุบันกลายเป็นค่าที่บันทึกแล้ว (ไม่ต้องโหลดสินค้าใหม่ทั้งหมด — เร็วขึ้น)
+    baseUnitRename = null;
+    savedSnapshot = snapshotOf(buildSaveSections()); // ค่าปัจจุบันกลายเป็นค่าที่บันทึกแล้ว (ไม่ต้องโหลดสินค้าใหม่ทั้งหมด — เร็วขึ้น)
     forceDirty = new Set();
     const names = { product: 'ข้อมูลสินค้า', labelDefaults: 'ค่าเริ่มต้นฉลากยา', genericName: 'ชื่อยาสามัญ', units: 'หน่วย', barcodes: 'บาร์โค้ด',
-      prices: 'ราคา', drugMeta: 'ข้อมูลทางยา', safetyStock: 'Safety Stock', shelfLocations: 'ชั้นวางสินค้า' };
+      prices: 'ราคา', drugMeta: 'ข้อมูลทางยา', safetyStock: 'Safety Stock', shelfLocations: 'ชั้นวางสินค้า', baseUnit: 'หน่วยเล็กสุด' };
     alert('บันทึกเรียบร้อย ✅\n\nส่วนที่บันทึก: ' + Object.keys(all).map(k => names[k] || k).join(', '));
   } catch (err) {
     alert('บันทึกไม่สำเร็จ: ' + err.message);
