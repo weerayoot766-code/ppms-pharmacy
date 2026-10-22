@@ -1360,18 +1360,7 @@
         </div>
         <div class="field-inline">
           <label style="margin:0;">หน่วย :</label>
-          <select id="lblDoseUnit">
-            <option value="เม็ด">เม็ด</option>
-            <option value="แคปซูล">แคปซูล</option>
-            <option value="ช้อนชา">ช้อนชา</option>
-            <option value="ช้อนโต๊ะ">ช้อนโต๊ะ</option>
-            <option value="ซีซี">ซีซี</option>
-            <option value="หยด">หยด</option>
-            <option value="พ่น">พ่น</option>
-            <option value="แท่ง">แท่ง</option>
-            <option value="ป้าย">ป้าย</option>
-            <option value="ครั้ง">ครั้ง</option>
-          </select>
+          <select id="lblDoseUnit" onchange="pickDoseUnitPos(this)"></select>
         </div>
       </div>
 
@@ -2789,6 +2778,35 @@ apiGet('getPriceLevels').then(l => {
   renderMemberChip();
 }).catch(() => {});
 
+// ---------- หน่วยในวิธีใช้ยา — เพิ่มเองได้ (ใช้รายการเดียวกับหน้าแก้ไขสินค้า) ----------
+const DOSE_UNITS_KEY = 'ppms_dose_units_v1';
+let doseUnits = (() => { try { const c = JSON.parse(localStorage.getItem(DOSE_UNITS_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return ['เม็ด', 'แคปซูล', 'ช้อนชา', 'ช้อนโต๊ะ', 'ซีซี', 'หยด', 'พ่น', 'แท่ง', 'ป้าย', 'ครั้ง']; })();
+function renderDoseUnitSelect(cur) {
+  const sel = document.getElementById('lblDoseUnit'); if (!sel) return;
+  if (cur === undefined) cur = sel.value;
+  const list = doseUnits.slice(); if (cur && !list.includes(cur)) list.unshift(cur);
+  sel.innerHTML = list.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('') + '<option value="__new__">＋ เพิ่มหน่วยใหม่...</option>';
+  sel.value = cur && list.includes(cur) ? cur : list[0];
+  sel.dataset.prev = sel.value;
+}
+async function pickDoseUnitPos(sel) {
+  if (sel.value !== '__new__') { sel.dataset.prev = sel.value; if (typeof syncLabelToActiveItem === 'function') syncLabelToActiveItem(); return; }
+  const name = (prompt('ชื่อหน่วยใหม่ (เช่น ซอง, ถุง, ml)') || '').trim();
+  if (!name) { sel.value = sel.dataset.prev || doseUnits[0]; return; }
+  const same = doseUnits.find(n => n.toLowerCase() === name.toLowerCase());
+  const finalName = same || name;
+  if (!same) {
+    doseUnits.push(name);
+    try { localStorage.setItem(DOSE_UNITS_KEY, JSON.stringify(doseUnits)); } catch (e) {}
+    apiPost('addDoseUnit', { name }).catch(err => alert('บันทึกหน่วยใหม่ลงระบบไม่สำเร็จ: ' + err.message));
+  }
+  renderDoseUnitSelect(finalName);
+  if (typeof syncLabelToActiveItem === 'function') syncLabelToActiveItem();
+}
+renderDoseUnitSelect('เม็ด');
+apiGet('getDoseUnits').then(l => { doseUnits = l; try { localStorage.setItem(DOSE_UNITS_KEY, JSON.stringify(l)); } catch (e) {} renderDoseUnitSelect(); }).catch(() => {});
+
 function levelNumber(v) {
   const n = Number((String(v == null ? '' : v).match(/(\d+)/) || [])[1]) || 1;
   return n >= 1 && n <= 4 ? n : 1;
@@ -3257,14 +3275,14 @@ const routeUnitDefaults = {
 
 function onRouteChange(){
   const route = document.getElementById('lblRoute').value;
-  document.getElementById('lblDoseUnit').value = routeUnitDefaults[route] || "";
+  renderDoseUnitSelect(routeUnitDefaults[route] || doseUnits[0]);
 }
 
 // ใส่ค่าเริ่มต้นของฟอร์มฉลาก (วิธีใช้/ขนาดยา/ช่วงเวลา) — ถ้ามี d (ค่าที่เคยบันทึกไว้สำหรับยาตัวนี้) ใช้ค่านั้น ไม่มีก็ใช้ค่ามาตรฐาน
 function applyLabelDefaults(d){
   document.getElementById('lblRoute').value = (d && d.route) || "รับประทาน";
   document.getElementById('lblDose').value = (d && d.dose) || 1;
-  document.getElementById('lblDoseUnit').value = (d && d.doseUnit) || "เม็ด";
+  renderDoseUnitSelect((d && d.doseUnit) || "เม็ด");
   document.getElementById('lblPerDay').value = (d && d.perDay) || 1;
   document.getElementById('lblMealTime').value = (d && d.mealTime) || "หลังอาหาร";
   document.getElementById('chkMorning').checked = d ? !!d.morning : true;

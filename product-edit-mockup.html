@@ -1184,18 +1184,18 @@ function renderDrugTab() {
     <div class="inline-fields" style="margin-bottom:24px;">
       <div>
         <div style="font-size:12.5px;font-weight:700;color:#3f4f45;margin-bottom:8px;">ต้องรายงาน ขย. <span style="font-weight:400;color:#8fa198;">(อ่านอย่างเดียว)</span></div>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${reqKY9?"checked":""} disabled> ต้องรายงาน ขย.9 <span style="color:#8fa198;font-size:11.5px;">(คำนวณอัตโนมัติ)</span></label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${reqKY10?"checked":""} disabled> ต้องรายงาน ขย.10</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;"><input type="checkbox" ${reqKY11?"checked":""} disabled> ต้องรายงาน ขย.11 <span style="color:#8fa198;font-size:11.5px;">(ยืนยันแล้วในระบบ)</span></label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${(reqKY9||printKY9)?"checked":""} disabled> ต้องรายงาน ขย.9</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${(reqKY10||printKY10)?"checked":""} disabled> ต้องรายงาน ขย.10</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;"><input type="checkbox" ${(reqKY11||printKY11)?"checked":""} disabled> ต้องรายงาน ขย.11</label>
       </div>
       <div>
         <div style="font-size:12.5px;font-weight:700;color:#3f4f45;margin-bottom:8px;">พิมพ์รายงาน ขย.</div>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${printKY9?"checked":""} onchange="printKY9=this.checked"> พิมพ์รายงาน ขย.9</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${printKY10?"checked":""} onchange="printKY10=this.checked"> พิมพ์รายงาน ขย.10</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;"><input type="checkbox" ${printKY11?"checked":""} onchange="printKY11=this.checked"> พิมพ์รายงาน ขย.11</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${printKY9?"checked":""} onchange="printKY9=this.checked;switchTab('drug')"> พิมพ์รายงาน ขย.9</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-bottom:6px;"><input type="checkbox" ${printKY10?"checked":""} onchange="printKY10=this.checked;switchTab('drug')"> พิมพ์รายงาน ขย.10</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;"><input type="checkbox" ${printKY11?"checked":""} onchange="printKY11=this.checked;switchTab('drug')"> พิมพ์รายงาน ขย.11</label>
       </div>
     </div>
-    <div class="connected-hint" style="margin-top:-10px;margin-bottom:20px;">✅ "พิมพ์รายงาน ขย." และ "ประเภทยาแยกตามอาการ" ด้านล่างนี้เชื่อมบันทึกจริงแล้ว — ส่วน "ต้องรายงาน ขย." ตั้งใจทำเป็นอ่านอย่างเดียว เพราะเป็นค่าที่คำนวณอัตโนมัติ/ยืนยันไว้แล้วในระบบ ป้องกันไม่ให้แก้จากหน้านี้แล้วข้อมูลเพี้ยน</div>
+    <div class="connected-hint" style="margin-top:-10px;margin-bottom:20px;">✅ "พิมพ์รายงาน ขย." และ "ประเภทยาแยกตามอาการ" ด้านล่างนี้เชื่อมบันทึกจริงแล้ว — ติ๊ก "พิมพ์รายงาน ขย." แล้ว "ต้องรายงาน ขย." ฝั่งซ้ายจะติ๊กตามให้อัตโนมัติ (บันทึกพร้อมกันตอนกด "บันทึก")</div>
 
     <h4>ประเภทยาแยกตามอาการที่รักษา (Treatment Class)</h4>
     <div class="checkbox-grid">
@@ -1297,18 +1297,7 @@ function renderPrintTab() {
       </div>
       <div class="field-inline" style="margin-top:22px;">
         <label>หน่วย :</label>
-        <select id="dlDoseUnit" onchange="defaultLabel.doseUnit=this.value">
-          <option ${defaultLabel.doseUnit==="เม็ด"?"selected":""}>เม็ด</option>
-          <option ${defaultLabel.doseUnit==="แคปซูล"?"selected":""}>แคปซูล</option>
-          <option ${defaultLabel.doseUnit==="ช้อนชา"?"selected":""}>ช้อนชา</option>
-          <option ${defaultLabel.doseUnit==="ช้อนโต๊ะ"?"selected":""}>ช้อนโต๊ะ</option>
-          <option ${defaultLabel.doseUnit==="ซีซี"?"selected":""}>ซีซี</option>
-          <option ${defaultLabel.doseUnit==="หยด"?"selected":""}>หยด</option>
-          <option ${defaultLabel.doseUnit==="พ่น"?"selected":""}>พ่น</option>
-          <option ${defaultLabel.doseUnit==="แท่ง"?"selected":""}>แท่ง</option>
-          <option ${defaultLabel.doseUnit==="ป้าย"?"selected":""}>ป้าย</option>
-          <option ${defaultLabel.doseUnit==="ครั้ง"?"selected":""}>ครั้ง</option>
-        </select>
+        <select id="dlDoseUnit" onchange="pickDoseUnit(this)">${doseUnitOptions(defaultLabel.doseUnit)}</select>
       </div>
       <div class="field-inline" style="margin-top:22px;">
         <label>วันละ :</label>
@@ -1356,6 +1345,31 @@ function renderPrintTab() {
 }
 
 let baseUnitRename = null;     // {from, to} เมื่อเปลี่ยนชื่อหน่วยเล็กสุดของสินค้าที่มีอยู่
+// ---------- หน่วยในวิธีใช้ยา (ครั้งละ 1 เม็ด/ช้อนชา/...) — เพิ่มเองได้ ใช้ร่วมกับหน้าขาย ----------
+const DOSE_UNITS_KEY = 'ppms_dose_units_v1';
+let doseUnits = (() => { try { const c = JSON.parse(localStorage.getItem(DOSE_UNITS_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return ['เม็ด', 'แคปซูล', 'ช้อนชา', 'ช้อนโต๊ะ', 'ซีซี', 'หยด', 'พ่น', 'แท่ง', 'ป้าย', 'ครั้ง']; })();
+apiGet('getDoseUnits').then(l => { doseUnits = l; try { localStorage.setItem(DOSE_UNITS_KEY, JSON.stringify(l)); } catch (e) {} }).catch(() => {});
+function doseUnitOptions(cur) {
+  const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const list = doseUnits.slice(); if (cur && !list.includes(cur)) list.unshift(cur);
+  return list.map(n => `<option value="${esc(n)}" ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('') + '<option value="__new__">＋ เพิ่มหน่วยใหม่...</option>';
+}
+async function pickDoseUnit(sel) {
+  if (sel.value !== '__new__') { defaultLabel.doseUnit = sel.value; return; }
+  const name = (prompt('ชื่อหน่วยใหม่ (เช่น ซอง, ถุง, ml)') || '').trim();
+  if (!name) { sel.innerHTML = doseUnitOptions(defaultLabel.doseUnit); return; }
+  const same = doseUnits.find(n => n.toLowerCase() === name.toLowerCase());
+  const finalName = same || name;
+  if (!same) {
+    doseUnits.push(name);
+    try { localStorage.setItem(DOSE_UNITS_KEY, JSON.stringify(doseUnits)); } catch (e) {}
+    apiPost('addDoseUnit', { name }).catch(err => alert('บันทึกหน่วยใหม่ลงระบบไม่สำเร็จ: ' + err.message));
+  }
+  defaultLabel.doseUnit = finalName;
+  sel.innerHTML = doseUnitOptions(finalName);
+}
+
 let savedSnapshot = null;      // JSON ของแต่ละส่วนตอนเปิดสินค้า/บันทึกล่าสุด
 let forceDirty = new Set();    // ส่วนที่ระบบแก้ให้อัตโนมัติตอนเปิด (ต้องบันทึกแม้ผู้ใช้ไม่ได้แตะ)
 function snapshotOf(all) { const o = {}; Object.keys(all).forEach(k => { o[k] = JSON.stringify(all[k]); }); return o; }
