@@ -1382,12 +1382,7 @@
 
       <div class="field-row">
         <div class="field">
-          <select id="lblMealTime">
-            <option>หลังอาหาร</option>
-            <option>ก่อนอาหาร</option>
-            <option>พร้อมอาหาร</option>
-            <option>ไม่ระบุ</option>
-          </select>
+          <select id="lblMealTime" onchange="pickMealTimePos(this)"></select>
         </div>
       </div>
 
@@ -2805,6 +2800,33 @@ async function pickDoseUnitPos(sel) {
   if (typeof syncLabelToActiveItem === 'function') syncLabelToActiveItem();
 }
 renderDoseUnitSelect('เม็ด');
+
+// ---------- ช่วงเวลารับประทาน — เพิ่มเองได้ (รายการเดียวกับหน้าแก้ไขสินค้า) ----------
+const MEAL_TIMES_KEY = 'ppms_meal_times_v1';
+let mealTimes = (() => { try { const c = JSON.parse(localStorage.getItem(MEAL_TIMES_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return ['หลังอาหาร', 'ก่อนอาหาร', 'พร้อมอาหาร', 'ไม่ระบุ']; })();
+function renderMealTimeSelect(cur) {
+  const sel = document.getElementById('lblMealTime'); if (!sel) return;
+  if (cur === undefined) cur = sel.value;
+  const list = mealTimes.slice(); if (cur && !list.includes(cur)) list.unshift(cur);
+  sel.innerHTML = list.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('') + '<option value="__new__">＋ เพิ่มใหม่...</option>';
+  sel.value = cur && list.includes(cur) ? cur : list[0];
+  sel.dataset.prev = sel.value;
+}
+function pickMealTimePos(sel) {
+  if (sel.value !== '__new__') { sel.dataset.prev = sel.value; if (typeof syncLabelToActiveItem === 'function') syncLabelToActiveItem(); return; }
+  const name = (prompt('เพิ่มช่วงเวลารับประทาน (เช่น หลังอาหารทันที, ก่อนนอน, ขณะท้องว่าง)') || '').trim();
+  if (!name) { sel.value = sel.dataset.prev || mealTimes[0]; return; }
+  if (!mealTimes.includes(name)) {
+    mealTimes.push(name);
+    try { localStorage.setItem(MEAL_TIMES_KEY, JSON.stringify(mealTimes)); } catch (e) {}
+    apiPost('addMealTime', { name }).catch(err => alert('บันทึกลงระบบไม่สำเร็จ: ' + err.message));
+  }
+  renderMealTimeSelect(name);
+  if (typeof syncLabelToActiveItem === 'function') syncLabelToActiveItem();
+}
+renderMealTimeSelect('หลังอาหาร');
+apiGet('getMealTimes').then(l => { mealTimes = l; try { localStorage.setItem(MEAL_TIMES_KEY, JSON.stringify(l)); } catch (e) {} renderMealTimeSelect(); }).catch(() => {});
 apiGet('getDoseUnits').then(l => { doseUnits = l; try { localStorage.setItem(DOSE_UNITS_KEY, JSON.stringify(l)); } catch (e) {} renderDoseUnitSelect(); }).catch(() => {});
 
 function levelNumber(v) {
@@ -3284,7 +3306,7 @@ function applyLabelDefaults(d){
   document.getElementById('lblDose').value = (d && d.dose) || 1;
   renderDoseUnitSelect((d && d.doseUnit) || "เม็ด");
   document.getElementById('lblPerDay').value = (d && d.perDay) || 1;
-  document.getElementById('lblMealTime').value = (d && d.mealTime) || "หลังอาหาร";
+  renderMealTimeSelect((d && d.mealTime) || "หลังอาหาร");
   document.getElementById('chkMorning').checked = d ? !!d.morning : true;
   document.getElementById('chkNoon').checked = d ? !!d.noon : false;
   document.getElementById('chkEvening').checked = d ? !!d.evening : false;

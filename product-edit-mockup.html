@@ -1316,12 +1316,7 @@ function renderPrintTab() {
 
     <div class="inline-fields" style="margin-bottom:16px;">
       <div class="field" style="max-width:220px;">
-        <select id="dlMealTime" onchange="defaultLabel.mealTime=this.value">
-          <option ${defaultLabel.mealTime==="หลังอาหาร"?"selected":""}>หลังอาหาร</option>
-          <option ${defaultLabel.mealTime==="ก่อนอาหาร"?"selected":""}>ก่อนอาหาร</option>
-          <option ${defaultLabel.mealTime==="พร้อมอาหาร"?"selected":""}>พร้อมอาหาร</option>
-          <option ${defaultLabel.mealTime==="ไม่ระบุ"?"selected":""}>ไม่ระบุ</option>
-        </select>
+        <select id="dlMealTime" onchange="pickMealTime(this)">${mealTimeOptions(defaultLabel.mealTime)}</select>
       </div>
     </div>
 
@@ -1368,6 +1363,29 @@ async function pickDoseUnit(sel) {
   }
   defaultLabel.doseUnit = finalName;
   sel.innerHTML = doseUnitOptions(finalName);
+}
+
+// ---------- ช่วงเวลารับประทาน (หลังอาหาร/ก่อนอาหาร/...) — เพิ่มเองได้ ใช้ร่วมกับหน้าขาย ----------
+const MEAL_TIMES_KEY = 'ppms_meal_times_v1';
+let mealTimes = (() => { try { const c = JSON.parse(localStorage.getItem(MEAL_TIMES_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return ['หลังอาหาร', 'ก่อนอาหาร', 'พร้อมอาหาร', 'ไม่ระบุ']; })();
+apiGet('getMealTimes').then(l => { mealTimes = l; try { localStorage.setItem(MEAL_TIMES_KEY, JSON.stringify(l)); } catch (e) {} }).catch(() => {});
+function mealTimeOptions(cur) {
+  const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const list = mealTimes.slice(); if (cur && !list.includes(cur)) list.unshift(cur);
+  return list.map(n => `<option value="${esc(n)}" ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('') + '<option value="__new__">＋ เพิ่มใหม่...</option>';
+}
+function pickMealTime(sel) {
+  if (sel.value !== '__new__') { defaultLabel.mealTime = sel.value; return; }
+  const name = (prompt('เพิ่มช่วงเวลารับประทาน (เช่น หลังอาหารทันที, ก่อนนอน, ขณะท้องว่าง)') || '').trim();
+  if (!name) { sel.innerHTML = mealTimeOptions(defaultLabel.mealTime); return; }
+  if (!mealTimes.includes(name)) {
+    mealTimes.push(name);
+    try { localStorage.setItem(MEAL_TIMES_KEY, JSON.stringify(mealTimes)); } catch (e) {}
+    apiPost('addMealTime', { name }).catch(err => alert('บันทึกลงระบบไม่สำเร็จ: ' + err.message));
+  }
+  defaultLabel.mealTime = name;
+  sel.innerHTML = mealTimeOptions(name);
 }
 
 let savedSnapshot = null;      // JSON ของแต่ละส่วนตอนเปิดสินค้า/บันทึกล่าสุด
