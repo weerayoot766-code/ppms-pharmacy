@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<script src="ppms-auth.js"></script>
 <!-- ไอคอนแอปบนหน้าจอโฮม (เพิ่มลงหน้าจอโฮม / ติดตั้งแอป) -->
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -195,6 +196,13 @@ async function doLogin() {
     btn.disabled = false;
     btn.textContent = 'เข้าสู่ระบบ';
   }
+}
+
+// ถูกพามาจากหน้าอื่นเพราะหมดเวลาการใช้งาน → แจ้งให้รู้
+if (new URLSearchParams(location.search).get('reason') === 'expired') {
+  const eb = document.getElementById('errorBox');
+  eb.textContent = 'หมดเวลาการใช้งาน (เพื่อความปลอดภัยของข้อมูลลูกค้า) กรุณาเข้าสู่ระบบใหม่';
+  eb.classList.add('show');
 }
 
 // จำชื่อผู้ใช้งานล่าสุดไว้ให้ ถ้าเคยติ๊ก "จดจำฉันไว้"
