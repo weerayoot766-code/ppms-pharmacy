@@ -1345,15 +1345,7 @@
       <div class="field-row">
         <div class="field">
           <label>วิธีใช้ยา</label>
-          <select id="lblRoute" onchange="onRouteChange()">
-            <option value="รับประทาน">รับประทาน</option>
-            <option value="ทา">ทา</option>
-            <option value="เหน็บช่องคลอด">เหน็บช่องคลอด</option>
-            <option value="เหน็บทวารหนัก">เหน็บทวารหนัก</option>
-            <option value="หยอดตา">หยอดตา</option>
-            <option value="พ่นจมูก">พ่นจมูก</option>
-            <option value="พ่นในปาก">พ่นในปาก</option>
-          </select>
+          <select id="lblRoute" onchange="onRouteChange()"></select>
         </div>
         <div class="field-inline">
           <label style="margin:0;">ครั้งละ :</label>
@@ -2830,6 +2822,21 @@ renderMealTimeSelect('หลังอาหาร');
 apiGet('getMealTimes').then(l => { mealTimes = l; try { localStorage.setItem(MEAL_TIMES_KEY, JSON.stringify(l)); } catch (e) {} renderMealTimeSelect(); }).catch(() => {});
 apiGet('getDoseUnits').then(l => { doseUnits = l; try { localStorage.setItem(DOSE_UNITS_KEY, JSON.stringify(l)); } catch (e) {} renderDoseUnitSelect(); }).catch(() => {});
 
+// ---------- วิธีใช้ยา — เพิ่มเองได้ (รายการเดียวกับหน้าแก้ไขสินค้า) ----------
+const ROUTES_KEY = 'ppms_routes_v1';
+let routes = (() => { try { const c = JSON.parse(localStorage.getItem(ROUTES_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return ['รับประทาน', 'ทา', 'เหน็บช่องคลอด', 'เหน็บทวารหนัก', 'หยอดตา', 'พ่นจมูก', 'พ่นในปาก']; })();
+function renderRouteSelect(cur) {
+  const sel = document.getElementById('lblRoute'); if (!sel) return;
+  if (cur === undefined) cur = sel.value;
+  const list = routes.slice(); if (cur && !list.includes(cur)) list.unshift(cur);
+  sel.innerHTML = list.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('') + '<option value="__new__">＋ เพิ่มวิธีใช้ใหม่...</option>';
+  sel.value = cur && list.includes(cur) ? cur : list[0];
+  sel.dataset.prev = sel.value;
+}
+renderRouteSelect('รับประทาน');
+apiGet('getRoutes').then(l => { routes = l; try { localStorage.setItem(ROUTES_KEY, JSON.stringify(l)); } catch (e) {} renderRouteSelect(); }).catch(() => {});
+
 function levelNumber(v) {
   const n = Number((String(v == null ? '' : v).match(/(\d+)/) || [])[1]) || 1;
   return n >= 1 && n <= 4 ? n : 1;
@@ -3297,13 +3304,25 @@ const routeUnitDefaults = {
 };
 
 function onRouteChange(){
-  const route = document.getElementById('lblRoute').value;
+  const sel = document.getElementById('lblRoute');
+  if (sel.value === '__new__') {
+    const name = (prompt('เพิ่มวิธีใช้ยาใหม่ (เช่น อม, กลั้วคอ, หยอดหู, ฉีด)') || '').trim();
+    if (!name) { sel.value = sel.dataset.prev || routes[0]; return; }
+    if (!routes.includes(name)) {
+      routes.push(name);
+      try { localStorage.setItem(ROUTES_KEY, JSON.stringify(routes)); } catch (e) {}
+      apiPost('addRoute', { name }).catch(err => alert('บันทึกลงระบบไม่สำเร็จ: ' + err.message));
+    }
+    renderRouteSelect(name);
+  }
+  sel.dataset.prev = sel.value;
+  const route = sel.value;
   renderDoseUnitSelect(routeUnitDefaults[route] || doseUnits[0]);
 }
 
 // ใส่ค่าเริ่มต้นของฟอร์มฉลาก (วิธีใช้/ขนาดยา/ช่วงเวลา) — ถ้ามี d (ค่าที่เคยบันทึกไว้สำหรับยาตัวนี้) ใช้ค่านั้น ไม่มีก็ใช้ค่ามาตรฐาน
 function applyLabelDefaults(d){
-  document.getElementById('lblRoute').value = (d && d.route) || "รับประทาน";
+  renderRouteSelect((d && d.route) || "รับประทาน");
   document.getElementById('lblDose').value = (d && d.dose) || 1;
   renderDoseUnitSelect((d && d.doseUnit) || "เม็ด");
   document.getElementById('lblPerDay').value = (d && d.perDay) || 1;

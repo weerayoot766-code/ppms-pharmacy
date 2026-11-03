@@ -1282,15 +1282,7 @@ function renderPrintTab() {
     <div class="inline-fields" style="margin-bottom:6px;">
       <div class="field" style="max-width:220px;">
         <label>วิธีใช้ยา</label>
-        <select id="dlRoute" onchange="defaultLabel.route=this.value">
-          <option ${defaultLabel.route==="รับประทาน"?"selected":""}>รับประทาน</option>
-          <option ${defaultLabel.route==="ทา"?"selected":""}>ทา</option>
-          <option ${defaultLabel.route==="เหน็บช่องคลอด"?"selected":""}>เหน็บช่องคลอด</option>
-          <option ${defaultLabel.route==="เหน็บทวารหนัก"?"selected":""}>เหน็บทวารหนัก</option>
-          <option ${defaultLabel.route==="หยอดตา"?"selected":""}>หยอดตา</option>
-          <option ${defaultLabel.route==="พ่นจมูก"?"selected":""}>พ่นจมูก</option>
-          <option ${defaultLabel.route==="พ่นในปาก"?"selected":""}>พ่นในปาก</option>
-        </select>
+        <select id="dlRoute" onchange="pickRoute(this)">${routeOptions(defaultLabel.route)}</select>
       </div>
       <div class="field-inline" style="margin-top:22px;">
         <label>ครั้งละ :</label>
@@ -1387,6 +1379,30 @@ function pickMealTime(sel) {
   }
   defaultLabel.mealTime = name;
   sel.innerHTML = mealTimeOptions(name);
+}
+
+// ---------- วิธีใช้ยา (รับประทาน/ทา/หยอดตา/...) — เพิ่มเองได้ ใช้ร่วมกับหน้าขาย ----------
+const ROUTES_KEY = 'ppms_routes_v1';
+let routes = (() => { try { const c = JSON.parse(localStorage.getItem(ROUTES_KEY) || 'null'); if (Array.isArray(c) && c.length) return c; } catch (e) {}
+  return ['รับประทาน', 'ทา', 'เหน็บช่องคลอด', 'เหน็บทวารหนัก', 'หยอดตา', 'พ่นจมูก', 'พ่นในปาก']; })();
+apiGet('getRoutes').then(l => { routes = l; try { localStorage.setItem(ROUTES_KEY, JSON.stringify(l)); } catch (e) {}
+  const sel = document.getElementById('dlRoute'); if (sel) sel.innerHTML = routeOptions(defaultLabel.route); }).catch(() => {});
+function routeOptions(cur) {
+  const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const list = routes.slice(); if (cur && !list.includes(cur)) list.unshift(cur);
+  return list.map(n => `<option value="${esc(n)}" ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('') + '<option value="__new__">＋ เพิ่มวิธีใช้ใหม่...</option>';
+}
+function pickRoute(sel) {
+  if (sel.value !== '__new__') { defaultLabel.route = sel.value; return; }
+  const name = (prompt('เพิ่มวิธีใช้ยาใหม่ (เช่น อม, กลั้วคอ, หยอดหู, ฉีด)') || '').trim();
+  if (!name) { sel.innerHTML = routeOptions(defaultLabel.route); return; }
+  if (!routes.includes(name)) {
+    routes.push(name);
+    try { localStorage.setItem(ROUTES_KEY, JSON.stringify(routes)); } catch (e) {}
+    apiPost('addRoute', { name }).catch(err => alert('บันทึกลงระบบไม่สำเร็จ: ' + err.message));
+  }
+  defaultLabel.route = name;
+  sel.innerHTML = routeOptions(name);
 }
 
 let savedSnapshot = null;      // JSON ของแต่ละส่วนตอนเปิดสินค้า/บันทึกล่าสุด
